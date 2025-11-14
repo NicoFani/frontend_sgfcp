@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.frontend_sgfcp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973" // Changed because of console error
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
