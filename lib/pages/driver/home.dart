@@ -23,7 +23,7 @@ class HomePageDriver extends StatelessWidget {
     return SafeArea(
       
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

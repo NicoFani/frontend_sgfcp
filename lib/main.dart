@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 import 'theme/util.dart';
@@ -18,10 +19,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     //final brightness = View.of(context).platformDispatcher.platformBrightness;
 
-    // Use with Google Fonts package to use downloadable fonts
     TextTheme textTheme = createTextTheme(context, "Noto Sans", "Noto Sans");
-
     MaterialTheme theme = MaterialTheme(textTheme);
+    
     return MaterialApp(
       title: 'SGFCP',
       theme: theme.light(),// brightness == Brightness.light ? theme.light() : theme.dark(),
@@ -44,7 +44,7 @@ class _RootNavigationState extends State<RootNavigation> {
 
   final List<Widget> _pages = [
     const HomePageDriver(),
-    const Placeholder(),
+    const MiTripsPage(),
     const Placeholder(),
   ];
 
@@ -71,11 +71,11 @@ class _RootNavigationState extends State<RootNavigation> {
         );
       case 1:
         return AppBar(
-          title: const Text('Mis viajes'),
+          title: Text('Mis viajes', style: Theme.of(context).textTheme.headlineSmall),
         );
       case 2:
         return AppBar(
-          title: const Text('Perfil'),
+          title:  Text('Perfil', style: Theme.of(context).textTheme.headlineSmall),
         );
       default:
         return null;
