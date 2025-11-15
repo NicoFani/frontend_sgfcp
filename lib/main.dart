@@ -4,7 +4,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'theme/util.dart';
 import 'theme/theme.dart';
 
-import 'pages/home.dart';
+import 'pages/driver/home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -43,15 +43,50 @@ class _RootNavigationState extends State<RootNavigation> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const HomePage(),
+    const HomePageDriver(),
     const Placeholder(),
     const Placeholder(),
   ];
+
+  // APPBAR según la pestaña seleccionada
+  PreferredSizeWidget? _buildAppBar() {
+    switch (_selectedIndex) {
+      case 0:
+        return AppBar(
+          title: Text(
+            'Hola, Juan!',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          actions: [
+            IconButton(
+              onPressed: () {
+                // TODO: abrir notificaciones
+              },
+              icon: Badge.count(
+                count: 1,
+                child: const Icon(Icons.notifications_outlined),
+              ),
+            ),
+          ],
+        );
+      case 1:
+        return AppBar(
+          title: const Text('Mis viajes'),
+        );
+      case 2:
+        return AppBar(
+          title: const Text('Perfil'),
+        );
+      default:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
+      appBar: _buildAppBar(),
       body: IndexedStack(
         index: _selectedIndex,
         children: _pages,

@@ -346,6 +346,64 @@ class MaterialTheme {
      ),
      scaffoldBackgroundColor: colorScheme.surface,
      canvasColor: colorScheme.surface,
+
+     // ===== BOTONES SQUARED (GLOBAL) =====
+        filledButtonTheme: FilledButtonThemeData(
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            fixedSize: WidgetStatePropertyAll(
+              const Size(double.infinity, 56), // 👈 altura global
+            ),
+            iconSize: const WidgetStatePropertyAll(24),
+            textStyle: WidgetStatePropertyAll(textTheme.titleMedium),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            fixedSize: WidgetStatePropertyAll(
+              const Size(double.infinity, 56), // 👈 altura global
+            ),
+            iconSize: const WidgetStatePropertyAll(24),
+            textStyle: WidgetStatePropertyAll(textTheme.titleMedium),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            fixedSize: WidgetStatePropertyAll(
+              const Size(double.infinity, 56), // 👈 altura global
+            ),
+            iconSize: const WidgetStatePropertyAll(24),
+            textStyle: WidgetStatePropertyAll(textTheme.titleMedium),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            fixedSize: WidgetStatePropertyAll(
+              const Size(double.infinity, 56), // 👈 altura global
+            ),
+            iconSize: const WidgetStatePropertyAll(24),
+            textStyle: WidgetStatePropertyAll(textTheme.titleMedium),
+          ),
+        ),
   );
 
 
