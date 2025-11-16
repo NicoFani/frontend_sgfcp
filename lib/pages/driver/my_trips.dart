@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/widgets/simple_card.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../theme/spacing.dart';
+import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
+import 'package:frontend_sgfcp/widgets/simple_card.dart';
+import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
+import 'package:frontend_sgfcp/theme/spacing.dart';
 
 
-class MiTripsPage extends StatelessWidget {
+class MiTripsPage extends StatefulWidget {
   const MiTripsPage({super.key});
 
   /// Route name you can use with Navigator.pushNamed
@@ -17,8 +20,43 @@ class MiTripsPage extends StatelessWidget {
   }
 
   @override
+  State<MiTripsPage> createState() => _MiTripsPageState();
+}
+
+class _MiTripsPageState extends State<MiTripsPage> {
+  DateTime _selectedMonth = DateTime(2025, 9);
+
+  final List<TripData> _trips = [
+    TripData(
+      date: DateTime(2025, 9, 11),
+      route: 'San Lorenzo → Laboulaye',
+    ),
+    TripData(
+      date: DateTime(2025, 9, 8),
+      route: 'Venado Tuerto → San Nicolás',
+    ),
+    TripData(
+      date: DateTime(2025, 9, 7),
+      route: 'Corral de Bustos → Armstrong',
+    ),
+    TripData(
+      date: DateTime(2025, 9, 5),
+      route: 'Cruz Alta → Villa Constitución',
+    ),
+    TripData(
+      date: DateTime(2025, 9, 4),
+      route: 'Arias → Rosario',
+    ),
+  ];
+
+  
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
+    final tripsForMonth = _trips.where((t) =>
+        t.date.year == _selectedMonth.year &&
+        t.date.month == _selectedMonth.month);
 
     return SafeArea(
       
@@ -67,8 +105,23 @@ class MiTripsPage extends StatelessWidget {
               style: textTheme.titleLarge,
             ),
             gap8,
-
-
+            MonthSelectorHeader(
+              initialMonth: _selectedMonth,
+              onMonthChanged: (newMonth) {
+                setState(() {
+                  _selectedMonth = newMonth;
+                });
+              },
+            ),
+            TripsListSection(
+              trips: tripsForMonth.toList(),
+              onTripTap: (trip) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => Placeholder()), // TODO: Implementar navegación real
+                );
+              },
+            ),
           ],
         ),
       ),

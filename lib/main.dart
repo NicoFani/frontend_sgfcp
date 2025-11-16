@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 import 'theme/util.dart';
@@ -7,7 +8,10 @@ import 'theme/theme.dart';
 
 import 'pages/driver/home.dart';
 
-void main() {
+Future<void> main() async {
+  // Inicializa datos de fechas para español
+  await initializeDateFormatting('es_ES', null);
+
   runApp(const MyApp());
 }
 
