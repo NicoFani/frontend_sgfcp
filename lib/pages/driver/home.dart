@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../theme/spacing.dart';
+import 'package:frontend_sgfcp/theme/spacing.dart';
 
 
 class HomePageDriver extends StatelessWidget {

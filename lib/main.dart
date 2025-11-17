@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 import 'theme/util.dart';
 import 'theme/theme.dart';
 
-import 'pages/driver/home.dart';
+import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
+import 'package:frontend_sgfcp/pages/driver/home.dart';
+import 'package:frontend_sgfcp/pages/driver/profile.dart';
 
 Future<void> main() async {
   // Inicializa datos de fechas para español
@@ -45,12 +46,19 @@ class RootNavigation extends StatefulWidget {
 
 class _RootNavigationState extends State<RootNavigation> {
   int _selectedIndex = 0;
+final PageController _pageController = PageController();
 
-  final List<Widget> _pages = [
-    const HomePageDriver(),
-    const MiTripsPage(),
-    const Placeholder(),
+  final List<Widget> _pages = const [
+    HomePageDriver(),
+    MiTripsPage(),
+    ProfilePage(),
   ];
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   // APPBAR según la pestaña seleccionada
   PreferredSizeWidget? _buildAppBar() {
@@ -75,11 +83,17 @@ class _RootNavigationState extends State<RootNavigation> {
         );
       case 1:
         return AppBar(
-          title: Text('Mis viajes', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text(
+            'Mis viajes',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
         );
       case 2:
         return AppBar(
-          title:  Text('Perfil', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text(
+            'Tu Perfil',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
         );
       default:
         return null;
@@ -88,11 +102,16 @@ class _RootNavigationState extends State<RootNavigation> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: _buildAppBar(),
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: PageView(
+        controller: _pageController,
+        physics: const BouncingScrollPhysics(), // reemplazar por NeverScrollableScrollPhysics si no se quiere swipe
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
         children: _pages,
       ),
       bottomNavigationBar: NavigationBar(
@@ -101,6 +120,11 @@ class _RootNavigationState extends State<RootNavigation> {
           setState(() {
             _selectedIndex = index;
           });
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          );
         },
         destinations: const [
           NavigationDestination(
