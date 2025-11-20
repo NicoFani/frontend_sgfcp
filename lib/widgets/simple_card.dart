@@ -97,7 +97,7 @@ class SimpleCard extends StatelessWidget {
     return FilledButton.tonal(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
-        fixedSize: const Size(double.infinity, 48),
+        fixedSize: const Size(48, 48),
         padding: EdgeInsets.zero,
       ),
       child: Icon(icon),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
+import 'package:frontend_sgfcp/pages/driver/trip.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
@@ -118,7 +119,7 @@ class _MiTripsPageState extends State<MiTripsPage> {
               onTripTap: (trip) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => Placeholder()), // TODO: Implementar navegación real
+                  MaterialPageRoute(builder: (_) => TripPage()), // TODO: Implementar navegación real
                 );
               },
             ),

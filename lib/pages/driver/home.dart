@@ -3,6 +3,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
+import 'package:frontend_sgfcp/pages/driver/trip.dart';
+
 
 class HomePageDriver extends StatelessWidget {
   const HomePageDriver({super.key});
@@ -113,7 +115,7 @@ class CurrentTripCard extends StatelessWidget {
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
-                    // TODO: show trip info
+                    Navigator.of(context).push(TripPage.route());
                   },
                   icon: Icon(Icons.info_outline, color: colors.onSurfaceVariant,),
                   label: Text('Info', style: TextStyle(color: colors.onSurfaceVariant),),
