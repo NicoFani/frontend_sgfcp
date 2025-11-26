@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
+import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/trip.dart';
 
 
@@ -186,7 +187,7 @@ class NextTripCard extends StatelessWidget {
             FilledButton.icon(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
               onPressed: () {
-                // TODO: comenzar viaje
+                Navigator.of(context).push(StartTripPage.route());
               },
               icon: const Icon(Icons.add_road), // poné el ícono que usaste en Figma
               label: const Text('Comenzar viaje'),

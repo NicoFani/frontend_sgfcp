@@ -94,7 +94,7 @@ class TripPage extends StatelessWidget {
               ),
               gap4,
               InlineInfoCard(
-                title: 'Tarifa',
+                title: 'Tarifa',  
                 leftLabel: 'Tipo',
                 leftValue: 'Por tonelada',
                 rightLabel: 'Tarifa',
