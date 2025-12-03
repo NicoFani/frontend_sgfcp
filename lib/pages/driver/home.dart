@@ -3,6 +3,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
+import 'package:frontend_sgfcp/pages/driver/expense.dart';
+import 'package:frontend_sgfcp/pages/driver/finish_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/trip.dart';
 
@@ -127,7 +129,7 @@ class CurrentTripCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton.tonalIcon(
                     onPressed: () {
-                      // TODO: show trip info
+                      Navigator.of(context).push(ExpensePage.route());
                     },
                     icon: const Icon(Symbols.garage_money),
                     label: const Text('Cargar gasto'),
@@ -144,7 +146,7 @@ class CurrentTripCard extends StatelessWidget {
                 minimumSize: const Size.fromHeight(48),
               ),
               onPressed: () {
-                // TODO: finalizar viaje
+                Navigator.of(context).push(FinishTripPage.route());
               },
               icon: const Icon(Symbols.where_to_vote),
               label: const Text('Finalizar viaje'),

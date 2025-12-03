@@ -15,8 +15,7 @@ class TripFabMenu extends StatefulWidget {
   State<TripFabMenu> createState() => _TripFabMenuState();
 }
 
-class _TripFabMenuState extends State<TripFabMenu>
-    with SingleTickerProviderStateMixin {
+class _TripFabMenuState extends State<TripFabMenu> {
   bool _open = false;
 
   void _toggle() => setState(() => _open = !_open);
@@ -42,11 +41,13 @@ class _TripFabMenuState extends State<TripFabMenu>
           ),
           child: _open
               ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   key: const ValueKey('fab_open_menu'),
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: FloatingActionButton.extended(
+                        heroTag: null,
                         onPressed: () {
                           _close();
                           widget.onAddExpense();
@@ -61,6 +62,7 @@ class _TripFabMenuState extends State<TripFabMenu>
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: FloatingActionButton.extended(
+                        heroTag: null,
                         onPressed: () {
                           _close();
                           widget.onEditTrip();

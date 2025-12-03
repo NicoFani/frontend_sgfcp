@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/widgets/trip_fab_menu.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 
+import 'package:frontend_sgfcp/pages/driver/expense_edit.dart';
+import 'package:frontend_sgfcp/pages/driver/expense.dart';
+import 'package:frontend_sgfcp/pages/driver/finish_trip.dart';
+import 'package:frontend_sgfcp/pages/driver/edit_trip.dart';
+import 'package:frontend_sgfcp/widgets/trip_fab_menu.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:frontend_sgfcp/widgets/inline_info_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
@@ -43,7 +47,7 @@ class TripPage extends StatelessWidget {
                 title: 'Viaje en curso',
                 icon: Symbols.where_to_vote,
                 label: 'Finalizar',
-                onPressed: () {},
+                onPressed: () { Navigator.of(context).push(FinishTripPage.route()); },
               ),
               const FinishedTripCard(),
               gap4,
@@ -108,12 +112,12 @@ class TripPage extends StatelessWidget {
                   SimpleTableRowData(
                     col1: 'Peaje',
                     col2: '\$1.300',
-                    onEdit: () {},
+                    onEdit: () { Navigator.of(context).push(ExpenseEditPage.route()); },
                   ),
                   SimpleTableRowData(
                     col1: 'Combustible',
                     col2: '\$60.000',
-                    onEdit: () {},
+                    onEdit: () { Navigator.of(context).push(ExpenseEditPage.route()); },
                   ),
                 ],
               ),
@@ -124,10 +128,10 @@ class TripPage extends StatelessWidget {
       ),
       floatingActionButton: TripFabMenu(
         onAddExpense: () {
-          // TODO
+          Navigator.of(context).push(ExpensePage.route());
         },
         onEditTrip: () {
-          // TODO
+          Navigator.of(context).push(EditTripPage.route());
         },
       ),
     );

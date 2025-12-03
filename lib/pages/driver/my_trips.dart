@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/models/trip_data.dart';
-import 'package:frontend_sgfcp/pages/driver/trip.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
+
+import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
+import 'package:frontend_sgfcp/pages/driver/trip.dart';
 import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
-import 'package:frontend_sgfcp/theme/spacing.dart';
 
 
 class MiTripsPage extends StatefulWidget {
@@ -78,7 +80,9 @@ class _MiTripsPageState extends State<MiTripsPage> {
               subtitle: 'Viaje iniciado hace 3 horas',
               icon: Symbols.delivery_truck_speed,
               label: 'Abrir',
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(TripPage.route());
+              },
             ),
 
 
@@ -94,8 +98,10 @@ class _MiTripsPageState extends State<MiTripsPage> {
               title: 'Mattaldi → San Lorenzo',
               subtitle: 'Faltan 2 días',
               icon: Symbols.add_road,
-              label: 'Iniciar',
-              onPressed: () {},
+              label: 'Comenzar',
+              onPressed: () {
+                Navigator.of(context).push(StartTripPage.route());
+              },
             ),
 
             gap24,
