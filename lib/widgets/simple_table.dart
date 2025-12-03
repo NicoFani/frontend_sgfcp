@@ -166,7 +166,7 @@ class _SimpleTableRow extends StatelessWidget {
                     ? const SizedBox.shrink()
                     : Icon(
                         data.isValid! ? Icons.check : Icons.error,
-                        size: 18,
+                        size: 24,
                         color: data.isValid! ? colors.primary : colors.error,
                       ),
               ),
@@ -180,8 +180,11 @@ class _SimpleTableRow extends StatelessWidget {
               child: FilledButton.tonal(
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(36, 36),
+                  maximumSize: const Size(36, 36),
                   padding: EdgeInsets.zero,
-                  shape: const CircleBorder(),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: data.onEdit,
                 child: const Icon(Icons.edit_outlined, size: 18),

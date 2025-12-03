@@ -5,7 +5,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 
-import 'package:frontend_sgfcp/pages/driver/expense_edit.dart';
+import 'package:frontend_sgfcp/pages/driver/edit_expense.dart';
 import 'package:frontend_sgfcp/pages/driver/expense.dart';
 import 'package:frontend_sgfcp/pages/driver/finish_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/edit_trip.dart';
@@ -112,12 +112,12 @@ class TripPage extends StatelessWidget {
                   SimpleTableRowData(
                     col1: 'Peaje',
                     col2: '\$1.300',
-                    onEdit: () { Navigator.of(context).push(ExpenseEditPage.route()); },
+                    onEdit: () { Navigator.of(context).push(EditExpensePage.route()); },
                   ),
                   SimpleTableRowData(
                     col1: 'Combustible',
                     col2: '\$60.000',
-                    onEdit: () { Navigator.of(context).push(ExpenseEditPage.route()); },
+                    onEdit: () { Navigator.of(context).push(EditExpensePage.route()); },
                   ),
                 ],
               ),

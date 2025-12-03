@@ -352,7 +352,7 @@ class MaterialTheme {
           style: ButtonStyle(
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             fixedSize: WidgetStatePropertyAll(
@@ -366,7 +366,7 @@ class MaterialTheme {
           style: ButtonStyle(
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             fixedSize: WidgetStatePropertyAll(
@@ -380,7 +380,7 @@ class MaterialTheme {
           style: ButtonStyle(
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             fixedSize: WidgetStatePropertyAll(
@@ -394,7 +394,7 @@ class MaterialTheme {
           style: ButtonStyle(
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             fixedSize: WidgetStatePropertyAll(

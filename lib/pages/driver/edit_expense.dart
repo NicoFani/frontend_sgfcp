@@ -9,21 +9,21 @@ import 'package:frontend_sgfcp/models/expense_type.dart';
 import 'package:frontend_sgfcp/pages/driver/trip.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 
-class ExpenseEditPage extends StatefulWidget {
-  const ExpenseEditPage({super.key});
+class EditExpensePage extends StatefulWidget {
+  const EditExpensePage({super.key});
 
   /// Route name you can use with Navigator.pushNamed
-  static const String routeName = '/expense_edit';
+  static const String routeName = '/edit_expense';
 
   /// Helper to create a route to this page
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const ExpenseEditPage());
+    return MaterialPageRoute<void>(builder: (_) => const EditExpensePage());
   }
   @override
-  State<ExpenseEditPage> createState() => _ExpenseEditPageState();
+  State<EditExpensePage> createState() => _EditExpensePageState();
 }
 
-class _ExpenseEditPageState extends State<ExpenseEditPage> {
+class _EditExpensePageState extends State<EditExpensePage> {
 
   DateTime? _startDate;
   bool _accountingPaid = false;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/driver/documentation_list.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
@@ -69,7 +70,7 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Documentación'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              // TODO: navegar a pantalla de documentación
+              Navigator.of(context).push(DocumentationListPage.route());
             },
           ),
           Padding(
