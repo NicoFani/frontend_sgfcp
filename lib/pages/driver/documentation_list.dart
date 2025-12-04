@@ -43,7 +43,6 @@ class DocumentationListPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 60), // Espacio para el FAB
             ],
           ),
         ),

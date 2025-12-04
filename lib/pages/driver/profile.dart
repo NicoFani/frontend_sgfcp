@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/pages/driver/documentation_list.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
+
+import 'package:frontend_sgfcp/pages/driver/documentation_list.dart';
+import 'package:frontend_sgfcp/pages/driver/personal_data.dart';
+import 'package:frontend_sgfcp/pages/driver/vehicle.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -82,7 +85,7 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Vehículo'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              // TODO: navegar a pantalla de vehículo
+              Navigator.of(context).push(VehiclePage.route());
             },
           ),
           Padding(
@@ -94,7 +97,7 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Datos personales'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              // TODO: navegar a pantalla de datos personales
+              Navigator.of(context).push(PersonalDataPage.route());
             },
           ),
         ],

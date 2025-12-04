@@ -27,6 +27,7 @@ class TripPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    const double infoLabelWidth = 140;
 
     return Scaffold(
       appBar: AppBar(
@@ -57,6 +58,7 @@ class TripPage extends StatelessWidget {
                 leftValue: '11/09/2025',
                 rightLabel: 'Fin',
                 rightValue: 'Viaje no finalizado',
+                leftColumnWidth: infoLabelWidth,
               ),
               gap4,
               InfoCard(
@@ -66,6 +68,7 @@ class TripPage extends StatelessWidget {
                   InfoItem(label: 'Gastos totales', value: '\$329.000'),
                   InfoItem(label: 'Balance final', value: '\$735.000'),
                 ],
+                labelColumnWidth: infoLabelWidth,
               ),
               gap4,
               InfoCard(
@@ -78,6 +81,7 @@ class TripPage extends StatelessWidget {
                   InfoItem(label: 'Vale para combustible', value: '329 lts'),
                   InfoItem(label: 'Adelanto del cliente', value: '\$150.000'),
                 ],
+                labelColumnWidth: infoLabelWidth,
               ),
               gap4,
               InlineInfoCard(
@@ -86,6 +90,7 @@ class TripPage extends StatelessWidget {
                 leftValue: 'Remito',
                 rightLabel: 'Número',
                 rightValue: '465138743164',
+                leftColumnWidth: infoLabelWidth,
               ),
               gap4,
               InfoCard(
@@ -95,6 +100,7 @@ class TripPage extends StatelessWidget {
                   InfoItem(label: 'Peso', value: '30.000 kg'),
                   InfoItem(label: 'Peso luego de descarga', value: 'Viaje no finalizado'),
                 ],
+                labelColumnWidth: infoLabelWidth,
               ),
               gap4,
               InlineInfoCard(
@@ -103,6 +109,7 @@ class TripPage extends StatelessWidget {
                 leftValue: 'Por tonelada',
                 rightLabel: 'Tarifa',
                 rightValue: '\$50.000/t',
+                leftColumnWidth: infoLabelWidth,
               ),
               gap16,
               SimpleTable(

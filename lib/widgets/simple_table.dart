@@ -36,7 +36,7 @@ class SimpleTable extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 6, left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -50,7 +50,7 @@ class SimpleTable extends StatelessWidget {
             children: [
               // Columna 1
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: Text(
                   headers[0],
                   style: textTheme.labelLarge?.copyWith(
@@ -61,7 +61,7 @@ class SimpleTable extends StatelessWidget {
               showStatusColumn ? gapW12 : gapW4,
               // Columna 2
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: Text(
                   headers[1],
                   style: textTheme.labelLarge?.copyWith(
@@ -72,7 +72,7 @@ class SimpleTable extends StatelessWidget {
               // Columna de estado (opcional)
               if (showStatusColumn)
                 Expanded(
-                  flex: 2,
+                  flex: 3,
                   child: Align(
                     alignment: Alignment.center,
                     child: Text(
@@ -138,7 +138,7 @@ class _SimpleTableRow extends StatelessWidget {
         children: [
           // Columna 1: Tipo / Documento
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Text(
               data.col1,
               style: textTheme.bodyMedium,
@@ -149,7 +149,7 @@ class _SimpleTableRow extends StatelessWidget {
 
           // Columna 2: Importe / Vencimiento
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Text(
               data.col2,
               style: textTheme.bodyMedium,
@@ -159,7 +159,7 @@ class _SimpleTableRow extends StatelessWidget {
           // Columna de estado (opcional)
           if (showStatus)
             Expanded(
-              flex: 2,
+              flex: 3,
               child: Align(
                 alignment: Alignment.center,
                 child: data.isValid == null

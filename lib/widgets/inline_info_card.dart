@@ -10,6 +10,10 @@ class InlineInfoCard extends StatelessWidget {
   final String rightLabel;
   final String rightValue;
 
+  /// Ancho de la columna izquierda (labels+values de la izquierda),
+  /// para poder alinearlo con InfoCard. Si es null, usa el ancho “natural”.
+  final double? leftColumnWidth;
+
   const InlineInfoCard({
     super.key,
     required this.title,
@@ -17,12 +21,22 @@ class InlineInfoCard extends StatelessWidget {
     required this.leftValue,
     required this.rightLabel,
     required this.rightValue,
+    this.leftColumnWidth,
   });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final colors = Theme.of(context).colorScheme;
+
+    final leftColumn = _LabelValueColumn(
+      label: leftLabel,
+      value: leftValue,
+    );
+
+    final rightColumn = _LabelValueColumn(
+      label: rightLabel,
+      value: rightValue,
+    );
 
     return Card.outlined(
       clipBehavior: Clip.antiAlias,
@@ -39,53 +53,63 @@ class InlineInfoCard extends StatelessWidget {
 
             gap8,
 
-            // Fila con dos columnas (Inicio / Fin, por ejemplo)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Columna izquierda
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      leftLabel,
-                      style: textTheme.labelLarge?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                // Columna izquierda con ancho fijo opcional
+                if (leftColumnWidth != null)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: leftColumnWidth!,
+                      maxWidth: leftColumnWidth!,
                     ),
-                    gap4,
-                    Text(
-                      leftValue,
-                      style: textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
+                    child: leftColumn,
+                  )
+                else
+                  leftColumn,
 
-                // Columna derecha
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        rightLabel,
-                        style: textTheme.labelLarge?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      gap4,
-                      Text(
-                        rightValue,
-                        style: textTheme.bodyLarge,
-                      ),
-                    ],
-                  ),
-                ),
+                gapW16,
+
+                // Columna derecha ocupa el resto
+                Expanded(child: rightColumn),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LabelValueColumn extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _LabelValueColumn({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: textTheme.labelLarge?.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        ),
+        gap4,
+        Text(
+          value,
+          style: textTheme.bodyLarge,
+        ),
+      ],
     );
   }
 }
