@@ -8,6 +8,7 @@ import 'theme/theme.dart';
 import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
 import 'package:frontend_sgfcp/pages/driver/home.dart';
 import 'package:frontend_sgfcp/pages/driver/profile.dart';
+import 'package:frontend_sgfcp/pages/loading_page.dart';
 
 Future<void> main() async {
   // Inicializa datos de fechas para español
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SGFCP',
       theme: theme.light(),// brightness == Brightness.light ? theme.light() : theme.dark(),
-      home: const RootNavigation(),
+      home: const LoadingPage(),
     );
   }
 }
