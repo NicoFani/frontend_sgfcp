@@ -3,6 +3,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/trip_detail.dart';
 import 'package:frontend_sgfcp/pages/admin/create_trip.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
+import 'package:frontend_sgfcp/services/api_service.dart';
 
 class TripsPageAdmin extends StatefulWidget {
   const TripsPageAdmin({super.key});
@@ -21,14 +23,26 @@ class _TripsPageAdminState extends State<TripsPageAdmin> {
   int _selectedFilterIndex = 0;
 
   final List<String> _filters = ['Pendientes', 'Actuales', 'Finalizados'];
+  final List<String> _filterStates = ['Pendiente', 'En curso', 'Finalizado'];
+
+  late Future<List<TripData>> _tripsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrips();
+  }
+
+  void _loadTrips() {
+    setState(() {
+      _tripsFuture = ApiService.getTrips();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    // TODO: Obtener viajes reales del backend
-    final trips = _getTripsForFilter(_selectedFilterIndex);
 
     return Column(
       children: [
@@ -37,7 +51,10 @@ class _TripsPageAdminState extends State<TripsPageAdmin> {
           padding: const EdgeInsets.all(16),
           child: FilledButton.icon(
             onPressed: () {
-              Navigator.of(context).push(CreateTripPageAdmin.route());
+              Navigator.of(context).push(CreateTripPageAdmin.route()).then((_) {
+                // Refrescar la lista de viajes
+                _loadTrips();
+              });
             },
             style: FilledButton.styleFrom(
               backgroundColor: colors.primary,
@@ -73,7 +90,9 @@ class _TripsPageAdminState extends State<TripsPageAdmin> {
                     color: isSelected
                         ? colors.onSecondaryContainer
                         : colors.onSurfaceVariant,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -87,40 +106,64 @@ class _TripsPageAdminState extends State<TripsPageAdmin> {
 
         gap16,
 
-        // Lista de viajes
+        // Lista de viajes desde el backend
         Expanded(
-          child: trips.isEmpty
-              ? _buildEmptyState(context)
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: trips.length,
-                  itemBuilder: (context, index) {
-                    return _TripListItem(trip: trips[index]);
-                  },
-                ),
+          child: FutureBuilder<List<TripData>>(
+            future: _tripsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(color: colors.primary),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48),
+                      gap8,
+                      Text('Error al cargar viajes'),
+                      gap8,
+                      Text(snapshot.error.toString()),
+                      gap16,
+                      ElevatedButton(
+                        onPressed: _loadTrips,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData) {
+                return _buildEmptyState(context);
+              }
+
+              // Filtrar viajes según el estado seleccionado
+              final filteredTrips = snapshot.data!
+                  .where(
+                    (trip) => trip.state == _filterStates[_selectedFilterIndex],
+                  )
+                  .toList();
+
+              if (filteredTrips.isEmpty) {
+                return _buildEmptyState(context);
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: filteredTrips.length,
+                itemBuilder: (context, index) {
+                  return _TripListItem(trip: filteredTrips[index]);
+                },
+              );
+            },
+          ),
         ),
       ],
     );
-  }
-
-  List<_TripData> _getTripsForFilter(int filterIndex) {
-    // TODO: Filtrar según el backend
-    final allTrips = [
-      _TripData(
-        origin: 'San Lorenzo',
-        destination: 'Laboulaye',
-        driverName: 'Carlos Sainz',
-        status: _TripStatus.pending,
-      ),
-      _TripData(
-        origin: 'Corral de Bustos',
-        destination: 'Armstrong',
-        driverName: 'Fernando Alonso',
-        status: _TripStatus.pending,
-      ),
-    ];
-
-    return allTrips;
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -151,7 +194,7 @@ class _TripsPageAdminState extends State<TripsPageAdmin> {
 
 /// Item de la lista de viajes
 class _TripListItem extends StatelessWidget {
-  final _TripData trip;
+  final TripData trip;
 
   const _TripListItem({required this.trip});
 
@@ -167,7 +210,8 @@ class _TripListItem extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => TripDetailPageAdmin(
-                isFinished: trip.status == _TripStatus.finished,
+                trip: trip,
+                isFinished: trip.state == 'Finalizado',
               ),
             ),
           );
@@ -182,14 +226,14 @@ class _TripListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${trip.origin} → ${trip.destination}',
+                      trip.route,
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     gap4,
                     Text(
-                      trip.driverName,
+                      trip.state,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -197,10 +241,7 @@ class _TripListItem extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: colors.onSurfaceVariant,
-              ),
+              Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
             ],
           ),
         ),
@@ -209,19 +250,5 @@ class _TripListItem extends StatelessWidget {
   }
 }
 
-// Modelos de datos
-enum _TripStatus { pending, active, finished }
-
-class _TripData {
-  final String origin;
-  final String destination;
-  final String driverName;
-  final _TripStatus status;
-
-  _TripData({
-    required this.origin,
-    required this.destination,
-    required this.driverName,
-    required this.status,
-  });
-}
+// Modelos de datos - Ya no necesitamos _TripStatus y _TripData
+// Ya estamos usando TripData del backend

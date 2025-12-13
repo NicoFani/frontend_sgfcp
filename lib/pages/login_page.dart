@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/main.dart';
 import 'package:frontend_sgfcp/pages/admin/admin_root_navigation.dart';
+import 'package:frontend_sgfcp/services/auth_service.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
 /// Pantalla de inicio de sesión
 class LoginPage extends StatefulWidget {
@@ -40,27 +42,47 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    // TODO: Implementar lógica de autenticación real con el backend
-    await Future.delayed(const Duration(seconds: 1));
+    // Llamar a la autenticación real del backend
+    final result = await AuthService.login(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
 
     if (mounted) {
       setState(() {
         _isLoading = false;
       });
 
-      // Determinar el rol según el email (temporal para pruebas)
-      final email = _emailController.text.toLowerCase();
-      final isAdmin = email.contains('admin');
-
-      if (isAdmin) {
-        // Navegar a pantallas de administrador
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminRootNavigation()),
+      if (result['success']) {
+        // Guardar tokens y usuario
+        TokenStorage.saveTokens(
+          accessToken: result['access_token'],
+          refreshToken: result['refresh_token'],
+          user: result['user'],
         );
+
+        // Determinar el rol desde la respuesta del backend
+        final user = result['user'] as Map<String, dynamic>;
+        final isAdmin = user['is_admin'] as bool? ?? false;
+
+        if (isAdmin) {
+          // Navegar a pantallas de administrador
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminRootNavigation()),
+          );
+        } else {
+          // Navegar a pantallas del chofer
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const RootNavigation()),
+          );
+        }
       } else {
-        // Navegar a pantallas del chofer
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RootNavigation()),
+        // Mostrar error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['error'] ?? 'Error al iniciar sesión'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

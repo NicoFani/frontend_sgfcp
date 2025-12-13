@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/widgets/trip_fab_menu.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/pages/admin/finish_trip.dart';
@@ -9,18 +10,16 @@ import 'package:frontend_sgfcp/pages/admin/add_expense.dart';
 import 'package:intl/intl.dart';
 
 class TripDetailPageAdmin extends StatelessWidget {
+  final TripData? trip;
   final bool isFinished;
 
-  const TripDetailPageAdmin({
-    super.key,
-    this.isFinished = false,
-  });
+  const TripDetailPageAdmin({super.key, this.trip, this.isFinished = false});
 
   static const String routeName = '/admin/trip-detail';
 
-  static Route route({bool isFinished = false}) {
+  static Route route({TripData? trip, bool isFinished = false}) {
     return MaterialPageRoute<void>(
-      builder: (_) => TripDetailPageAdmin(isFinished: isFinished),
+      builder: (_) => TripDetailPageAdmin(trip: trip, isFinished: isFinished),
     );
   }
 
@@ -28,12 +27,20 @@ class TripDetailPageAdmin extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+
+    // Si no hay trip, mostrar un error
+    if (trip == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Viaje')),
+        body: const Center(child: Text('No hay datos del viaje')),
+      );
+    }
+
+    final tripData = trip!;
+    final isFinished = tripData.state == 'Finalizado';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Viaje'),
-      ),
+      appBar: AppBar(title: const Text('Viaje')),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,7 +51,7 @@ class TripDetailPageAdmin extends StatelessWidget {
               color: colors.surfaceContainerHighest,
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Mattaldi → San Lorenzo',
+                tripData.route,
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -59,7 +66,7 @@ class TripDetailPageAdmin extends StatelessWidget {
                   // Botón Finalizar o Badge (según el estado)
                   if (!isFinished)
                     SimpleCard(
-                      title: 'Viaje en curso',
+                      title: tripData.state,
                       icon: Symbols.where_to_vote,
                       label: 'Finalizar',
                       onPressed: () {
@@ -69,7 +76,10 @@ class TripDetailPageAdmin extends StatelessWidget {
                   else
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.secondaryContainer,
                         borderRadius: BorderRadius.circular(12),
@@ -85,150 +95,119 @@ class TripDetailPageAdmin extends StatelessWidget {
                     ),
                   gap16,
 
-                  // Sección Chofer
+                  // Sección Fechas
                   _SectionHeader(
-                    title: 'Chofer',
+                    title: 'Fechas',
+                    icon: Symbols.calendar_month,
+                    iconColor: colors.tertiaryContainer,
+                  ),
+                  gap8,
+                  _InfoRow(
+                    label: 'Inicio',
+                    value: _formatDate(tripData.startDate),
+                  ),
+                  _InfoRow(
+                    label: 'Fin',
+                    value: tripData.endDate != null
+                        ? _formatDate(tripData.endDate!)
+                        : 'Viaje no finalizado',
+                  ),
+
+                  gap24,
+
+                  // Sección Choferes
+                  _SectionHeader(
+                    title: 'Choferes Asignados',
                     icon: Symbols.person,
                     iconColor: colors.secondaryContainer,
                   ),
                   gap8,
-                  _InfoRow(label: 'Nombre', value: 'Carlos Sainz'),
-
-                  gap24,
-
-                  // Sección Fechas
-                  _SectionHeader(
-                    title: 'Fechas',
-                    icon: Symbols.calendar_today,
-                  ),
-                  gap8,
-                  if (!isFinished) ...[
-                    _InfoRow(label: 'Inicio', value: '11/09/2025'),
-                    _InfoRow(label: 'Fin', value: 'Viaje no finalizado'),
-                  ] else
-                    _InfoRow(label: 'Fin', value: '11/09/2025'),
-
-                  gap24,
-
-                  // Balance (solo si está finalizado)
-                  if (isFinished) ...[
-                    _SectionTitle(title: 'Balance'),
-                    gap8,
-                    _InfoRow(
-                      label: 'Comisión total',
-                      value: currencyFormat.format(1064000),
-                    ),
-                    _InfoRow(
-                      label: 'Gastos totales',
-                      value: currencyFormat.format(61300),
-                    ),
-                    _InfoRow(
-                      label: 'Balance final',
-                      value: currencyFormat.format(1002700),
-                      valueStyle: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: colors.primary,
+                  if (tripData.drivers.isEmpty)
+                    Text(
+                      'Sin choferes asignados',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    ...tripData.drivers.map(
+                      (driver) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          driver.fullName,
+                          style: textTheme.bodyMedium,
+                        ),
                       ),
                     ),
-                    gap24,
-                  ],
 
-                  // Sección Información
-                  _SectionTitle(title: 'Información'),
+                  gap24,
+                  _SectionHeader(
+                    title: 'Información',
+                    icon: Symbols.info,
+                    iconColor: colors.primaryContainer,
+                  ),
                   gap8,
-                  _InfoRow(label: 'Dador de carga', value: 'Monagro SA'),
-                  _InfoRow(label: 'Cliente', value: 'Capieletti'),
-                  _InfoRow(label: 'Distancia', value: '180 km'),
-                  _InfoRow(label: 'Combustible', value: 'Por parte del cliente'),
-                  _InfoRow(label: 'Código de transporte', value: '6454987'),
+                  _InfoRow(
+                    label: 'Distancia',
+                    value: '${tripData.estimatedKms} km',
+                  ),
+                  _InfoRow(
+                    label: 'Tarifa por tonelada',
+                    value: '\$${tripData.ratePerTon}',
+                  ),
+                  _InfoRow(
+                    label: 'Vale para combustible',
+                    value: tripData.fuelOnClient ? 'Sí' : 'No',
+                  ),
 
                   gap24,
 
-                  // Sección Documento de Remito
-                  _SectionTitle(title: 'Documento de Remito'),
+                  // Sección Documento
+                  _SectionHeader(
+                    title: 'Documento de Remito',
+                    icon: Symbols.description,
+                    iconColor: colors.errorContainer,
+                  ),
                   gap8,
-                  _InfoRow(label: 'Número', value: '465138743164'),
+                  _InfoRow(label: 'Tipo', value: tripData.documentType),
+                  _InfoRow(label: 'Número', value: tripData.documentNumber),
 
                   gap24,
 
                   // Sección Carga
-                  _SectionTitle(title: 'Carga'),
+                  _SectionHeader(
+                    title: 'Carga',
+                    icon: Symbols.inventory_2,
+                    iconColor: colors.surfaceTint,
+                  ),
                   gap8,
-                  _InfoRow(label: 'Tipo', value: 'Maíz'),
-                  _InfoRow(label: 'Peso', value: '30.000 kg'),
-                  if (isFinished)
-                    _InfoRow(label: 'Peso luego de descarga', value: '28.000 kg'),
+                  _InfoRow(
+                    label: 'Peso al cargar',
+                    value: '${tripData.loadWeightOnLoad} kg',
+                  ),
+                  _InfoRow(
+                    label: 'Peso al descargar',
+                    value: tripData.loadWeightOnUnload > 0
+                        ? '${tripData.loadWeightOnUnload} kg'
+                        : 'Viaje no finalizado',
+                  ),
 
                   gap24,
 
                   // Sección Tarifa
-                  _SectionTitle(title: 'Tarifa'),
-                  gap8,
-                  _InfoRow(
-                    label: 'Tipo',
-                    value: isFinished ? 'Por tonelada' : 'Por tonelada',
+                  _SectionHeader(
+                    title: 'Tarifa',
+                    icon: Symbols.price_check,
+                    iconColor: colors.outlineVariant,
                   ),
+                  gap8,
+                  _InfoRow(label: 'Tipo', value: 'Por tonelada'),
                   _InfoRow(
                     label: 'Tarifa',
-                    value: isFinished
-                        ? currencyFormat.format(38000)
-                        : currencyFormat.format(50000),
+                    value: '\$${tripData.ratePerTon}/t',
                   ),
 
                   gap24,
-
-                  // Adelanto del cliente
-                  _SectionHeader(
-                    title: 'Adelanto del cliente',
-                    icon: Symbols.payments,
-                    iconColor: colors.secondaryContainer,
-                  ),
-                  gap8,
-                  _InfoRow(
-                    label: 'Importe',
-                    value: currencyFormat.format(isFinished ? 60000 : 60000),
-                  ),
-
-                  gap24,
-
-                  // Gastos (solo si está finalizado)
-                  if (isFinished) ...[
-                    _SectionTitle(title: 'Gastos'),
-                    gap8,
-                    Card.outlined(
-                      child: Column(
-                        children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            title: const Text('Tipo'),
-                            trailing: const Text('Importe'),
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            title: const Text('Peaje'),
-                            trailing: Text(currencyFormat.format(1300)),
-                          ),
-                          const Divider(height: 1),
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            title: const Text('Combustible'),
-                            trailing: Text(currencyFormat.format(60000)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    gap24,
-                  ],
 
                   // Espacio para el FAB
                   const SizedBox(height: 80),
@@ -247,6 +226,10 @@ class TripDetailPageAdmin extends StatelessWidget {
         },
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
@@ -287,30 +270,9 @@ class _SectionHeader extends StatelessWidget {
         gapW12,
         Text(
           title,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
-    );
-  }
-}
-
-/// Título de sección simple
-class _SectionTitle extends StatelessWidget {
-  final String title;
-
-  const _SectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Text(
-      title,
-      style: textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
     );
   }
 }
@@ -319,13 +281,8 @@ class _SectionTitle extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-  final TextStyle? valueStyle;
 
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.valueStyle,
-  });
+  const _InfoRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +308,7 @@ class _InfoRow extends StatelessWidget {
             flex: 3,
             child: Text(
               value,
-              style: valueStyle ?? textTheme.bodyMedium,
+              style: textTheme.bodyMedium,
               textAlign: TextAlign.end,
             ),
           ),

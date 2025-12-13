@@ -49,7 +49,7 @@ class HomePageDriver extends StatelessWidget {
               style: textTheme.titleLarge,
             ),
             gap8,
-            const NextTripCard(),
+            const NextTripCard(trip: null),
 
             gap24,
 
@@ -84,7 +84,9 @@ class HomePageDriver extends StatelessWidget {
 
 /// Card: "Viaje actual"
 class CurrentTripCard extends StatelessWidget {
-  const CurrentTripCard({super.key});
+  final dynamic trip;
+  
+  const CurrentTripCard({super.key, this.trip});
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +148,7 @@ class CurrentTripCard extends StatelessWidget {
                 minimumSize: const Size.fromHeight(48),
               ),
               onPressed: () {
-                Navigator.of(context).push(FinishTripPage.route());
+                Navigator.of(context).push(FinishTripPage.route(trip: trip));
               },
               icon: const Icon(Symbols.where_to_vote),
               label: const Text('Finalizar viaje'),
@@ -160,7 +162,9 @@ class CurrentTripCard extends StatelessWidget {
 
 /// Card: "Tu próximo viaje"
 class NextTripCard extends StatelessWidget {
-  const NextTripCard({super.key});
+  final dynamic trip;
+  
+  const NextTripCard({super.key, required this.trip});
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +193,7 @@ class NextTripCard extends StatelessWidget {
             FilledButton.icon(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
               onPressed: () {
-                Navigator.of(context).push(StartTripPage.route());
+                Navigator.of(context).push(StartTripPage.route(trip: trip));
               },
               icon: const Icon(Icons.add_road), // poné el ícono que usaste en Figma
               label: const Text('Comenzar viaje'),

@@ -9,7 +9,9 @@ class LoadAdvancePageAdmin extends StatefulWidget {
   static const String routeName = '/admin/load-advance';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const LoadAdvancePageAdmin());
+    return MaterialPageRoute<void>(
+      builder: (_) => const LoadAdvancePageAdmin(),
+    );
   }
 
   @override
@@ -80,16 +82,10 @@ class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
     final textTheme = Theme.of(context).textTheme;
 
     // TODO: Obtener lista real de choferes del backend
-    final drivers = [
-      'Alexander Albon',
-      'Carlos Sainz',
-      'Fernando Alonso',
-    ];
+    final drivers = ['Alexander Albon', 'Carlos Sainz', 'Fernando Alonso'];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Adelanto'),
-      ),
+      appBar: AppBar(title: const Text('Adelanto')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -108,10 +104,7 @@ class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
                   ),
                 ),
                 items: drivers.map((driver) {
-                  return DropdownMenuItem(
-                    value: driver,
-                    child: Text(driver),
-                  );
+                  return DropdownMenuItem(value: driver, child: Text(driver));
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
@@ -149,7 +142,9 @@ class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
                   Expanded(
                     child: TextField(
                       controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Importe',
                         border: OutlineInputBorder(),
