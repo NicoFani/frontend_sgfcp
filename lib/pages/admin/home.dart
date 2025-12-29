@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/widgets/drivers_list.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/create_trip.dart';
@@ -17,6 +18,11 @@ class HomePageAdmin extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final drivers = [
+      const DriverData(name: 'Carlos Sainz', status: DriverStatus.onTrip),
+      const DriverData(name: 'Alexander Albon', status: DriverStatus.inactive),
+      const DriverData(name: 'Fernando Alonso', status: DriverStatus.onTrip),
+    ];
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -30,7 +36,13 @@ class HomePageAdmin extends StatelessWidget {
               style: textTheme.titleLarge,
             ),
             gap8,
-            const DriversList(),
+            DriversList(
+              drivers: drivers,
+              onDriverTap: (driver) {
+                // TODO: navegar al detalle del chofer
+              },
+            ),
+
 
             gap24,
 
@@ -39,34 +51,29 @@ class HomePageAdmin extends StatelessWidget {
               'Atajos',
               style: textTheme.titleLarge,
             ),
-            gap8,
-            Row(
-              children: [
-                Expanded(
-                  child: _ShortcutButton(
-                    label: 'Crear viaje',
-                    icon: Symbols.route,
-                    backgroundColor: colors.primary,
-                    foregroundColor: colors.onPrimary,
-                    onPressed: () {
-                      Navigator.of(context).push(CreateTripPageAdmin.route());
-                    },
-                  ),
-                ),
-                gapW12,
-                Expanded(
-                  child: _ShortcutButton(
-                    label: 'Cargar adelanto',
-                    icon: Symbols.payments,
-                    backgroundColor: colors.secondary,
-                    foregroundColor: colors.onSecondary,
-                    onPressed: () {
-                      Navigator.of(context).push(LoadAdvancePageAdmin.route());
-                    },
-                  ),
-                ),
-              ],
+            gap12,
+
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(CreateTripPageAdmin.route());
+                },
+                icon: const Icon(Symbols.add_road),
+                label: const Text('Crear viaje'),
+              ),
             ),
+            gap8,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.of(context).push(LoadAdvancePageAdmin.route());
+                },
+                icon: const Icon(Symbols.mintmark),
+                label: const Text('Cargar adelanto'),
+              ),
+            ), 
 
             gap24,
 
@@ -78,14 +85,9 @@ class HomePageAdmin extends StatelessWidget {
             gap8,
 
             // Calendario
+            // const CalendarWidget(),
+            // TODO: calendar widget will go here later
             Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: colors.surfaceContainerHighest,
-              ),
-              // child: const CalendarWidget(),
-              // TODO: calendar widget will go here later
-              child: Container(
                 height: 200,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -99,7 +101,6 @@ class HomePageAdmin extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -108,132 +109,83 @@ class HomePageAdmin extends StatelessWidget {
 }
 
 /// Lista de choferes
-class DriversList extends StatelessWidget {
-  const DriversList({super.key});
+// class DriversList extends StatelessWidget {
+//   const DriversList({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    // TODO: Obtener datos reales del backend
-    final drivers = [
-      _DriverData(
-        name: 'Carlos Sainz',
-        status: _DriverStatus.onTrip,
-      ),
-      _DriverData(
-        name: 'Alexander Albon',
-        status: _DriverStatus.inactive,
-      ),
-      _DriverData(
-        name: 'Fernando Alonso',
-        status: _DriverStatus.onTrip,
-      ),
-    ];
+//   @override
+//   Widget build(BuildContext context) {
+//     // TODO: Obtener datos reales del backend
+//     final drivers = [
+//       _DriverData(
+//         name: 'Carlos Sainz',
+//         status: _DriverStatus.onTrip,
+//       ),
+//       _DriverData(
+//         name: 'Alexander Albon',
+//         status: _DriverStatus.inactive,
+//       ),
+//       _DriverData(
+//         name: 'Fernando Alonso',
+//         status: _DriverStatus.onTrip,
+//       ),
+//     ];
 
-    return Column(
-      children: drivers.map((driver) => _DriverListItem(driver: driver)).toList(),
-    );
-  }
-}
+//     return Column(
+//       children: drivers.map((driver) => _DriverListItem(driver: driver)).toList(),
+//     );
+//   }
+// }
 
 /// Item de la lista de choferes
-class _DriverListItem extends StatelessWidget {
-  final _DriverData driver;
+// class _DriverListItem extends StatelessWidget {
+//   final _DriverData driver;
 
-  const _DriverListItem({required this.driver});
+//   const _DriverListItem({required this.driver});
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+//   @override
+//   Widget build(BuildContext context) {
+//     final colors = Theme.of(context).colorScheme;
+//     final textTheme = Theme.of(context).textTheme;
 
-    return Card.outlined(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: CircleAvatar(
-          backgroundColor: driver.status == _DriverStatus.onTrip
-              ? colors.secondaryContainer
-              : colors.surfaceContainerHighest,
-          child: Icon(
-            Symbols.local_shipping,
-            color: driver.status == _DriverStatus.onTrip
-                ? colors.onSecondaryContainer
-                : colors.onSurfaceVariant,
-          ),
-        ),
-        title: Text(
-          driver.name,
-          style: textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Text(
-          driver.status == _DriverStatus.onTrip ? 'En viaje' : 'Inactivo',
-          style: textTheme.bodySmall?.copyWith(
-            color: colors.onSurfaceVariant,
-          ),
-        ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: colors.onSurfaceVariant,
-        ),
-        onTap: () {
-          // TODO: Navegar a detalles del chofer
-        },
-      ),
-    );
-  }
-}
+//     return Card.outlined(
+//       margin: const EdgeInsets.only(bottom: 8),
+//       child: ListTile(
+//         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+//         leading: CircleAvatar(
+//           backgroundColor: driver.status == _DriverStatus.onTrip
+//               ? colors.secondaryContainer
+//               : colors.surfaceContainerHighest,
+//           child: Icon(
+//             Symbols.local_shipping,
+//             color: driver.status == _DriverStatus.onTrip
+//                 ? colors.onSecondaryContainer
+//                 : colors.onSurfaceVariant,
+//           ),
+//         ),
+//         title: Text(
+//           driver.name,
+//           style: textTheme.bodyLarge?.copyWith(
+//             fontWeight: FontWeight.w500,
+//           ),
+//         ),
+//         subtitle: Text(
+//           driver.status == _DriverStatus.onTrip ? 'En viaje' : 'Inactivo',
+//           style: textTheme.bodySmall?.copyWith(
+//             color: colors.onSurfaceVariant,
+//           ),
+//         ),
+//         trailing: Icon(
+//           Icons.chevron_right,
+//           color: colors.onSurfaceVariant,
+//         ),
+//         onTap: () {
+//           // TODO: Navegar a detalles del chofer
+//         },
+//       ),
+//     );
+//   }
+// }
 
-/// Botón de atajo
-class _ShortcutButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color backgroundColor;
-  final Color foregroundColor;
-  final VoidCallback onPressed;
-
-  const _ShortcutButton({
-    required this.label,
-    required this.icon,
-    required this.backgroundColor,
-    required this.foregroundColor,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20),
-          gapW8,
-          Flexible(
-            child: Text(
-              label,
-              style: textTheme.labelLarge?.copyWith(
-                color: foregroundColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Widget del calendario
 // class CalendarWidget extends StatefulWidget {

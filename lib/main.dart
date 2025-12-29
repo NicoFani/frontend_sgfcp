@@ -47,7 +47,7 @@ class RootNavigation extends StatefulWidget {
 
 class _RootNavigationState extends State<RootNavigation> {
   int _selectedIndex = 0;
-final PageController _pageController = PageController();
+  final PageController _pageController = PageController();
 
   final List<Widget> _pages = const [
     HomePageDriver(),
