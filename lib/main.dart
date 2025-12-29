@@ -101,13 +101,19 @@ final PageController _pageController = PageController();
     }
   }
 
+  void _onDestinationSelected(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    _pageController.jumpToPage(index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
       body: PageView(
         controller: _pageController,
-        physics: const BouncingScrollPhysics(), // reemplazar por NeverScrollableScrollPhysics si no se quiere swipe
         onPageChanged: (index) {
           setState(() {
             _selectedIndex = index;
@@ -117,16 +123,7 @@ final PageController _pageController = PageController();
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-          );
-        },
+        onDestinationSelected: _onDestinationSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

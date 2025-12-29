@@ -39,9 +39,7 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
   }
 
   // APPBAR según la pestaña seleccionada
-  PreferredSizeWidget? _buildAppBar() {
-    final colors = Theme.of(context).colorScheme;
-    
+  PreferredSizeWidget? _buildAppBar() {   
     switch (_selectedIndex) {
       case 0:
         return AppBar(
@@ -60,7 +58,6 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
               },
               icon: Badge.count(
                 count: 3,
-                backgroundColor: colors.error,
                 child: const Icon(Icons.notifications_outlined),
               ),
             ),
@@ -109,8 +106,6 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: _buildAppBar(),
       body: PageView(
@@ -125,26 +120,25 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
-        backgroundColor: colors.surface,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Symbols.home),
-            selectedIcon: Icon(Symbols.home, fill: 1),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(Symbols.local_shipping),
-            selectedIcon: Icon(Symbols.local_shipping, fill: 1),
+            icon: Icon(Symbols.delivery_truck_speed),
+            selectedIcon: Icon(Symbols.delivery_truck_speed, fill: 1),
             label: 'Viajes',
           ),
           NavigationDestination(
-            icon: Icon(Symbols.group),
-            selectedIcon: Icon(Symbols.group, fill: 1),
+            icon: Icon(Symbols.groups),
+            selectedIcon: Icon(Symbols.groups, fill: 1),
             label: 'Choferes',
           ),
           NavigationDestination(
-            icon: Icon(Symbols.admin_panel_settings),
-            selectedIcon: Icon(Symbols.admin_panel_settings, fill: 1),
+            icon: Icon(Symbols.supervisor_account),
+            selectedIcon: Icon(Symbols.supervisor_account, fill: 1),
             label: 'Administración',
           ),
         ],

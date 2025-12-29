@@ -23,6 +23,9 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailRegex = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$");
+  final String logoLocation = 'assets/images/logo_mockup_gemini_no_background.png';
+
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -107,41 +110,19 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(26),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 160,
-                    height: 160,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback: mostrar icono si no existe la imagen
-                      return Icon(
-                        Icons.local_shipping_rounded,
-                        size: 100,
-                        color: colors.primary,
-                      );
-                    },
-                  ),
-                  gap16,
-
-                  // Título
-                  Text(
-                    'mi Truck',
-                    style: textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colors.primary,
-                    ),
-                  ),
-                  gap4,
-                  Text(
-                    'Fleet Management System',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24, bottom: 12),
+                    child: Image.asset(
+                      logoLocation,
+                      fit: BoxFit.contain,
+                      height: 140,
                     ),
                   ),
 
@@ -153,24 +134,17 @@ class _LoginPageState extends State<LoginPage> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      hintText: 'juan@gmail.com',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      border: OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.email_outlined),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingresa tu email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Por favor ingresa un email válido';
-                      }
+                      if (value == null || value.isEmpty) return 'Por favor ingresa tu email';
+                      if (!_emailRegex.hasMatch(value)) return 'Por favor ingresa un email válido';
                       return null;
                     },
                   ),
 
-                  gap16,
+                  gap12,
 
                   // Campo de Contraseña
                   TextFormField(
@@ -179,9 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
                       hintText: '••••••••••',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      border: OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -215,12 +187,6 @@ class _LoginPageState extends State<LoginPage> {
                     height: 56,
                     child: FilledButton(
                       onPressed: _isLoading ? null : _handleLogin,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: _isLoading
                           ? SizedBox(
                               height: 24,
@@ -241,29 +207,23 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  gap16,
+                  gap12,
 
-                  // Botón de Olvidé mi contraseña
-                  TextButton(
-                    onPressed: _handleForgotPassword,
-                    style: TextButton.styleFrom(
-                      backgroundColor: colors.secondaryContainer,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: Text(
-                      'Olvidé mi contraseña',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.onSecondaryContainer,
-                        fontWeight: FontWeight.w500,
+                    // Forgot password
+                    SizedBox(
+                      height: 36,
+                      child: FilledButton.tonal(
+                        onPressed: _handleForgotPassword,
+                        child: Text(
+                          'Olvidé mi contraseña',
+                          style: textTheme.labelLarge?.copyWith(
+                            color: colors.onSecondaryContainer,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+
                 ],
               ),
             ),

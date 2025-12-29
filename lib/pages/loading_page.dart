@@ -43,7 +43,7 @@ class _LoadingPageState extends State<LoadingPage> {
           children: [
             // Logo
             Image.asset(
-              'assets/images/logo.png',
+              'assets/images/logo_mockup_gemini_no_background.png',
               width: 200,
               height: 200,
               errorBuilder: (context, error, stackTrace) {
@@ -54,22 +54,6 @@ class _LoadingPageState extends State<LoadingPage> {
                   color: Theme.of(context).colorScheme.primary,
                 );
               },
-            ),
-            const SizedBox(height: 16),
-            // Nombre de la app
-            Text(
-              'mi Truck',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Fleet Management System',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
             ),
           ],
         ),
