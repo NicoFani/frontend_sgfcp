@@ -170,7 +170,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                 controller: _originController,
                 enabled: !_isLoading,
                 decoration: const InputDecoration(
-                  labelText: 'Origen *',
+                  labelText: 'Origen',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
@@ -200,7 +200,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                 controller: _destinationController,
                 enabled: !_isLoading,
                 decoration: const InputDecoration(
-                  labelText: 'Destino *',
+                  labelText: 'Destino',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
@@ -231,7 +231,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                 readOnly: true,
                 enabled: !_isLoading,
                 decoration: const InputDecoration(
-                  labelText: 'Fecha Inicio *',
+                  labelText: 'Fecha Inicio',
                   border: OutlineInputBorder(),
                   suffixIcon: Icon(Icons.calendar_today_outlined),
                   contentPadding: EdgeInsets.symmetric(
@@ -279,9 +279,8 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                   return DropdownButtonFormField<int>(
                     value: _selectedClientId,
                     decoration: const InputDecoration(
-                      labelText: 'Cliente *',
+                      labelText: 'Cliente',
                       border: OutlineInputBorder(),
-                      hintText: 'Seleccionar...',
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 12,
@@ -306,7 +305,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
               gap16,
 
               // Choferes Asignados
-              Text('Choferes Asignados *', style: textTheme.titleMedium),
+              Text('Choferes Asignados', style: textTheme.titleMedium),
               gap8,
 
               FutureBuilder<List<DriverData>>(
@@ -348,6 +347,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                       return CheckboxListTile(
                         enabled: !_isLoading,
                         contentPadding: EdgeInsets.zero,
+                        visualDensity: const VisualDensity(vertical: -4),
                         title: Text(driver.fullName),
                         value: isSelected,
                         onChanged: (value) {
@@ -369,10 +369,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
 
               // Botón Crear viaje
               FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  minimumSize: const Size.fromHeight(48),
-                ),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                 onPressed: _isLoading ? null : _createTrip,
                 icon: _isLoading
                     ? const SizedBox(
@@ -385,7 +382,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                           ),
                         ),
                       )
-                    : const Icon(Symbols.route),
+                    : const Icon(Symbols.add_road),
                 label: Text(_isLoading ? 'Creando...' : 'Crear viaje'),
               ),
             ],

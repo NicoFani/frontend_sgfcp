@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
-import 'package:frontend_sgfcp/pages/driver/trip.dart';
 
 class FinishTripPage extends StatefulWidget {
   final TripData trip;

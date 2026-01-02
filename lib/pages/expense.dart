@@ -6,24 +6,24 @@ import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
 
-import 'package:frontend_sgfcp/pages/driver/trip.dart';
+import 'package:frontend_sgfcp/pages/trip.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 
-class EditExpensePage extends StatefulWidget {
-  const EditExpensePage({super.key});
+class ExpensePage extends StatefulWidget {
+  const ExpensePage({super.key});
 
   /// Route name you can use with Navigator.pushNamed
-  static const String routeName = '/edit_expense';
+  static const String routeName = '/expense';
 
   /// Helper to create a route to this page
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const EditExpensePage());
+    return MaterialPageRoute<void>(builder: (_) => const ExpensePage());
   }
   @override
-  State<EditExpensePage> createState() => _EditExpensePageState();
+  State<ExpensePage> createState() => _ExpensePageState();
 }
 
-class _EditExpensePageState extends State<EditExpensePage> {
+class _ExpensePageState extends State<ExpensePage> {
 
   DateTime? _startDate;
   bool _accountingPaid = false;
@@ -92,48 +92,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
     return Scaffold(
       appBar: AppBar(
-      title: const Text('Editar gasto'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: const Text('¿Eliminar gasto?'),
-                  content: const Text(
-                    '¿Estás seguro de que querés eliminar este gasto? '
-                    'Esta acción no se puede deshacer.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar'),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        foregroundColor: Theme.of(context).colorScheme.onError,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Eliminar'),
-                    ),
-                  ],
-                );
-              },
-            );
-
-            if (confirmed == true) {
-              // TODO: lógica real de eliminación
-              // Por ejemplo: llamar a la API y luego:
-              Navigator.of(context).pop(); // volver a la pantalla anterior
-            }
-          },
-        ),
-      ],
-    ),
-
+        title: const Text('Cargar gasto'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -153,7 +113,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   // TODO: AI tool to take photo of receipt
                 },
                 icon: const Icon(Symbols.add_a_photo),
-                label: const Text('Tomar nueva foto del comprobante'),
+                label: const Text('Tomar foto del comprobante'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
@@ -168,7 +128,6 @@ class _EditExpensePageState extends State<EditExpensePage> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   return DropdownMenu<ExpenseType>(
-                    enabled: false,
                     width: constraints.maxWidth,
                     label: const Text('Tipo de gasto'),
                     initialSelection: _expenseType,
@@ -278,8 +237,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
                 onPressed: () {
                   Navigator.of(context).push(TripPage.route());
                 },
-                icon: const Icon(Icons.check),
-                label: const Text('Guardar cambios'),
+                icon: const Icon(Symbols.garage_money),
+                label: const Text('Cargar gasto'),
               ),
             ],
           ),

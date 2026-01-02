@@ -6,16 +6,17 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 class TripsListSection extends StatelessWidget {
   final List<TripData> trips;
   final void Function(TripData trip)? onTripTap;
+  final bool showDriverNameSubtitle;
 
   const TripsListSection({
     super.key,
     required this.trips,
     this.onTripTap,
+    this.showDriverNameSubtitle = false,
   });
 
   @override
   Widget build(BuildContext context) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
@@ -25,7 +26,11 @@ class TripsListSection extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               title: Text(trips[i].route),
               subtitle: Text(
-                DateFormat('dd/MM/yyyy').format(trips[i].date),
+                showDriverNameSubtitle
+                    ? (trips[i].drivers.isNotEmpty
+                          ? trips[i].drivers.map((d) => d.fullName).join(', ')
+                          : 'Sin chofer')
+                    : DateFormat('dd/MM/yyyy').format(trips[i].date),
               ),
               trailing: const Icon(Icons.arrow_right),
               onTap: () {
@@ -36,8 +41,7 @@ class TripsListSection extends StatelessWidget {
             ),
 
             // Divider solo entre elementos
-            if (i < trips.length - 1)
-              const Divider(height: 1),
+            if (i < trips.length - 1) const Divider(height: 1),
           ],
         ],
       ),

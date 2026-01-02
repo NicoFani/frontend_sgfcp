@@ -8,15 +8,16 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/expense_data.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 
-import 'package:frontend_sgfcp/pages/driver/edit_expense.dart';
-import 'package:frontend_sgfcp/pages/driver/expense.dart';
-import 'package:frontend_sgfcp/pages/driver/finish_trip.dart';
-import 'package:frontend_sgfcp/pages/driver/edit_trip.dart';
+import 'package:frontend_sgfcp/pages/edit_expense.dart';
+import 'package:frontend_sgfcp/pages/expense.dart';
+import 'package:frontend_sgfcp/pages/finish_trip.dart';
+import 'package:frontend_sgfcp/pages/edit_trip.dart';
 import 'package:frontend_sgfcp/widgets/trip_fab_menu.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:frontend_sgfcp/widgets/inline_info_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
 class TripPage extends StatefulWidget {
   final int? tripId;
@@ -67,6 +68,8 @@ class _TripPageState extends State<TripPage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     const double infoLabelWidth = 140;
+    final bool isAdmin =
+        (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Viaje')),
@@ -131,19 +134,26 @@ class _TripPageState extends State<TripPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(trip.route, style: textTheme.titleLarge),
+
                   gap8,
-                  SimpleCard(
-                    title: trip.state,
-                    icon: Symbols.where_to_vote,
-                    label: 'Finalizar',
-                    onPressed: () {
-                      Navigator.of(
-                        context,
-                      ).push(FinishTripPage.route(trip: trip));
-                    },
-                  ),
-                  if (trip.state == 'Finalizado') FinishedTripCard(trip: trip),
+
+                  // Card de estado y acción
+                  if (trip.state != 'Finalizado')
+                    SimpleCard(
+                      title: trip.state,
+                      icon: Symbols.where_to_vote,
+                      label: 'Finalizar',
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).push(FinishTripPage.route(trip: trip));
+                      },
+                    )
+                  else
+                    FinishedTripCard(trip: trip),
+
                   gap4,
+
                   InlineInfoCard(
                     title: 'Fechas',
                     leftLabel: 'Inicio',
@@ -154,32 +164,25 @@ class _TripPageState extends State<TripPage> {
                         : 'Viaje no finalizado',
                     leftColumnWidth: infoLabelWidth,
                   ),
+
                   gap4,
-                  if (trip.drivers.isNotEmpty)
-                    InfoCard(
-                      title: 'Choferes Asignados',
-                      items: trip.drivers
-                          .map(
-                            (driver) => InfoItem(
-                              label: 'Chofer',
-                              value: driver.fullName,
-                            ),
-                          )
-                          .toList(),
-                      labelColumnWidth: infoLabelWidth,
-                    )
-                  else
-                    InfoCard(
-                      title: 'Choferes Asignados',
-                      items: const [
-                        InfoItem(
-                          label: 'Estado',
-                          value: 'Sin choferes asignados',
-                        ),
-                      ],
-                      labelColumnWidth: infoLabelWidth,
+
+                  if (isAdmin) ...[
+                    SimpleCard.iconOnly(
+                      title: 'Chofer',
+                      subtitle: trip.drivers.isNotEmpty
+                          ? trip.drivers.map((d) => d.fullName).join(', ')
+                          : 'Sin chofer asignado',
+                      icon: Symbols.arrow_right,
+                      onPressed: () {
+                        // TODO: Add navigation to driver detail page
+                        // Navigator.of(context).push(FinishTripPage.route());
+                      },
                     ),
-                  gap4,
+
+                    gap4,
+                  ],
+
                   InfoCard(
                     title: 'Balance',
                     items: const [
@@ -189,7 +192,9 @@ class _TripPageState extends State<TripPage> {
                     ],
                     labelColumnWidth: infoLabelWidth,
                   ),
+
                   gap4,
+
                   InfoCard(
                     title: 'Información',
                     items: [
@@ -212,7 +217,9 @@ class _TripPageState extends State<TripPage> {
                     ],
                     labelColumnWidth: infoLabelWidth,
                   ),
+
                   gap4,
+
                   InlineInfoCard(
                     title: 'Documento',
                     leftLabel: 'Tipo',
@@ -221,7 +228,9 @@ class _TripPageState extends State<TripPage> {
                     rightValue: trip.documentNumber,
                     leftColumnWidth: infoLabelWidth,
                   ),
+
                   gap4,
+
                   InfoCard(
                     title: 'Carga',
                     items: [
@@ -238,7 +247,9 @@ class _TripPageState extends State<TripPage> {
                     ],
                     labelColumnWidth: infoLabelWidth,
                   ),
+
                   gap4,
+
                   InlineInfoCard(
                     title: 'Tarifa',
                     leftLabel: 'Tipo',
@@ -247,13 +258,16 @@ class _TripPageState extends State<TripPage> {
                     rightValue: '\$${trip.ratePerTon}/t',
                     leftColumnWidth: infoLabelWidth,
                   ),
+
                   gap16,
+
+                  // Sección Gastos
                   FutureBuilder<List<ExpenseData>>(
                     future: _expensesFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: CircularProgressIndicator(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -271,7 +285,7 @@ class _TripPageState extends State<TripPage> {
 
                       if (expenses.isEmpty) {
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
                             'No hay gastos registrados',
                             style: textTheme.bodyMedium,
@@ -284,11 +298,7 @@ class _TripPageState extends State<TripPage> {
                             (expense) => SimpleTableRowData(
                               col1: expense.type,
                               col2: '\$${expense.amount.toStringAsFixed(2)}',
-                              onEdit: () {
-                                Navigator.of(
-                                  context,
-                                ).push(EditExpensePage.route());
-                              },
+                              onEdit: () { Navigator.of(context).push(EditExpensePage.route()); },
                             ),
                           )
                           .toList();

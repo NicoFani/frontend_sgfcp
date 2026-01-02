@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/widgets/document_type_selector.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/pages/driver/trip.dart';
+import 'package:frontend_sgfcp/pages/trip.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
+
 
 class EditTripPage extends StatefulWidget {
   const EditTripPage({super.key});
@@ -28,6 +31,8 @@ class _EditTripPageState extends State<EditTripPage> {
   // Controllers para el selector de tipo de documento y datepicker
   final TextEditingController _docNumberController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
+  final bool isAdmin =
+    (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
   
   @override
   void dispose() {
@@ -124,6 +129,35 @@ class _EditTripPageState extends State<EditTripPage> {
               ),
 
               gap12,
+
+              // Chofer asignado
+              if (isAdmin) ...[
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return DropdownMenu<DriverData>(
+                      width: constraints.maxWidth,
+                      label: const Text('Chofer asignado'),
+                      // initialSelection: _expenseType,
+                      dropdownMenuEntries: const [
+                        // DropdownMenuEntry(value: , label: ,),
+                        // DropdownMenuEntry(value: ExpenseType.viaticos, label: 'Viáticos',),
+                        // DropdownMenuEntry(value: ExpenseType.reparaciones, label: 'Reparaciones',),
+                        // DropdownMenuEntry(value: ExpenseType.combustible, label: 'Combustible',),
+                        // DropdownMenuEntry(value: ExpenseType.multa, label: 'Multa',),
+                      ],
+                      onSelected: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          // _expenseType = value;
+                          // _subtype = null; // resetear subtipo al cambiar tipo
+                        });
+                      },
+                    );
+                  },
+                ),
+
+                gap12,
+              ],
 
               // Código del transporte
               TextField(
@@ -257,7 +291,7 @@ class _EditTripPageState extends State<EditTripPage> {
               gap8,
               TextField(
                 decoration: const InputDecoration(
-                  labelText: 'Importe del adelanto',
+                  labelText: 'Litros del vale',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType:

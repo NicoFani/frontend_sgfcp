@@ -7,7 +7,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/load_owner_data.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
-import 'package:frontend_sgfcp/pages/driver/trip.dart';
+import 'package:frontend_sgfcp/pages/trip.dart';
 
 class StartTripPage extends StatefulWidget {
   final TripData trip;

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:frontend_sgfcp/pages/login_page.dart';
+import 'package:frontend_sgfcp/services/auth_service.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/pages/admin/admin_root_navigation.dart';
+import 'package:frontend_sgfcp/main.dart';
 
 /// Pantalla de carga inicial (Splash Screen)
 class LoadingPage extends StatefulWidget {
@@ -25,7 +30,49 @@ class _LoadingPageState extends State<LoadingPage> {
   Future<void> _navigateToLogin() async {
     // Simular carga inicial (2 segundos)
     await Future.delayed(const Duration(seconds: 2));
-    
+
+    // ----------------- AUTOLOGIN FOR DEVELOPMENT PURPOSES -----------------
+    // Si ya hay sesión en memoria, navegamos según rol
+    if (TokenStorage.isAuthenticated && mounted) {
+      final user = TokenStorage.user ?? {};
+      final isAdmin = user['is_admin'] as bool? ?? false;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => isAdmin ? const AdminRootNavigation() : const RootNavigation(),
+        ),
+      );
+      return;
+    }
+
+    // Auto-login solo en modo debug para desarrollo
+    if (kDebugMode) {
+      final result = await AuthService.login(
+        // email: 'juan.perez@sgfcp.com',
+        email: 'admin@sgfcp.com',
+        password: '123456',
+      );
+
+      if (result['success'] == true) {
+        TokenStorage.saveTokens(
+          accessToken: result['access_token'],
+          refreshToken: result['refresh_token'],
+          user: result['user'],
+        );
+
+        if (mounted) {
+          final user = result['user'] as Map<String, dynamic>;
+          final isAdmin = user['is_admin'] as bool? ?? false;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => isAdmin ? const AdminRootNavigation() : const RootNavigation(),
+            ),
+          );
+        }
+        return;
+      }
+      // Si falla el auto-login (backend no disponible, etc.), seguimos al LoginPage
+    }
+
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
