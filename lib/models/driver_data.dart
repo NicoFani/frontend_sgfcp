@@ -4,6 +4,10 @@ class DriverData {
   final String lastName;
   final String? email;
   final String? phoneNumber;
+  final String? cuil;
+  final String? cbu;
+  final DateTime? driverLicenseDueDate;
+  final DateTime? medicalExamDueDate;
 
   DriverData({
     required this.id,
@@ -11,6 +15,10 @@ class DriverData {
     required this.lastName,
     this.email,
     this.phoneNumber,
+    this.cuil,
+    this.cbu,
+    this.driverLicenseDueDate,
+    this.medicalExamDueDate,
   });
 
   String get fullName => '$firstName $lastName';
@@ -22,6 +30,14 @@ class DriverData {
       lastName: (json['surname'] ?? json['last_name'] ?? '') as String,
       email: json['email'] as String?,
       phoneNumber: json['phone_number'] as String? ?? json['phone'] as String?,
+      cuil: json['cuil'] as String?,
+      cbu: json['cbu'] as String?,
+      driverLicenseDueDate: json['driver_license_due_date'] != null
+          ? DateTime.parse(json['driver_license_due_date'] as String)
+          : null,
+      medicalExamDueDate: json['medical_exam_due_date'] != null
+          ? DateTime.parse(json['medical_exam_due_date'] as String)
+          : null,
     );
   }
 
@@ -32,6 +48,10 @@ class DriverData {
       'surname': lastName,
       'email': email,
       'phone_number': phoneNumber,
+      'cuil': cuil,
+      'cbu': cbu,
+      'driver_license_due_date': driverLicenseDueDate?.toIso8601String(),
+      'medical_exam_due_date': medicalExamDueDate?.toIso8601String(),
     };
   }
 }

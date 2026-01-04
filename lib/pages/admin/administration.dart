@@ -4,6 +4,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/account.dart';
 import 'package:frontend_sgfcp/pages/admin/clients_providers.dart';
 import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
+import 'package:frontend_sgfcp/pages/admin/load_advance.dart';
 
 class AdministrationPageAdmin extends StatelessWidget {
   const AdministrationPageAdmin({super.key});
@@ -11,7 +12,9 @@ class AdministrationPageAdmin extends StatelessWidget {
   static const String routeName = '/admin/administration';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const AdministrationPageAdmin());
+    return MaterialPageRoute<void>(
+      builder: (_) => const AdministrationPageAdmin(),
+    );
   }
 
   @override
@@ -92,6 +95,16 @@ class AdministrationPageAdmin extends StatelessWidget {
           Divider(height: 1, color: colors.outlineVariant),
 
           _MenuItem(
+            icon: Symbols.attach_money,
+            label: 'Cargar Adelanto',
+            onTap: () {
+              Navigator.of(context).push(LoadAdvancePageAdmin.route());
+            },
+          ),
+
+          Divider(height: 1, color: colors.outlineVariant),
+
+          _MenuItem(
             icon: Symbols.calculate,
             label: 'Cuenta',
             onTap: () {
@@ -121,19 +134,9 @@ class _MenuItem extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
-      leading: Icon(
-        icon,
-        color: colors.onSurface,
-        size: 24,
-      ),
-      title: Text(
-        label,
-        style: Theme.of(context).textTheme.bodyLarge,
-      ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: colors.onSurfaceVariant,
-      ),
+      leading: Icon(icon, color: colors.onSurface, size: 24),
+      title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
+      trailing: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
       onTap: onTap,
     );
   }

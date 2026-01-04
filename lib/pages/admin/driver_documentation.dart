@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/pages/admin/update_document.dart';
+import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:intl/intl.dart';
 
 class DriverDocumentationPageAdmin extends StatelessWidget {
-  final String driverName;
+  final DriverData driver;
 
-  const DriverDocumentationPageAdmin({
-    super.key,
-    required this.driverName,
-  });
+  const DriverDocumentationPageAdmin({super.key, required this.driver});
 
   static const String routeName = '/admin/driver-documentation';
 
-  static Route route({required String driverName}) {
+  static Route route({required DriverData driver}) {
     return MaterialPageRoute<void>(
-      builder: (_) => DriverDocumentationPageAdmin(driverName: driverName),
+      builder: (_) => DriverDocumentationPageAdmin(driver: driver),
     );
   }
 
@@ -24,179 +21,31 @@ class DriverDocumentationPageAdmin extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
-    // TODO: Obtener datos reales del backend
-    final documents = [
-      _DocumentData(
-        name: 'Licencia de conducir',
-        expirationDate: DateTime(2025, 3, 20),
-      ),
-      _DocumentData(
-        name: 'Examen psicofísico',
-        expirationDate: DateTime(2025, 4, 20),
-      ),
-    ];
+    final dateFormatter = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Documentación'),
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Encabezados de columnas
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'Documentación',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Vencimiento',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  gapW16,
-                  SizedBox(
-                    width: 60,
-                    child: Text(
-                      'Vigente',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  gapW16,
-                  SizedBox(
-                    width: 50,
-                    child: Text(
-                      'Editar',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Lista de documentos
-            ...documents.map((doc) => _DocumentListItem(
-              document: doc,
-              onTap: () {
-                Navigator.of(context).push(
-                  UpdateDocumentPageAdmin.route(
-                    documentName: doc.name,
-                    currentDate: doc.expirationDate,
-                  ),
-                );
-              },
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DocumentListItem extends StatelessWidget {
-  final _DocumentData document;
-  final VoidCallback onTap;
-
-  const _DocumentListItem({
-    required this.document,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final now = DateTime.now();
-    final daysUntilExpiration = document.expirationDate.difference(now).inDays;
-
-    // Determinar icono de estado
-    IconData statusIcon;
-    Color statusColor;
-
-    if (daysUntilExpiration < 0) {
-      // Vencido
-      statusIcon = Symbols.error;
-      statusColor = colors.error;
-    } else {
-      // Al día
-      statusIcon = Symbols.check_circle;
-      statusColor = Colors.green;
-    }
-
-    final formattedDate = DateFormat('dd/MM/yyyy').format(document.expirationDate);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      appBar: AppBar(title: const Text('Documentación')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          // Nombre del documento (columna Documentación)
-          Expanded(
-            flex: 2,
-            child: Text(
-              document.name,
-              style: textTheme.bodyLarge,
-            ),
+          // Licencia de conducir
+          _DocumentCard(
+            title: 'Licencia de conducir',
+            dueDate: driver.driverLicenseDueDate,
+            dateFormatter: dateFormatter,
+            colors: colors,
+            textTheme: textTheme,
           ),
 
-          // Fecha (columna Vencimiento)
-          Expanded(
-            child: Text(
-              formattedDate,
-              style: textTheme.bodyLarge,
-            ),
-          ),
+          gap16,
 
-          gapW16,
-
-          // Icono de estado (columna Vigente)
-          SizedBox(
-            width: 60,
-            child: Icon(
-              statusIcon,
-              color: statusColor,
-              size: 24,
-              fill: 1,
-            ),
-          ),
-
-          gapW16,
-
-          // Botón de editar (columna Editar)
-          SizedBox(
-            width: 50,
-            child: Material(
-              color: colors.secondaryContainer,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    Symbols.edit,
-                    color: colors.onSecondaryContainer,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
+          // Examen médico
+          _DocumentCard(
+            title: 'Examen médico',
+            dueDate: driver.medicalExamDueDate,
+            dateFormatter: dateFormatter,
+            colors: colors,
+            textTheme: textTheme,
           ),
         ],
       ),
@@ -204,12 +53,114 @@ class _DocumentListItem extends StatelessWidget {
   }
 }
 
-class _DocumentData {
-  final String name;
-  final DateTime expirationDate;
+class _DocumentCard extends StatelessWidget {
+  final String title;
+  final DateTime? dueDate;
+  final DateFormat dateFormatter;
+  final ColorScheme colors;
+  final TextTheme textTheme;
 
-  _DocumentData({
-    required this.name,
-    required this.expirationDate,
+  const _DocumentCard({
+    required this.title,
+    required this.dueDate,
+    required this.dateFormatter,
+    required this.colors,
+    required this.textTheme,
   });
+
+  bool _isValid() {
+    if (dueDate == null) return false;
+    return dueDate!.isAfter(DateTime.now());
+  }
+
+  String _getStatus() {
+    if (dueDate == null) return 'Sin fecha';
+    if (_isValid()) {
+      return 'Vigente';
+    } else {
+      return 'Vencido';
+    }
+  }
+
+  Color _getStatusColor() {
+    if (dueDate == null) return colors.onSurfaceVariant;
+    if (_isValid()) {
+      return Colors.green;
+    } else {
+      return Colors.red;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _getStatus(),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: _getStatusColor(),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            gap12,
+            if (dueDate != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Vencimiento',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        dateFormatter.format(dueDate!),
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            else
+              Text(
+                'Sin fecha de vencimiento registrada',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
