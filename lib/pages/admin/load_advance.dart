@@ -22,6 +22,7 @@ class LoadAdvancePageAdmin extends StatefulWidget {
 
 class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
   int? _selectedDriverId;
+  // ignore: unused_field
   String? _selectedDriverName;
   DateTime? _date;
   final TextEditingController _dateController = TextEditingController();

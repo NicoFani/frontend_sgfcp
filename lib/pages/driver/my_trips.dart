@@ -153,7 +153,7 @@ class _MiTripsPageState extends State<MiTripsPage> {
                   onPressed: () {
                     Navigator.of(
                       context,
-                    ).push(StartTripPage.route(trip: nextTrip!));
+                    ).push(StartTripPage.route(trip: nextTrip));
                   },
                 );
               },

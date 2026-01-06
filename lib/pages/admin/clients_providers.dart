@@ -22,7 +22,6 @@ class _ClientsProvidersPageAdminState extends State<ClientsProvidersPageAdmin> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     // TODO: Obtener datos reales del backend
     final clients = [
@@ -139,7 +138,6 @@ class _TabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return FilledButton(
       style: FilledButton.styleFrom(

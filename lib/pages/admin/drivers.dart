@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
@@ -8,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/models/advance_payment_data.dart';
+import 'package:frontend_sgfcp/widgets/drivers_list.dart' as dl;
 
 class DriversPageAdmin extends StatefulWidget {
   const DriversPageAdmin({super.key});
@@ -23,12 +25,9 @@ class DriversPageAdmin extends StatefulWidget {
 }
 
 class _DriversPageAdminState extends State<DriversPageAdmin> {
+  DateTime _selectedMonth = DateTime.now();
   late Future<List<DriverData>> _driversFuture;
   late Future<List<AdvancePaymentData>> _advancesFuture;
-  DateTimeRange _selectedDateRange = DateTimeRange(
-    start: DateTime(DateTime.now().year, DateTime.now().month, 1),
-    end: DateTime.now(),
-  );
 
   @override
   void initState() {
@@ -40,39 +39,19 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
   List<AdvancePaymentData> _filterAdvancesByDateRange(
     List<AdvancePaymentData> advances,
   ) {
+    final startOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+    final endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+
     return advances.where((advance) {
-      return advance.date.isAfter(
-            _selectedDateRange.start.subtract(const Duration(days: 1)),
-          ) &&
-          advance.date.isBefore(
-            _selectedDateRange.end.add(const Duration(days: 1)),
-          );
+      return !advance.date.isBefore(startOfMonth) &&
+          !advance.date.isAfter(endOfMonth);
     }).toList();
-  }
-
-  Future<void> _showDateRangePicker(BuildContext context) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      currentDate: DateTime.now(),
-      initialDateRange: _selectedDateRange,
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final dateFormatter = DateFormat('dd/MM/yyyy', 'es_ES');
-    final selectedRangeText =
-        '${dateFormatter.format(_selectedDateRange.start)} - ${dateFormatter.format(_selectedDateRange.end)}';
 
     return FutureBuilder<List<DriverData>>(
       future: _driversFuture,
@@ -128,119 +107,40 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
             final drivers = driversSnapshot.data ?? [];
             final allAdvances = advancesSnapshot.data ?? [];
             final filteredAdvances = _filterAdvancesByDateRange(allAdvances);
+            final driverTilesData = drivers
+              .map((d) => dl.DriverData(
+                  name: '${d.firstName} ${d.lastName}',
+                  status: dl.DriverStatus.inactive,
+                  //TODO: Implementar estado real
+                ))
+              .toList();
 
-            return Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      // Lista de choferes
-                      if (drivers.isEmpty)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Text(
-                              'No hay choferes cargados',
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (drivers.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text(
+                            'No hay choferes cargados',
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: colors.onSurfaceVariant,
                             ),
-                          ),
-                        )
-                      else
-                        ...drivers.map(
-                          (driver) => _DriverListItem(
-                            driver: driver,
-                            onTap: () {
-                              Navigator.of(context).push(
-                                DriverDetailPageAdmin.route(
-                                  driverId: driver.id,
-                                  driverName:
-                                      '${driver.firstName} ${driver.lastName}',
-                                ),
-                              );
-                            },
                           ),
                         ),
-
-                      gap24,
-
-                      // Sección Adelantos
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Adelantos', style: textTheme.titleLarge),
-                        ],
-                      ),
-
-                      gap12,
-
-                      // Botón Cargar adelanto
-                      FilledButton.icon(
-                        onPressed: () {
-                          Navigator.of(
-                            context,
-                          ).push(LoadAdvancePageAdmin.route());
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Symbols.payments),
-                        label: const Text('Cargar adelanto'),
-                      ),
-
-                      gap16,
-
-                      // Selector de rango de fechas
-                      Row(
-                        children: [
-                          Text(selectedRangeText, style: textTheme.bodyMedium),
-                          const Spacer(),
-                          FilledButton.icon(
-                            onPressed: () {
-                              _showDateRangePicker(context);
-                            },
-                            style: FilledButton.styleFrom(
-                              backgroundColor: colors.secondaryContainer,
-                              foregroundColor: colors.onSecondaryContainer,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            icon: const Icon(Symbols.calendar_today, size: 18),
-                            label: const Text('Elegir período'),
-                          ),
-                        ],
-                      ),
-
-                      gap16,
-
-                      // Lista de adelantos
-                      if (filteredAdvances.isEmpty)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: Text(
-                              'No hay adelantos en este período',
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ...filteredAdvances.map((advance) {
-                          final driver = drivers.firstWhere(
-                            (d) => d.id == advance.driverId,
+                      )
+                    else
+                      dl.DriversList(
+                        drivers: driverTilesData,
+                        onDriverTap: (tileDriver) {
+                          final originalDriver = drivers.firstWhere(
+                            (d) =>
+                                '${d.firstName} ${d.lastName}' ==
+                                tileDriver.name,
                             orElse: () => DriverData(
                               id: -1,
                               firstName: 'Chofer',
@@ -248,28 +148,73 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                             ),
                           );
 
-                          return _AdvanceListItem(
-                            advance: advance,
-                            driverName:
-                                '${driver.firstName} ${driver.lastName}',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                EditAdvancePageAdmin.route(
-                                  advancePaymentId: advance.id,
-                                  driverId: advance.driverId,
-                                  driverName:
-                                      '${driver.firstName} ${driver.lastName}',
-                                  date: advance.date,
-                                  amount: advance.amount,
-                                ),
-                              );
-                            },
-                          );
-                        }),
-                    ],
-                  ),
+                          if (originalDriver.id != -1) {
+                            Navigator.of(context).push(
+                              DriverDetailPageAdmin.route(
+                                driverId: originalDriver.id,
+                                driverName:
+                                    '${originalDriver.firstName} ${originalDriver.lastName}',
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    
+                    gap24,
+                    
+                    // Sección Adelantos
+                    Text('Adelantos', style: textTheme.titleLarge),
+                    
+                    gap12,
+                    
+                    // Botón Cargar adelanto
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(LoadAdvancePageAdmin.route());
+                      },
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      icon: const Icon(Symbols.mintmark),
+                      label: const Text('Cargar adelanto'),
+                    ),
+                    
+                    gap16,
+                    
+                    // Selector de mes
+                    MonthSelectorHeader(
+                      initialMonth: _selectedMonth,
+                      onMonthChanged: (newMonth) {
+                        setState(() {
+                          _selectedMonth = newMonth;
+                          //TODO: filtrar adelantos por mes seleccionado
+                        });
+                      },
+                    ),
+                    
+                    gap16,
+                    
+                    // Lista de adelantos
+                    if (filteredAdvances.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text(
+                            'No hay adelantos en este período',
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      _AdvancePaymentsList(
+                        advancePayments: filteredAdvances,
+                        drivers: drivers,
+                      ),
+              ],  
                 ),
-              ],
+              ),
             );
           },
         );
@@ -278,68 +223,14 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
   }
 }
 
-/// Item de chofer en la lista
-class _DriverListItem extends StatelessWidget {
-  final DriverData driver;
-  final VoidCallback onTap;
 
-  const _DriverListItem({required this.driver, required this.onTap});
+class _AdvancePaymentsList extends StatelessWidget {
+  final List<AdvancePaymentData> advancePayments;
+  final List<DriverData> drivers;
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    // Mostrar estado como activo por defecto (sin estado en el modelo actual)
-    const isActive = true;
-
-    return Card.outlined(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: CircleAvatar(
-          backgroundColor: isActive
-              ? colors.secondaryContainer
-              : colors.surfaceContainerHighest,
-          child: Icon(
-            Symbols.local_shipping,
-            color: isActive
-                ? colors.onSecondaryContainer
-                : colors.onSurfaceVariant,
-            size: 20,
-          ),
-        ),
-        title: Row(
-          children: [
-            Text(
-              isActive ? 'Activo' : 'Inactivo',
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        subtitle: Text(
-          '${driver.firstName} ${driver.lastName}',
-          style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-        ),
-        trailing: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// Item de adelanto en la lista
-class _AdvanceListItem extends StatelessWidget {
-  final AdvancePaymentData advance;
-  final String driverName;
-  final VoidCallback onTap;
-
-  const _AdvanceListItem({
-    required this.advance,
-    required this.driverName,
-    required this.onTap,
+  const _AdvancePaymentsList({
+    required this.advancePayments,
+    required this.drivers,
   });
 
   @override
@@ -353,36 +244,65 @@ class _AdvanceListItem extends StatelessWidget {
     );
     final dateFormatter = DateFormat('dd/MM/yyyy');
 
-    return Card.outlined(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Row(
-          children: [
-            Text(
-              dateFormatter.format(advance.date),
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
+        children: [
+          for (int i = 0; i < advancePayments.length; i++) ...[
+            Builder(
+              builder: (context) {
+                final advance = advancePayments[i];
+                final driver = drivers.firstWhere(
+                  (d) => d.id == advance.driverId,
+                  orElse: () => DriverData(
+                    id: -1,
+                    firstName: 'Chofer',
+                    lastName: 'desconocido',
+                  ),
+                );
+
+                final driverName = '${driver.firstName} ${driver.lastName}';
+
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dateFormatter.format(advance.date),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(driverName, style: textTheme.bodyMedium),
+                    ],
+                  ),
+                  subtitle: Text(
+                    currencyFormat.format(advance.amount),
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_right),
+                  onTap: () {
+                    if (driver.id != -1) {
+                      Navigator.of(context).push(
+                        EditAdvancePageAdmin.route(
+                          advancePaymentId: advance.id,
+                          driverId: advance.driverId,
+                          driverName: driverName,
+                          date: advance.date,
+                          amount: advance.amount,
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
             ),
+            if (i < advancePayments.length - 1) const Divider(height: 1),
           ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            gap4,
-            Text(driverName, style: textTheme.bodyMedium),
-            gap4,
-            Text(
-              currencyFormat.format(advance.amount),
-              style: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        trailing: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
-        onTap: onTap,
+        ],
       ),
     );
   }

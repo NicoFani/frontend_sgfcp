@@ -16,7 +16,6 @@ class VehiclesPageAdmin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     // TODO: Obtener datos reales del backend
     final vehicles = [

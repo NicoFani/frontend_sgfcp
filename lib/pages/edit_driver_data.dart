@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
-class EditDriverDataPageAdmin extends StatefulWidget {
-  const EditDriverDataPageAdmin({
+class EditDriverDataPage extends StatefulWidget {
+  const EditDriverDataPage({
     super.key,
     required this.driverName,
   });
@@ -14,15 +14,15 @@ class EditDriverDataPageAdmin extends StatefulWidget {
 
   static Route route({required String driverName}) {
     return MaterialPageRoute<void>(
-      builder: (_) => EditDriverDataPageAdmin(driverName: driverName),
+      builder: (_) => EditDriverDataPage(driverName: driverName),
     );
   }
 
   @override
-  State<EditDriverDataPageAdmin> createState() => _EditDriverDataPageAdminState();
+  State<EditDriverDataPage> createState() => _EditDriverDataPageState();
 }
 
-class _EditDriverDataPageAdminState extends State<EditDriverDataPageAdmin> {
+class _EditDriverDataPageState extends State<EditDriverDataPage> {
   // TODO: Obtener datos reales del backend basado en widget.driverName
   final TextEditingController _nameController = TextEditingController(text: 'Juan Antonio');
   final TextEditingController _lastNameController = TextEditingController(text: 'Rodriguez');
@@ -53,8 +53,6 @@ class _EditDriverDataPageAdminState extends State<EditDriverDataPageAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -147,7 +145,6 @@ class _EditDriverDataPageAdminState extends State<EditDriverDataPageAdmin> {
               // Botón Guardar cambios
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: _saveChanges,

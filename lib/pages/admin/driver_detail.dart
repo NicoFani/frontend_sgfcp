@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
+import 'package:frontend_sgfcp/widgets/simple_card.dart';
+import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
-import 'package:frontend_sgfcp/pages/admin/driver_data.dart';
+import 'package:frontend_sgfcp/pages/driver_data.dart';
 import 'package:frontend_sgfcp/pages/admin/driver_documentation.dart';
 import 'package:frontend_sgfcp/pages/admin/trip_detail.dart';
-import 'package:intl/intl.dart';
 
 class DriverDetailPageAdmin extends StatefulWidget {
   final int driverId;
@@ -154,8 +156,6 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
               final driver = driverSnapshot.data;
               final currentAndNextTrips = _getCurrentAndNextTrips(trips);
               final previousTrips = _getPreviousTrips(trips);
-              final monthFormatter = DateFormat('MMMM, yyyy', 'es_ES');
-              final selectedMonthText = monthFormatter.format(_selectedMonth);
 
               return ListView(
                 padding: const EdgeInsets.all(16),
@@ -183,17 +183,18 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
 
                       return Column(
                         children: [
-                          _TripCard(
+                          SimpleCard(
                             title: title,
-                            trip: trip,
-                            buttonLabel: 'Abrir',
+                            subtitle: '${trip.origin} → ${trip.destination}',
+                            icon: Symbols.delivery_truck_speed,
+                            label: 'Abrir',
                             onPressed: () {
                               Navigator.of(
                                 context,
                               ).push(TripDetailPageAdmin.route(trip: trip));
                             },
                           ),
-                          if (index < currentAndNextTrips.length - 1) gap16,
+                          if (index < currentAndNextTrips.length - 1) gap8,
                         ],
                       );
                     }),
@@ -205,117 +206,23 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
 
                   gap8,
 
-                  // Datos del chofer
-                  Card.outlined(
-                    child: ListTile(
-                      leading: Icon(
-                        Symbols.person,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      title: const Text('Datos del chofer'),
-                      subtitle: driver != null
-                          ? Text(
-                              '${driver.firstName} ${driver.lastName}',
-                              style: textTheme.bodySmall,
-                            )
-                          : const Text('Cargando...'),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      onTap: driver != null
-                          ? () {
-                              Navigator.of(
-                                context,
-                              ).push(DriverDataPageAdmin.route(driver: driver));
-                            }
-                          : null,
-                    ),
-                  ),
-
-                  gap8,
-
-                  // Documentación
-                  Card.outlined(
-                    child: ListTile(
-                      leading: Icon(
-                        Symbols.description,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      title: const Text('Documentación'),
-                      subtitle: const Text('Ver documentos del chofer'),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      onTap: driver != null
-                          ? () {
-                              Navigator.of(context).push(
-                                DriverDocumentationPageAdmin.route(
-                                  driver: driver,
-                                ),
-                              );
-                            }
-                          : null,
-                    ),
-                  ),
+                  _ProfileOptionsList(driver: driver!),
 
                   gap24,
 
                   // Viajes anteriores
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Viajes anteriores', style: textTheme.titleLarge),
-                    ],
-                  ),
+                  Text('Viajes anteriores', style: textTheme.titleLarge),
 
                   gap8,
 
-                  // Selector de mes
-                  Row(
-                    children: [
-                      Text(selectedMonthText, style: textTheme.bodyMedium),
-                      const Spacer(),
-                      FilledButton.icon(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _selectedMonth,
-                            firstDate: DateTime(2020, 1),
-                            lastDate: DateTime.now(),
-                            selectableDayPredicate: (DateTime date) {
-                              return true;
-                            },
-                          );
-
-                          if (picked != null) {
-                            setState(() {
-                              _selectedMonth = DateTime(
-                                picked.year,
-                                picked.month,
-                                1,
-                              );
-                            });
-                          }
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: colors.secondaryContainer,
-                          foregroundColor: colors.onSecondaryContainer,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        icon: const Icon(Symbols.calendar_today, size: 18),
-                        label: const Text('Elegir mes'),
-                      ),
-                    ],
+                  MonthSelectorHeader(
+                    initialMonth: _selectedMonth,
+                    onMonthChanged: (newMonth) {
+                      setState(() {
+                        _selectedMonth = newMonth;
+                      });
+                    },
                   ),
-
                   gap16,
 
                   // Lista de viajes anteriores
@@ -332,9 +239,12 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
                       ),
                     )
                   else
-                    ...previousTrips.map(
-                      (trip) => _PreviousTripListItem(trip: trip),
-                    ),
+                    TripsListSection(
+                      trips: previousTrips.toList(),
+                      onTripTap: (trip) {
+                        Navigator.of(context).push(TripDetailPageAdmin.route(trip: trip));
+                      },
+                    )
                 ],
               );
             },
@@ -345,105 +255,40 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
   }
 }
 
-/// Card de viaje (actual o próximo)
-class _TripCard extends StatelessWidget {
-  final String title;
-  final TripData trip;
-  final String buttonLabel;
-  final VoidCallback onPressed;
+/// Lista de opciones del perfil
+class _ProfileOptionsList extends StatelessWidget {
+  final DriverData driver;
 
-  const _TripCard({
-    required this.title,
-    required this.trip,
-    required this.buttonLabel,
-    required this.onPressed,
-  });
-
+  const _ProfileOptionsList({required this.driver});
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card.outlined(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-            gap8,
-            Text(
-              '${trip.origin} → ${trip.destination}',
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            gap12,
-            FilledButton.icon(
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.primary,
-                minimumSize: const Size.fromHeight(44),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: const Icon(Symbols.open_in_new, size: 18),
-              label: Text(buttonLabel),
-            ),
-          ],
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(Symbols.user_attributes),
+          title: Text('Datos del chofer'),
+          trailing: const Icon(Icons.arrow_right),
+          onTap: () {
+            Navigator.of(context).push(
+              DriverDataPage.route(driver: driver)
+              );
+          }
         ),
-      ),
-    );
-  }
-}
-
-/// Item de viaje anterior
-class _PreviousTripListItem extends StatelessWidget {
-  final TripData trip;
-
-  const _PreviousTripListItem({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final dateFormatter = DateFormat('dd/MM/yyyy');
-
-    return Card.outlined(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Row(
-          children: [
-            Text(
-              dateFormatter.format(trip.startDate),
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: const Divider(height: 1),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            gap4,
-            Text(
-              '${trip.origin} → ${trip.destination}',
-              style: textTheme.bodyMedium,
-            ),
-          ],
+        ListTile(
+          leading: Icon(Symbols.id_card),
+          title: Text('Documentación'),
+          trailing: const Icon(Icons.arrow_right),
+          onTap: () {
+                Navigator.of(context).push(
+                  DriverDocumentationPageAdmin.route(driver: driver),
+                );
+              }
         ),
-        trailing: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
-        onTap: () {
-          Navigator.of(context).push(TripDetailPageAdmin.route(trip: trip));
-        },
-      ),
+      ],
     );
   }
 }

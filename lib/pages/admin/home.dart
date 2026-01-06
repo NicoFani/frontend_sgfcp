@@ -321,14 +321,14 @@ class HomePageAdmin extends StatelessWidget {
 // }
 
 // Modelos de datos
-enum _DriverStatus { onTrip, inactive }
+// enum _DriverStatus { onTrip, inactive }
 
-class _DriverData {
-  final String name;
-  final _DriverStatus status;
+// class _DriverData {
+//   final String name;
+//   final _DriverStatus status;
 
-  _DriverData({
-    required this.name,
-    required this.status,
-  });
-}
+//   _DriverData({
+//     required this.name,
+//     required this.status,
+//   });
+// }

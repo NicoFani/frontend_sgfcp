@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
 class CreateClientProviderPageAdmin extends StatefulWidget {
@@ -38,7 +37,6 @@ class _CreateClientProviderPageAdminState extends State<CreateClientProviderPage
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Dialog(

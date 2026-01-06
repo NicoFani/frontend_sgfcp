@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/driver_data.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
 import 'package:frontend_sgfcp/pages/driver/documentation_list.dart';
-import 'package:frontend_sgfcp/pages/driver/personal_data.dart';
 import 'package:frontend_sgfcp/pages/driver/vehicle.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -61,6 +61,8 @@ class ProfilePage extends StatelessWidget {
 
 /// Lista de opciones del perfil
 class _ProfileOptionsList extends StatelessWidget {
+  get driver => null;
+
   @override
   Widget build(BuildContext context) {
 
@@ -97,7 +99,9 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Datos personales'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              Navigator.of(context).push(PersonalDataPage.route());
+              Navigator.of(context).push(
+                DriverDataPage.route(driver: driver)
+              );
             },
           ),
         ],

@@ -72,7 +72,6 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     final peajeOptions = ['Tasa portuaria', 'Ruta'];
     final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
