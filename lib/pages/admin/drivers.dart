@@ -3,8 +3,8 @@ import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
-import 'package:frontend_sgfcp/pages/admin/load_advance.dart';
-import 'package:frontend_sgfcp/pages/admin/edit_advance.dart';
+import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
+import 'package:frontend_sgfcp/pages/admin/edit_advance_payment.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
@@ -170,7 +170,7 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                     // Botón Cargar adelanto
                     FilledButton.icon(
                       onPressed: () {
-                        Navigator.of(context).push(LoadAdvancePageAdmin.route());
+                        Navigator.of(context).push(AddAdvancePaymentPage.route());
                       },
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
@@ -287,7 +287,7 @@ class _AdvancePaymentsList extends StatelessWidget {
                   onTap: () {
                     if (driver.id != -1) {
                       Navigator.of(context).push(
-                        EditAdvancePageAdmin.route(
+                        EditAdvancePaymentPage.route(
                           advancePaymentId: advance.id,
                           driverId: advance.driverId,
                           driverName: driverName,

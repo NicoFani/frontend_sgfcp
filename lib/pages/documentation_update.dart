@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:frontend_sgfcp/pages/driver/documentation_list.dart';
+import 'package:frontend_sgfcp/pages/driver_documentation.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
 class DocumentationUpdatePage extends StatefulWidget {
@@ -22,6 +22,8 @@ class _DocumentationUpdatePageState extends State<DocumentationUpdatePage> {
 
   DateTime? _expirationDate;
   final TextEditingController _expirationDateController = TextEditingController();
+  
+  get driver => null;
   
   @override
   void dispose() {
@@ -85,7 +87,7 @@ class _DocumentationUpdatePageState extends State<DocumentationUpdatePage> {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () {
-                  Navigator.of(context).push(DocumentationListPage.route());
+                  Navigator.of(context).push(DriverDocumentationPage.route(driver: driver));
                 },
                 icon: const Icon(Icons.check),
                 label: const Text('Guardar cambios'),

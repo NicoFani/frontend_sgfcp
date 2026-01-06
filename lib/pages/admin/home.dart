@@ -3,7 +3,7 @@ import 'package:frontend_sgfcp/widgets/drivers_list.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/create_trip.dart';
-import 'package:frontend_sgfcp/pages/admin/load_advance.dart';
+import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
 
 class HomePageAdmin extends StatelessWidget {
   const HomePageAdmin({super.key});
@@ -68,7 +68,7 @@ class HomePageAdmin extends StatelessWidget {
               width: double.infinity,
               child: FilledButton.tonalIcon(
                 onPressed: () {
-                  Navigator.of(context).push(LoadAdvancePageAdmin.route());
+                  Navigator.of(context).push(AddAdvancePaymentPage.route());
                 },
                 icon: const Icon(Symbols.mintmark),
                 label: const Text('Cargar adelanto'),

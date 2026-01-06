@@ -8,7 +8,7 @@ import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/pages/driver_data.dart';
-import 'package:frontend_sgfcp/pages/admin/driver_documentation.dart';
+import 'package:frontend_sgfcp/pages/driver_documentation.dart';
 import 'package:frontend_sgfcp/pages/admin/trip_detail.dart';
 
 class DriverDetailPageAdmin extends StatefulWidget {
@@ -284,7 +284,7 @@ class _ProfileOptionsList extends StatelessWidget {
           trailing: const Icon(Icons.arrow_right),
           onTap: () {
                 Navigator.of(context).push(
-                  DriverDocumentationPageAdmin.route(driver: driver),
+                  DriverDocumentationPage.route(driver: driver),
                 );
               }
         ),

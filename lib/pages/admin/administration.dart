@@ -4,7 +4,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/account.dart';
 import 'package:frontend_sgfcp/pages/admin/clients_providers.dart';
 import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
-import 'package:frontend_sgfcp/pages/admin/load_advance.dart';
+import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
 
 class AdministrationPageAdmin extends StatelessWidget {
   const AdministrationPageAdmin({super.key});
@@ -98,7 +98,7 @@ class AdministrationPageAdmin extends StatelessWidget {
             icon: Symbols.attach_money,
             label: 'Cargar Adelanto',
             onTap: () {
-              Navigator.of(context).push(LoadAdvancePageAdmin.route());
+              Navigator.of(context).push(AddAdvancePaymentPage.route());
             },
           ),
 

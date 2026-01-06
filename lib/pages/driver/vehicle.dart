@@ -4,7 +4,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
 
-import 'package:frontend_sgfcp/pages/driver/documentation_update.dart';
+import 'package:frontend_sgfcp/pages/documentation_update.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
 
@@ -57,19 +57,19 @@ class VehiclePage extends StatelessWidget {
                   SimpleTableRowData(
                     col1: 'VTV',
                     col2: '20/09/2025',
-                    isValid: false,
+                    dateToValidate: DateTime(2025, 9, 20),
                     onEdit: () { Navigator.of(context).push(DocumentationUpdatePage.route()); },
                   ),
                   SimpleTableRowData(
                     col1: 'Service',
                     col2: '15/11/2026',
-                    isValid: true,
+                    dateToValidate: DateTime(2026, 11, 15),
                     onEdit: () { Navigator.of(context).push(DocumentationUpdatePage.route()); },
                   ),
                   SimpleTableRowData(
                     col1: 'Patente',
                     col2: '23/07/2026',
-                    isValid: true,
+                    dateToValidate: DateTime(2026, 07, 23),
                     onEdit: () { Navigator.of(context).push(DocumentationUpdatePage.route()); },
                   ),
                 ],

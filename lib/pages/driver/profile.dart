@@ -4,7 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
-import 'package:frontend_sgfcp/pages/driver/documentation_list.dart';
+import 'package:frontend_sgfcp/pages/driver_documentation.dart';
 import 'package:frontend_sgfcp/pages/driver/vehicle.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -75,7 +75,7 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Documentación'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              Navigator.of(context).push(DocumentationListPage.route());
+              Navigator.of(context).push(DriverDocumentationPage.route(driver: driver));
             },
           ),
           Padding(

@@ -126,6 +126,11 @@ class _SimpleTableRow extends StatelessWidget {
     required this.showStatus,
   });
 
+  bool _isValid() {
+    if (data.dateToValidate == null) return false;
+    return data.dateToValidate!.isAfter(DateTime.now());
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -162,12 +167,12 @@ class _SimpleTableRow extends StatelessWidget {
               flex: 3,
               child: Align(
                 alignment: Alignment.center,
-                child: data.isValid == null
+                child: data.dateToValidate == null
                     ? const SizedBox.shrink()
                     : Icon(
-                        data.isValid! ? Icons.check : Icons.error,
+                        _isValid() ? Icons.check : Icons.error,
                         size: 24,
-                        color: data.isValid! ? colors.primary : colors.error,
+                        color: _isValid() ? colors.primary : colors.error,
                       ),
               ),
             ),

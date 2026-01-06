@@ -5,14 +5,14 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 
-class EditAdvancePageAdmin extends StatefulWidget {
+class EditAdvancePaymentPage extends StatefulWidget {
   final int advancePaymentId;
   final int driverId;
   final String driverName;
   final DateTime date;
   final double amount;
 
-  const EditAdvancePageAdmin({
+  const EditAdvancePaymentPage({
     super.key,
     required this.advancePaymentId,
     required this.driverId,
@@ -31,7 +31,7 @@ class EditAdvancePageAdmin extends StatefulWidget {
     required double amount,
   }) {
     return MaterialPageRoute<void>(
-      builder: (_) => EditAdvancePageAdmin(
+      builder: (_) => EditAdvancePaymentPage(
         advancePaymentId: advancePaymentId,
         driverId: driverId,
         driverName: driverName,
@@ -42,10 +42,10 @@ class EditAdvancePageAdmin extends StatefulWidget {
   }
 
   @override
-  State<EditAdvancePageAdmin> createState() => _EditAdvancePageAdminState();
+  State<EditAdvancePaymentPage> createState() => _EditAdvancePaymentPageState();
 }
 
-class _EditAdvancePageAdminState extends State<EditAdvancePageAdmin> {
+class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
   int? _selectedDriverId;
   DateTime? _date;
   final TextEditingController _dateController = TextEditingController();
@@ -315,21 +315,22 @@ class _EditAdvancePageAdminState extends State<EditAdvancePageAdmin> {
                     ],
                   ),
 
-                  gap16,
+                  gap12,
 
                   // Botón Cambiar comprobante
                   FilledButton.tonalIcon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: colors.secondaryContainer,
-                      foregroundColor: colors.onSecondaryContainer,
                       minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
                     ),
                     onPressed: _showReceiptDialog,
                     icon: const Icon(Symbols.receipt_long),
                     label: const Text('Cambiar comprobante'),
                   ),
 
-                  const Spacer(),
+                  gap16,
 
                   // Botón Guardar cambios
                   FilledButton.icon(

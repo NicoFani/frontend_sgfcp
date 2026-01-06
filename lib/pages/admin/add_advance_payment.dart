@@ -5,22 +5,22 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 
-class LoadAdvancePageAdmin extends StatefulWidget {
-  const LoadAdvancePageAdmin({super.key});
+class AddAdvancePaymentPage extends StatefulWidget {
+  const AddAdvancePaymentPage({super.key});
 
   static const String routeName = '/admin/load-advance';
 
   static Route route() {
     return MaterialPageRoute<void>(
-      builder: (_) => const LoadAdvancePageAdmin(),
+      builder: (_) => const AddAdvancePaymentPage(),
     );
   }
 
   @override
-  State<LoadAdvancePageAdmin> createState() => _LoadAdvancePageAdminState();
+  State<AddAdvancePaymentPage> createState() => _AddAdvancePaymentPageState();
 }
 
-class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
+class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
   int? _selectedDriverId;
   // ignore: unused_field
   String? _selectedDriverName;
@@ -177,7 +177,6 @@ class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Cargar Adelanto')),
@@ -290,26 +289,26 @@ class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
                     ],
                   ),
 
-                  gap16,
+                  gap12,
 
                   // Botón Adjuntar comprobante
                   FilledButton.tonalIcon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: colors.secondaryContainer,
-                      foregroundColor: colors.onSecondaryContainer,
                       minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
                     ),
                     onPressed: _showReceiptDialog,
                     icon: const Icon(Symbols.receipt_long),
                     label: const Text('Adjuntar comprobante'),
                   ),
 
-                  const Spacer(),
+                  gap12,
 
                   // Botón Cargar adelanto
                   FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: colors.primary,
                       minimumSize: const Size.fromHeight(48),
                     ),
                     onPressed: _isLoading ? null : _loadAdvance,
@@ -319,7 +318,7 @@ class _LoadAdvancePageAdminState extends State<LoadAdvancePageAdmin> {
                             width: 24,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Symbols.attach_money),
+                        : const Icon(Symbols.mintmark),
                     label: const Text('Cargar adelanto'),
                   ),
                 ],
