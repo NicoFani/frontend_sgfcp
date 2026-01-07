@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:frontend_sgfcp/pages/driver_documentation.dart';
+import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
 class DocumentationUpdatePage extends StatefulWidget {

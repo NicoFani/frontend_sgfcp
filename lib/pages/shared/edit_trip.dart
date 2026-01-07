@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/widgets/document_type_selector.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/pages/trip.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 
 

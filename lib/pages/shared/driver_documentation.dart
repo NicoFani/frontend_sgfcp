@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
-import 'package:frontend_sgfcp/pages/documentation_update.dart';
+import 'package:frontend_sgfcp/pages/shared/documentation_update.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
 // import 'package:material_symbols_icons/symbols.dart';
 // import 'package:frontend_sgfcp/theme/spacing.dart';

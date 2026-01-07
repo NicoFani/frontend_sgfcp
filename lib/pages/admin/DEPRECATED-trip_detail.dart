@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/expense_data.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
-import 'package:frontend_sgfcp/pages/edit_expense.dart';
+import 'package:frontend_sgfcp/pages/shared/edit_expense.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:frontend_sgfcp/widgets/inline_info_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';

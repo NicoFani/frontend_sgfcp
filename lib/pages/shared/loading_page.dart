@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:frontend_sgfcp/pages/login_page.dart';
+import 'package:frontend_sgfcp/pages/shared/login_page.dart';
 import 'package:frontend_sgfcp/services/auth_service.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/pages/admin/admin_root_navigation.dart';

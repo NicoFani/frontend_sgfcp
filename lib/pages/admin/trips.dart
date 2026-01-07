@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/pages/trip.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/services/api_service.dart';

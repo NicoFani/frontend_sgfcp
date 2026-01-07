@@ -6,7 +6,7 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 
 import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
-import 'package:frontend_sgfcp/pages/trip.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';

@@ -26,15 +26,12 @@ class AdministrationPageAdmin extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          gap24,
+
           // Información del usuario (Omar)
           Column(
             children: [
-              Text(
-                'Omar',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text('Omar', style: textTheme.titleLarge),
               gap4,
               Text(
                 'omar@gmail.com',
@@ -45,7 +42,7 @@ class AdministrationPageAdmin extends StatelessWidget {
             ],
           ),
 
-          gap24,
+          gap32,
 
           // Opciones del menú con divisores
           _MenuItem(
@@ -59,10 +56,13 @@ class AdministrationPageAdmin extends StatelessWidget {
             },
           ),
 
-          Divider(height: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
 
           _MenuItem(
-            icon: Symbols.bar_chart,
+            icon: Symbols.insert_chart,
             label: 'Estadísticas',
             onTap: () {
               // TODO: Navegar a Estadísticas
@@ -72,7 +72,10 @@ class AdministrationPageAdmin extends StatelessWidget {
             },
           ),
 
-          Divider(height: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
 
           _MenuItem(
             icon: Symbols.local_shipping,
@@ -82,30 +85,39 @@ class AdministrationPageAdmin extends StatelessWidget {
             },
           ),
 
-          Divider(height: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
 
           _MenuItem(
-            icon: Symbols.groups,
+            icon: Symbols.group,
             label: 'Clientes y Dadores',
             onTap: () {
               Navigator.of(context).push(ClientsProvidersPageAdmin.route());
             },
           ),
 
-          Divider(height: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
 
           _MenuItem(
-            icon: Symbols.attach_money,
+            icon: Symbols.mintmark,
             label: 'Cargar Adelanto',
             onTap: () {
               Navigator.of(context).push(AddAdvancePaymentPage.route());
             },
           ),
 
-          Divider(height: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
 
           _MenuItem(
-            icon: Symbols.calculate,
+            icon: Symbols.user_attributes,
             label: 'Cuenta',
             onTap: () {
               Navigator.of(context).push(AccountPageAdmin.route());
@@ -130,13 +142,10 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
-      leading: Icon(icon, color: colors.onSurface, size: 24),
-      title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
-      trailing: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
+      leading: Icon(icon),
+      title: Text(label),
+      trailing: Icon(Icons.arrow_right),
       onTap: onTap,
     );
   }

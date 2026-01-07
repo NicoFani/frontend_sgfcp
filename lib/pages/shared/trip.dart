@@ -8,10 +8,10 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/expense_data.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 
-import 'package:frontend_sgfcp/pages/edit_expense.dart';
-import 'package:frontend_sgfcp/pages/expense.dart';
-import 'package:frontend_sgfcp/pages/finish_trip.dart';
-import 'package:frontend_sgfcp/pages/edit_trip.dart';
+import 'package:frontend_sgfcp/pages/shared/edit_expense.dart';
+import 'package:frontend_sgfcp/pages/shared/expense.dart';
+import 'package:frontend_sgfcp/pages/shared/finish_trip.dart';
+import 'package:frontend_sgfcp/pages/shared/edit_trip.dart';
 import 'package:frontend_sgfcp/widgets/trip_fab_menu.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:frontend_sgfcp/widgets/inline_info_card.dart';

@@ -7,8 +7,8 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
-import 'package:frontend_sgfcp/pages/driver_data.dart';
-import 'package:frontend_sgfcp/pages/driver_documentation.dart';
+import 'package:frontend_sgfcp/pages/shared/driver_data.dart';
+import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
 import 'package:frontend_sgfcp/pages/admin/trip_detail.dart';
 
 class DriverDetailPageAdmin extends StatefulWidget {

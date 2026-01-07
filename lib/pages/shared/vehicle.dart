@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
+import 'package:frontend_sgfcp/pages/admin/edit_vehicle.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
 
-import 'package:frontend_sgfcp/pages/documentation_update.dart';
+import 'package:frontend_sgfcp/pages/shared/documentation_update.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
+import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class VehiclePage extends StatelessWidget {
   const VehiclePage({super.key});
@@ -24,11 +29,25 @@ class VehiclePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double infoLabelWidth = 125;
+    final bool isAdmin =
+      (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
 
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vehículo'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () {
+              Navigator.of(context).push(EditVehiclePage.route(
+                  brand: 'Scania',
+                  model: 'R500',
+                  plate: 'AE698LE',
+                ),);
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -48,8 +67,28 @@ class VehiclePage extends StatelessWidget {
                 labelColumnWidth: infoLabelWidth,
               ),
 
-              gap16,
+              gap12,
 
+              // --- Card: Chofer asignado (solo admin) ---
+              if (isAdmin) ...[
+                SimpleCard.iconOnly(
+                  title: 'Chofer',
+                  subtitle: 'Carlos Sainz',
+                  icon: Symbols.arrow_right,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      DriverDetailPageAdmin.route(
+                        driverId: 1,
+                        driverName: 'Juan Pérez', // Aquí debería ir el nombre real del chofer
+                      ),
+                    );
+                  },
+                ),
+
+                gap12,
+              ],
+
+              // --- Table: Documentación del vehículo ---
               SimpleTable.statusColumn(
                 title: 'Documentación del vehículo',
                 headers: ['Documentación', 'Vencimiento', 'Vigente', 'Editar'],

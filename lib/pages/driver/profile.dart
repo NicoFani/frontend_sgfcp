@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/pages/driver_data.dart';
+import 'package:frontend_sgfcp/pages/shared/driver_data.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
-import 'package:frontend_sgfcp/pages/driver_documentation.dart';
-import 'package:frontend_sgfcp/pages/driver/vehicle.dart';
+import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
+import 'package:frontend_sgfcp/pages/shared/vehicle.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -29,6 +29,8 @@ class ProfilePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            gap24,
+
             // ----- Nombre + email centrados -----
             Center(
               child: Column(
@@ -48,7 +50,7 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
 
-            gap16,
+            gap32,
 
             // ----- Lista de opciones -----
             _ProfileOptionsList(),

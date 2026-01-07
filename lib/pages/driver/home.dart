@@ -3,10 +3,10 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
-import 'package:frontend_sgfcp/pages/expense.dart';
-import 'package:frontend_sgfcp/pages/finish_trip.dart';
+import 'package:frontend_sgfcp/pages/shared/expense.dart';
+import 'package:frontend_sgfcp/pages/shared/finish_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
-import 'package:frontend_sgfcp/pages/trip.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 
 
 class HomePageDriver extends StatelessWidget {

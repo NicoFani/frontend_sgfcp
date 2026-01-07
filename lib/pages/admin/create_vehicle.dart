@@ -43,8 +43,6 @@ class _CreateVehiclePageAdminState extends State<CreateVehiclePageAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     // TODO: Obtener lista real de choferes del backend
     final drivers = [
       'Alexander Albon',
@@ -146,12 +144,11 @@ class _CreateVehiclePageAdminState extends State<CreateVehiclePageAdmin> {
                 },
               ),
 
-              const Spacer(),
+              gap16,
 
               // Botón Dar vehículo de alta
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: _createVehicle,

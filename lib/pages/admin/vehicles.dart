@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/shared/vehicle.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/pages/admin/vehicle_detail.dart';
 import 'package:frontend_sgfcp/pages/admin/create_vehicle.dart';
 
 class VehiclesPageAdmin extends StatelessWidget {
@@ -15,7 +14,6 @@ class VehiclesPageAdmin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
 
     // TODO: Obtener datos reales del backend
     final vehicles = [
@@ -52,95 +50,24 @@ class VehiclesPageAdmin extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: vehicles.length,
-          separatorBuilder: (context, index) => Divider(
-            height: 1,
-            color: colors.outlineVariant,
+          separatorBuilder: (context, index) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Divider(height: 1),
           ),
           itemBuilder: (context, index) {
             final vehicle = vehicles[index];
-            return _VehicleListItem(
-              vehicle: vehicle,
+            return ListTile(
+              title: Text('${vehicle.brand} ${vehicle.model}'),
+              subtitle: Text(vehicle.plate),
+              leading: Icon(Symbols.local_shipping),
+              trailing: const Icon(Icons.arrow_right),
               onTap: () {
                 Navigator.of(context).push(
-                  VehicleDetailPageAdmin.route(
-                    brand: vehicle.brand,
-                    model: vehicle.model,
-                    plate: vehicle.plate,
-                  ),
+                  VehiclePage.route()
                 );
               },
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _VehicleListItem extends StatelessWidget {
-  final _VehicleData vehicle;
-  final VoidCallback onTap;
-
-  const _VehicleListItem({
-    required this.vehicle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Row(
-          children: [
-            // Icono del vehículo
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.surfaceContainerHighest,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Symbols.local_shipping,
-                color: colors.onSurface,
-                size: 24,
-              ),
-            ),
-
-            gapW12,
-
-            // Información del vehículo
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${vehicle.brand} ${vehicle.model}',
-                    style: textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  gap4,
-                  Text(
-                    vehicle.plate,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Chevron
-            Icon(
-              Icons.chevron_right,
-              color: colors.onSurfaceVariant,
-            ),
-          ],
         ),
       ),
     );

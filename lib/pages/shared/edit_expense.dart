@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
 
-import 'package:frontend_sgfcp/pages/trip.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 
 class EditExpensePage extends StatefulWidget {

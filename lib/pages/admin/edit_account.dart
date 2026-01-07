@@ -42,7 +42,6 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,12 +96,11 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
                 ),
               ),
 
-              const Spacer(),
+              gap16,
 
               // Botón Guardar cambios
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: _saveChanges,

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
-class EditVehiclePageAdmin extends StatefulWidget {
+class EditVehiclePage extends StatefulWidget {
   final String brand;
   final String model;
   final String plate;
 
-  const EditVehiclePageAdmin({
+  const EditVehiclePage({
     super.key,
     required this.brand,
     required this.model,
@@ -22,7 +22,7 @@ class EditVehiclePageAdmin extends StatefulWidget {
     required String plate,
   }) {
     return MaterialPageRoute<void>(
-      builder: (_) => EditVehiclePageAdmin(
+      builder: (_) => EditVehiclePage(
         brand: brand,
         model: model,
         plate: plate,
@@ -31,10 +31,10 @@ class EditVehiclePageAdmin extends StatefulWidget {
   }
 
   @override
-  State<EditVehiclePageAdmin> createState() => _EditVehiclePageAdminState();
+  State<EditVehiclePage> createState() => _EditVehiclePageState();
 }
 
-class _EditVehiclePageAdminState extends State<EditVehiclePageAdmin> {
+class _EditVehiclePageState extends State<EditVehiclePage> {
   final TextEditingController _brandController = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
@@ -73,8 +73,6 @@ class _EditVehiclePageAdminState extends State<EditVehiclePageAdmin> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     // TODO: Obtener lista real de choferes del backend
     final drivers = [
       'Alexander Albon',
@@ -85,6 +83,14 @@ class _EditVehiclePageAdminState extends State<EditVehiclePageAdmin> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar datos del vehículo'),
+        actions: [
+          IconButton(
+            icon: const Icon(Symbols.delete),
+            onPressed: () {
+              // TODO: Implementar dialog de eliminar vehículo
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -175,13 +181,13 @@ class _EditVehiclePageAdminState extends State<EditVehiclePageAdmin> {
                   });
                 },
               ),
+              //TODO: Hacer que el dropdown aparezca siempre en el mismo lugar
 
-              const Spacer(),
+              gap16,
 
               // Botón Guardar cambios
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: _saveChanges,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
-import 'package:frontend_sgfcp/pages/edit_driver_data.dart';
+import 'package:frontend_sgfcp/pages/shared/edit_driver_data.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';

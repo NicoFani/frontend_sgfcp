@@ -1,22 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
-class CreateClientProviderPageAdmin extends StatefulWidget {
-  const CreateClientProviderPageAdmin({super.key});
+class ClientProviderDialog extends StatefulWidget {
+  final bool isEdit;
+  final String? initialName;
+  final String? initialType; // 'Cliente' | 'Dador'
+  final VoidCallback? onDelete;
+
+  const ClientProviderDialog({
+    super.key,
+    this.initialName,
+    this.initialType,
+    this.onDelete,
+  }) : isEdit = false;
+
+  const ClientProviderDialog.edit({
+    super.key,
+    this.initialName,
+    this.initialType,
+    this.onDelete,
+  }) : isEdit = true;
 
   static const String routeName = '/admin/create-client-provider';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const CreateClientProviderPageAdmin());
+    return MaterialPageRoute<void>(builder: (_) => const ClientProviderDialog());
+  }
+
+  static Route editRoute({
+    String? initialName,
+    String? initialType,
+    VoidCallback? onDelete,
+  }) {
+    return MaterialPageRoute<void>(
+      builder: (_) => ClientProviderDialog.edit(
+        initialName: initialName,
+        initialType: initialType,
+        onDelete: onDelete,
+      ),
+    );
   }
 
   @override
-  State<CreateClientProviderPageAdmin> createState() => _CreateClientProviderPageAdminState();
+  State<ClientProviderDialog> createState() => _ClientProviderDialogState();
 }
 
-class _CreateClientProviderPageAdminState extends State<CreateClientProviderPageAdmin> {
+class _ClientProviderDialogState extends State<ClientProviderDialog> {
   final TextEditingController _nameController = TextEditingController();
   String _selectedType = 'Cliente';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialName != null) {
+      _nameController.text = widget.initialName!;
+    }
+    if (widget.initialType != null) {
+      _selectedType = widget.initialType!;
+    }
+  }
 
   @override
   void dispose() {
@@ -38,6 +80,8 @@ class _CreateClientProviderPageAdminState extends State<CreateClientProviderPage
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    final saveLabel = widget.isEdit ? 'Guardar cambios' : 'Guardar';
 
     return Dialog(
       child: Padding(
@@ -48,7 +92,7 @@ class _CreateClientProviderPageAdminState extends State<CreateClientProviderPage
           children: [
             // Título
             Text(
-              'Crear cliente o dador',
+              widget.isEdit ? 'Editar' : 'Crear cliente o dador',
               style: textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -96,7 +140,24 @@ class _CreateClientProviderPageAdminState extends State<CreateClientProviderPage
               },
             ),
 
-            gap20,
+            gap16,
+
+            if (widget.isEdit) ...[
+              // Botón Eliminar (solo en edición)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.error,
+                  ),
+                  onPressed: widget.onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Eliminar'),
+                ),
+              ),
+
+              gap12,
+            ],
 
             // Botones
             Row(
@@ -109,7 +170,7 @@ class _CreateClientProviderPageAdminState extends State<CreateClientProviderPage
                 gapW8,
                 FilledButton(
                   onPressed: _save,
-                  child: const Text('Guardar cambios'),
+                  child: Text(saveLabel),
                 ),
               ],
             ),

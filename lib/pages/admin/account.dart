@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/models/info_item.dart';
+import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/edit_account.dart';
 
 class AccountPageAdmin extends StatelessWidget {
@@ -42,16 +43,7 @@ class AccountPageAdmin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    // TODO: Obtener datos reales del backend
-    final accountData = {
-      'Nombre(s)': 'Omar',
-      'Apellido(s)': 'José',
-      'Email': 'omar@gmail.com',
-      'Contraseña': '**********',
-    };
+    const double infoLabelWidth = 125;
 
     return Scaffold(
       appBar: AppBar(
@@ -66,84 +58,25 @@ class AccountPageAdmin extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Datos de la cuenta
-              Text(
-                'Datos de la cuenta',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              gap16,
-
-              // Card con datos y líneas divisoras
-              Card.outlined(
-                child: Column(
-                  children: accountData.entries.map((entry) {
-                    final isLast = entry.key == accountData.keys.last;
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: _DataRow(label: entry.key, value: entry.value),
-                        ),
-                        if (!isLast) Divider(height: 1, color: colors.outlineVariant),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              gap24,
-
-              // Botón Reestablecer contraseña
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                onPressed: () => _showResetPasswordDialog(context),
-                icon: const Icon(Symbols.lock_reset),
-                label: const Text('Reestablecer contraseña'),
-              ),
+          child: InfoCard.footerButton(
+            title: 'Datos de la cuenta',
+            items: [
+              InfoItem(label: 'Nombre(s)', value: 'Omar'),
+              InfoItem(label: 'Apellido(s)', value: 'José'),
+              InfoItem(label: 'Email', value: 'omar@gmail.com'),
+              InfoItem(label: 'Contraseña', value: '***********'),
             ],
+            buttonIcon: Symbols.lock_reset,
+            buttonLabel: 'Reestablecer contraseña',
+            onPressed: () {
+              _showResetPasswordDialog(context);
+            },
+            labelColumnWidth: infoLabelWidth,
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DataRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _DataRow({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: textTheme.bodyLarge,
-        ),
-        Text(
-          value,
-          style: textTheme.bodyLarge,
-        ),
-      ],
     );
   }
 }
