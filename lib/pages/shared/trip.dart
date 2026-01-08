@@ -18,6 +18,7 @@ import 'package:frontend_sgfcp/widgets/inline_info_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:intl/intl.dart';
 
 class TripPage extends StatefulWidget {
   final int? tripId;
@@ -70,6 +71,11 @@ class _TripPageState extends State<TripPage> {
     const double infoLabelWidth = 140;
     final bool isAdmin =
         (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '\$',
+      decimalDigits: 0,
+      locale: 'es_AR',
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Viaje')),
@@ -183,17 +189,7 @@ class _TripPageState extends State<TripPage> {
                     gap4,
                   ],
 
-                  InfoCard(
-                    title: 'Balance',
-                    items: const [
-                      InfoItem(label: 'Comisión total', value: '\$1.064.000'),
-                      InfoItem(label: 'Gastos totales', value: '\$329.000'),
-                      InfoItem(label: 'Balance final', value: '\$735.000'),
-                    ],
-                    labelColumnWidth: infoLabelWidth,
-                  ),
-
-                  gap4,
+                  // Balance será calculado junto a los gastos más abajo
 
                   InfoCard(
                     title: 'Información',
@@ -236,12 +232,13 @@ class _TripPageState extends State<TripPage> {
                     items: [
                       InfoItem(
                         label: 'Peso',
-                        value: '${trip.loadWeightOnLoad} kg',
+                        value:
+                            '${trip.loadWeightOnLoad.toStringAsFixed(2)} ton',
                       ),
                       InfoItem(
                         label: 'Peso luego de descarga',
                         value: trip.loadWeightOnUnload > 0
-                            ? '${trip.loadWeightOnUnload} kg'
+                            ? '${trip.loadWeightOnUnload.toStringAsFixed(2)} ton'
                             : 'Viaje no finalizado',
                       ),
                     ],
@@ -255,13 +252,13 @@ class _TripPageState extends State<TripPage> {
                     leftLabel: 'Tipo',
                     leftValue: 'Por tonelada',
                     rightLabel: 'Tarifa',
-                    rightValue: '\$${trip.ratePerTon}/t',
+                    rightValue: '${currencyFormat.format(trip.ratePerTon)}/t',
                     leftColumnWidth: infoLabelWidth,
                   ),
 
-                  gap16,
+                  gap4,
 
-                  // Sección Gastos
+                  // Sección Balance y Gastos
                   FutureBuilder<List<ExpenseData>>(
                     future: _expensesFuture,
                     builder: (context, snapshot) {
@@ -282,31 +279,68 @@ class _TripPageState extends State<TripPage> {
                       }
 
                       final expenses = snapshot.data ?? [];
-
-                      if (expenses.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text(
-                            'No hay gastos registrados',
-                            style: textTheme.bodyMedium,
-                          ),
-                        );
-                      }
+                      final expensesTotal =
+                          expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+                      final weightTons = trip.loadWeightOnUnload > 0
+                          ? trip.loadWeightOnUnload
+                          : trip.loadWeightOnLoad;
+                      final commissionTotal = trip.ratePerTon * weightTons;
+                      final balanceFinal = commissionTotal - expensesTotal;
 
                       final rows = expenses
                           .map(
                             (expense) => SimpleTableRowData(
                               col1: expense.type,
-                              col2: '\$${expense.amount.toStringAsFixed(2)}',
-                              onEdit: () { Navigator.of(context).push(EditExpensePage.route()); },
+                              col2: currencyFormat.format(expense.amount),
+                              onEdit: () {
+                                Navigator.of(context).push(
+                                  EditExpensePage.route(),
+                                );
+                              },
                             ),
                           )
                           .toList();
 
-                      return SimpleTable(
-                        title: 'Gastos',
-                        headers: ['Tipo', 'Importe', 'Editar'],
-                        rows: rows,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          InfoCard(
+                            title: 'Balance',
+                            items: [
+                              InfoItem(
+                                label: 'Comisión total',
+                                value: currencyFormat.format(commissionTotal),
+                              ),
+                              InfoItem(
+                                label: 'Gastos totales',
+                                value: currencyFormat.format(expensesTotal),
+                              ),
+                              InfoItem(
+                                label: 'Balance final',
+                                value: currencyFormat.format(balanceFinal),
+                              ),
+                            ],
+                            labelColumnWidth: infoLabelWidth,
+                          ),
+
+                          gap16,
+
+                          if (expenses.isEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                'No hay gastos registrados',
+                                style: textTheme.bodyMedium,
+                              ),
+                            )
+                          else
+                            SimpleTable(
+                              title: 'Gastos',
+                              headers: const ['Tipo', 'Importe', 'Editar'],
+                              rows: rows,
+                            ),
+                        ],
                       );
                     },
                   ),

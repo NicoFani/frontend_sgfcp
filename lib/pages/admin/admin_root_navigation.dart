@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/pages/admin/home.dart';
-import 'package:frontend_sgfcp/pages/admin/notifications.dart';
+import 'package:frontend_sgfcp/pages/shared/notifications.dart';
 import 'package:frontend_sgfcp/pages/admin/trips.dart';
 import 'package:frontend_sgfcp/pages/admin/drivers.dart';
 import 'package:frontend_sgfcp/pages/admin/create_driver.dart';
@@ -52,7 +52,7 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const NotificationsPageAdmin(),
+                    builder: (_) => const NotificationsPage(),
                   ),
                 );
               },

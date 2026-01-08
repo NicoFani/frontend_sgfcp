@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
@@ -9,7 +10,6 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/pages/shared/driver_data.dart';
 import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
-import 'package:frontend_sgfcp/pages/admin/trip_detail.dart';
 
 class DriverDetailPageAdmin extends StatefulWidget {
   final int driverId;
@@ -191,7 +191,7 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
                             onPressed: () {
                               Navigator.of(
                                 context,
-                              ).push(TripDetailPageAdmin.route(trip: trip));
+                              ).push(TripPage.route(trip: trip));
                             },
                           ),
                           if (index < currentAndNextTrips.length - 1) gap8,
@@ -242,7 +242,7 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
                     TripsListSection(
                       trips: previousTrips.toList(),
                       onTripTap: (trip) {
-                        Navigator.of(context).push(TripDetailPageAdmin.route(trip: trip));
+                        Navigator.of(context).push(TripPage.route(trip: trip));
                       },
                     )
                 ],

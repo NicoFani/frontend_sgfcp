@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:intl/intl.dart';
 
-class NotificationsPageAdmin extends StatelessWidget {
-  const NotificationsPageAdmin({super.key});
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({super.key});
 
   static const String routeName = '/admin/notifications';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const NotificationsPageAdmin());
+    return MaterialPageRoute<void>(builder: (_) => const NotificationsPage());
   }
 
   @override
@@ -48,22 +47,30 @@ class NotificationsPageAdmin extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const NotificationSettingsPageAdmin(),
+                  builder: (_) => const NotificationSettingsPage(),
                 ),
               );
             },
           ),
         ],
       ),
-      body: notifications.isEmpty
-          ? _buildEmptyState(context)
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                return _NotificationListItem(notification: notifications[index]);
-              },
-            ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: notifications.isEmpty
+            ? _buildEmptyState(context)
+            : ListView.separated(
+                itemCount: notifications.length,
+                separatorBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Divider(height: 1),
+                ),
+                itemBuilder: (context, index) {
+                  return _NotificationListItem(notification: notifications[index]);
+                },
+              ),
+        ),
+      ),
     );
   }
 
@@ -106,18 +113,10 @@ class _NotificationListItem extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: colors.surfaceContainerHighest,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          notification.icon,
-          size: 20,
-          color: colors.onSurfaceVariant,
-        ),
+      leading: Icon(
+        notification.icon,
+        size: 20,
+        color: colors.onSurfaceVariant,
       ),
       title: Text(
         notification.title,
@@ -151,24 +150,24 @@ class _NotificationListItem extends StatelessWidget {
 }
 
 /// Pantalla de configuración de notificaciones
-class NotificationSettingsPageAdmin extends StatefulWidget {
-  const NotificationSettingsPageAdmin({super.key});
+class NotificationSettingsPage extends StatefulWidget {
+  const NotificationSettingsPage({super.key});
 
   static const String routeName = '/admin/notifications/settings';
 
   static Route route() {
     return MaterialPageRoute<void>(
-      builder: (_) => const NotificationSettingsPageAdmin(),
+      builder: (_) => const NotificationSettingsPage(),
     );
   }
 
   @override
-  State<NotificationSettingsPageAdmin> createState() =>
-      _NotificationSettingsPageAdminState();
+  State<NotificationSettingsPage> createState() =>
+      _NotificationSettingsPageState();
 }
 
-class _NotificationSettingsPageAdminState
-    extends State<NotificationSettingsPageAdmin> {
+class _NotificationSettingsPageState
+    extends State<NotificationSettingsPage> {
   // Estado de los switches
   bool _tripStarted = true;
   bool _tripFinished = true;
@@ -176,47 +175,59 @@ class _NotificationSettingsPageAdminState
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuración'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          _NotificationSettingItem(
-            icon: Symbols.route,
-            title: 'Viaje iniciado',
-            value: _tripStarted,
-            onChanged: (value) {
-              setState(() {
-                _tripStarted = value;
-              });
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView.separated(
+            itemCount: 3,
+            separatorBuilder: (context, index) => const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Divider(height: 1),
+            ),
+            itemBuilder: (context, index) {
+              switch (index) {
+                case 0:
+                  return _NotificationSettingItem(
+                    icon: Symbols.route,
+                    title: 'Viaje iniciado',
+                    value: _tripStarted,
+                    onChanged: (value) {
+                      setState(() {
+                        _tripStarted = value;
+                      });
+                    },
+                  );
+                case 1:
+                  return _NotificationSettingItem(
+                    icon: Symbols.location_on,
+                    title: 'Viaje finalizado',
+                    value: _tripFinished,
+                    onChanged: (value) {
+                      setState(() {
+                        _tripFinished = value;
+                      });
+                    },
+                  );
+                case 2:
+                default:
+                  return _NotificationSettingItem(
+                    icon: Symbols.event_busy,
+                    title: 'Vencimientos',
+                    value: _expirations,
+                    onChanged: (value) {
+                      setState(() {
+                        _expirations = value;
+                      });
+                    },
+                  );
+              }
             },
           ),
-          _NotificationSettingItem(
-            icon: Symbols.location_on,
-            title: 'Viaje finalizado',
-            value: _tripFinished,
-            onChanged: (value) {
-              setState(() {
-                _tripFinished = value;
-              });
-            },
-          ),
-          _NotificationSettingItem(
-            icon: Symbols.event_busy,
-            title: 'Vencimientos',
-            value: _expirations,
-            onChanged: (value) {
-              setState(() {
-                _expirations = value;
-              });
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -243,18 +254,10 @@ class _NotificationSettingItem extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: colors.surfaceContainerHighest,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: colors.onSurfaceVariant,
-        ),
+      leading: Icon(
+        icon,
+        size: 20,
+        color: colors.onSurfaceVariant,
       ),
       title: Text(
         title,
