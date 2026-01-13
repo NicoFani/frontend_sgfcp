@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/admin/summaries.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/account.dart';
@@ -49,10 +50,7 @@ class AdministrationPageAdmin extends StatelessWidget {
             icon: Symbols.description,
             label: 'Resúmenes',
             onTap: () {
-              // TODO: Navegar a Resúmenes
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Resúmenes - En desarrollo')),
-              );
+              Navigator.of(context).push(SummariesPageAdmin.route());
             },
           ),
 
