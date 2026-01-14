@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
 import 'package:frontend_sgfcp/models/summary_row_data.dart';
+import 'package:frontend_sgfcp/pages/admin/summary_detail.dart';
 
 class SummaryList extends StatelessWidget {
   final List<SummaryRowData> rows;
@@ -68,7 +69,7 @@ class SummaryList extends StatelessWidget {
                   width: sizedBoxWidth,
                   child: Icon(row.status.icon, color: row.status.color(colors)),
                 ),
-                onTap: () {},
+                onTap: () => Navigator.of(context).push(SummaryDetailPage.route()),
               ),
               if (!isLast) const Divider(height: 1),
             ],

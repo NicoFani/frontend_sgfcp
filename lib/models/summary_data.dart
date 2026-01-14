@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+/// Entry model for a single labeled monetary item in the group.
+class SummaryItemEntry {
+  final String label;
+  final num amount;
+  final bool navigable;
+
+  const SummaryItemEntry({
+    required this.label,
+    required this.amount,
+    this.navigable = false,
+  });
+}
+
 /// Summary status used across the app
 /// Labels are in Spanish per product copy.
 enum SummaryStatus {

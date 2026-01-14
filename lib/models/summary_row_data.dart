@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
 
 class SummaryRowData {
