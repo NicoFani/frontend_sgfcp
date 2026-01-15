@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'theme/util.dart';
 import 'theme/theme.dart';
@@ -13,6 +14,7 @@ import 'package:frontend_sgfcp/pages/shared/loading_page.dart';
 Future<void> main() async {
   // Inicializa datos de fechas para español
   await initializeDateFormatting('es_ES', null);
+  await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
 }

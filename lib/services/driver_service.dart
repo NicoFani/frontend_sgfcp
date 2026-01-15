@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DriverService {
-  static const String baseUrl = 'http://localhost:5000';
+  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET ALL - Obtener todos los choferes
   static Future<List<DriverData>> getDrivers() async {

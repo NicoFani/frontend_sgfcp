@@ -38,6 +38,7 @@ dependencies:
   material_symbols_icons: ^4.2874.0
   intl: ^0.20.2
   http: ^1.2.1
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see

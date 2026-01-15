@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TripService {
-  static const String baseUrl = 'http://localhost:5000';
+  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET BY DRIVER- Obtener todos los viajes del conductor autenticado
   static Future<List<TripData>> getTrips() async {

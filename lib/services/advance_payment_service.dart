@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/advance_payment_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AdvancePaymentService {
-  static const String baseUrl = 'http://localhost:5000';
+  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET ALL - Obtener todos los adelantos
   static Future<List<AdvancePaymentData>> getAdvancePayments() async {

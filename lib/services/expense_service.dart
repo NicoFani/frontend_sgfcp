@@ -2,9 +2,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/expense_data.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ExpenseService {
-  static const String baseUrl = 'http://localhost:5000';
+  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET BY TRIP - Obtener gastos de un viaje
   static Future<List<ExpenseData>> getExpensesByTrip({
