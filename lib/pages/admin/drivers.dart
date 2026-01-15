@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/services/advance_payment_service.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
@@ -6,7 +8,6 @@ import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
 import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
 import 'package:frontend_sgfcp/pages/admin/edit_advance_payment.dart';
 import 'package:intl/intl.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/models/advance_payment_data.dart';
 import 'package:frontend_sgfcp/widgets/drivers_list.dart' as dl;
@@ -32,8 +33,8 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
   @override
   void initState() {
     super.initState();
-    _driversFuture = ApiService.getDrivers();
-    _advancesFuture = ApiService.getAdvancePayments();
+    _driversFuture = DriverService.getDrivers();
+    _advancesFuture = AdvancePaymentService.getAdvancePayments();
   }
 
   List<AdvancePaymentData> _filterAdvancesByDateRange(
@@ -74,7 +75,7 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _driversFuture = ApiService.getDrivers();
+                          _driversFuture = DriverService.getDrivers();
                         });
                       },
                       child: const Text('Reintentar'),
@@ -94,7 +95,7 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _advancesFuture = ApiService.getAdvancePayments();
+                          _advancesFuture = AdvancePaymentService.getAdvancePayments();
                         });
                       },
                       child: const Text('Reintentar'),

@@ -3,13 +3,14 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 
 import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
 import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/widgets/month_selector_header.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
+
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class MiTripsPage extends StatefulWidget {
   const MiTripsPage({super.key});
@@ -40,9 +41,9 @@ class _MiTripsPageState extends State<MiTripsPage> {
 
   void _loadTrips() {
     setState(() {
-      _tripsFuture = ApiService.getTrips();
-      _currentTripFuture = ApiService.getCurrentTrip();
-      _nextTripFuture = ApiService.getNextTrip();
+      _tripsFuture = TripService.getTrips();
+      _currentTripFuture = TripService.getCurrentTrip();
+      _nextTripFuture = TripService.getNextTrip();
     });
   }
 

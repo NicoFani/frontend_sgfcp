@@ -16,7 +16,8 @@ import 'package:frontend_sgfcp/widgets/simple_card.dart';
 // import 'package:frontend_sgfcp/pages/finish_trip.dart';
 // import 'package:frontend_sgfcp/pages/admin/edit_trip.dart';
 import 'package:frontend_sgfcp/pages/admin/add_expense.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
+
+import 'package:frontend_sgfcp/services/expense_service.dart';
 
 class TripDetailPageAdmin extends StatefulWidget {
   final TripData? trip;
@@ -44,7 +45,7 @@ class _TripDetailPageAdminState extends State<TripDetailPageAdmin> {
     super.initState();
     // Cargar gastos del viaje si existe, de lo contrario lista vacía
     if (widget.trip != null) {
-      _expensesFuture = ApiService.getExpensesByTrip(tripId: widget.trip!.id);
+      _expensesFuture = ExpenseService.getExpensesByTrip(tripId: widget.trip!.id);
     } else {
       _expensesFuture = Future.value(<ExpenseData>[]);
     }

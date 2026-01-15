@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+
+import 'package:frontend_sgfcp/services/driver_service.dart';
 
 class GenerateSummary extends StatefulWidget {
   const GenerateSummary({super.key});
@@ -184,7 +185,7 @@ class _GenerateSummaryState extends State<GenerateSummary> {
               gap8,
 
               FutureBuilder<List<DriverData>>(
-                future: ApiService.getDrivers(),
+                future: DriverService.getDrivers(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(

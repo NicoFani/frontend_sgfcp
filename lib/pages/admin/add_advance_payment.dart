@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+
+import 'package:frontend_sgfcp/services/advance_payment_service.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
 
 class AddAdvancePaymentPage extends StatefulWidget {
   const AddAdvancePaymentPage({super.key});
@@ -33,7 +35,7 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
   @override
   void initState() {
     super.initState();
-    _driversFuture = ApiService.getDrivers();
+    _driversFuture = DriverService.getDrivers();
   }
 
   @override
@@ -140,7 +142,7 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
     try {
       final amount = double.parse(_amountController.text.replaceAll(',', '.'));
 
-      await ApiService.createAdvancePayment(
+      await AdvancePaymentService.createAdvancePayment(
         driverId: _selectedDriverId!,
         date: _date!,
         amount: amount,
@@ -198,7 +200,7 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _driversFuture = ApiService.getDrivers();
+                          _driversFuture = DriverService.getDrivers();
                         });
                       },
                       child: const Text('Reintentar'),

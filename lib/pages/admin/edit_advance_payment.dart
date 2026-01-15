@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+
+import 'package:frontend_sgfcp/services/advance_payment_service.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
 
 class EditAdvancePaymentPage extends StatefulWidget {
   final int advancePaymentId;
@@ -56,7 +58,7 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
   @override
   void initState() {
     super.initState();
-    _driversFuture = ApiService.getDrivers();
+    _driversFuture = DriverService.getDrivers();
 
     // Inicializar con los datos existentes
     _selectedDriverId = widget.driverId;
@@ -169,7 +171,7 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
     try {
       final amount = double.parse(_amountController.text.replaceAll(',', '.'));
 
-      await ApiService.updateAdvancePayment(
+      await AdvancePaymentService.updateAdvancePayment(
         advancePaymentId: widget.advancePaymentId,
         driverId: _selectedDriverId!,
         date: _date!,
@@ -229,7 +231,7 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _driversFuture = ApiService.getDrivers();
+                          _driversFuture = DriverService.getDrivers();
                         });
                       },
                       child: const Text('Reintentar'),

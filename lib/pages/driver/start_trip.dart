@@ -6,7 +6,9 @@ import 'package:frontend_sgfcp/widgets/document_type_selector.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/load_owner_data.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
+
+import 'package:frontend_sgfcp/services/load_owner_service.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class StartTripPage extends StatefulWidget {
   final TripData trip;
@@ -104,7 +106,7 @@ class _StartTripPageState extends State<StartTripPage> {
         'fuel_on_client': _fuelDelivered,
       };
 
-      await ApiService.updateTrip(tripId: widget.trip.id, data: data);
+      await TripService.updateTrip(tripId: widget.trip.id, data: data);
 
       if (mounted) {
         Navigator.of(context).popUntil((route) => route.isFirst);
@@ -235,7 +237,7 @@ class _StartTripPageState extends State<StartTripPage> {
                   Expanded(
                     flex: 1,
                     child: FutureBuilder<List<LoadOwnerData>>(
-                      future: ApiService.getLoadOwners(),
+                      future: LoadOwnerService.getLoadOwners(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {

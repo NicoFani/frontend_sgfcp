@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
 import 'package:frontend_sgfcp/pages/admin/create_trip.dart';
+
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class TripsPageAdmin extends StatefulWidget {
   const TripsPageAdmin({super.key});
@@ -38,7 +39,7 @@ class _TripsPageAdminState extends State<TripsPageAdmin> {
 
   void _loadTrips() {
     setState(() {
-      _tripsFuture = ApiService.getTrips();
+      _tripsFuture = TripService.getTrips();
     });
   }
 

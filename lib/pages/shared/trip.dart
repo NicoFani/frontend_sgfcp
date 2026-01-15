@@ -6,7 +6,6 @@ import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/expense_data.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 
 import 'package:frontend_sgfcp/pages/shared/edit_expense.dart';
 import 'package:frontend_sgfcp/pages/shared/expense.dart';
@@ -19,6 +18,9 @@ import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:intl/intl.dart';
+
+import 'package:frontend_sgfcp/services/expense_service.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class TripPage extends StatefulWidget {
   final int? tripId;
@@ -48,19 +50,19 @@ class _TripPageState extends State<TripPage> {
     // Si ya tenemos el viaje completo, no hacemos otra llamada
     if (widget.trip != null) {
       _tripFuture = Future.value(widget.trip!);
-      _expensesFuture = ApiService.getExpensesByTrip(tripId: widget.trip!.id);
+      _expensesFuture = ExpenseService.getExpensesByTrip(tripId: widget.trip!.id);
     } else if (widget.tripId != null) {
-      _tripFuture = ApiService.getTrip(tripId: widget.tripId!);
-      _expensesFuture = ApiService.getExpensesByTrip(tripId: widget.tripId!);
+      _tripFuture = TripService.getTrip(tripId: widget.tripId!);
+      _expensesFuture = ExpenseService.getExpensesByTrip(tripId: widget.tripId!);
     } else {
-      _tripFuture = ApiService.getCurrentTrip().then((trip) {
+      _tripFuture = TripService.getCurrentTrip().then((trip) {
         if (trip == null) {
           throw Exception('No hay viaje actual disponible');
         }
         return trip;
       });
       _expensesFuture = _tripFuture.then(
-        (trip) => ApiService.getExpensesByTrip(tripId: trip.id),
+        (trip) => ExpenseService.getExpensesByTrip(tripId: trip.id),
       );
     }
   }
@@ -105,11 +107,11 @@ class _TripPageState extends State<TripPage> {
                     onPressed: () {
                       setState(() {
                         if (widget.tripId != null) {
-                          _tripFuture = ApiService.getTrip(
+                          _tripFuture = TripService.getTrip(
                             tripId: widget.tripId!,
                           );
                         } else {
-                          _tripFuture = ApiService.getCurrentTrip().then((
+                          _tripFuture = TripService.getCurrentTrip().then((
                             trip,
                           ) {
                             if (trip == null) {

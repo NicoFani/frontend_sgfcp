@@ -5,11 +5,13 @@ import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/pages/shared/driver_data.dart';
 import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
+
+import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class DriverDetailPageAdmin extends StatefulWidget {
   final int driverId;
@@ -46,14 +48,14 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
     super.initState();
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month, 1);
-    _tripsFuture = ApiService.getTrips();
+    _tripsFuture = TripService.getTrips();
     _driverFuture = _getDriverData();
   }
 
   Future<DriverData> _getDriverData() async {
     // Por ahora retornaremos datos básicos, idealmente necesitaríamos
     // un endpoint para obtener un driver específico por ID
-    final drivers = await ApiService.getDrivers();
+    final drivers = await DriverService.getDrivers();
     return drivers.firstWhere(
       (d) => d.id == widget.driverId || d.fullName == widget.driverName,
       orElse: () => DriverData(
@@ -141,7 +143,7 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
                       ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            _tripsFuture = ApiService.getTrips();
+                            _tripsFuture = TripService.getTrips();
                             _driverFuture = _getDriverData();
                           });
                         },

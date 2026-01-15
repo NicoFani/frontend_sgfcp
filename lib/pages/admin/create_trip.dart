@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
 import 'package:frontend_sgfcp/models/client_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+
+import 'package:frontend_sgfcp/services/client_service.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class CreateTripPageAdmin extends StatefulWidget {
   const CreateTripPageAdmin({super.key});
@@ -113,7 +116,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.createTrip(
+      await TripService.createTrip(
         origin: _originController.text,
         originDescription: _originDescController.text.isNotEmpty
             ? _originDescController.text
@@ -245,7 +248,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
 
               // Cliente
               FutureBuilder<List<ClientData>>(
-                future: ApiService.getClients(),
+                future: ClientService.getClients(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Container(
@@ -309,7 +312,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
               gap8,
 
               FutureBuilder<List<DriverData>>(
-                future: ApiService.getDrivers(),
+                future: DriverService.getDrivers(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(

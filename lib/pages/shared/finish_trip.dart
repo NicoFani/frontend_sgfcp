@@ -4,7 +4,8 @@ import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
-import 'package:frontend_sgfcp/services/api_service.dart';
+
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class FinishTripPage extends StatefulWidget {
   final TripData trip;
@@ -79,7 +80,7 @@ class _FinishTripPageState extends State<FinishTripPage> {
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.updateTrip(
+      await TripService.updateTrip(
         tripId: widget.trip.id,
         data: {
           'state_id': 'Finalizado',
