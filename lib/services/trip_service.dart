@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TripService {
@@ -11,64 +12,46 @@ class TripService {
   // GET BY DRIVER- Obtener todos los viajes del conductor autenticado
   static Future<List<TripData>> getTrips() async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/trips/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData.map((trip) => TripData.fromJson(trip)).toList();
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado. Por favor inicia sesión nuevamente.');
-      } else {
-        throw Exception('Error al obtener viajes: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<List<TripData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
+            .map((trip) => TripData.fromJson(trip))
+            .toList(),
+        operation: 'obtener viajes',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
   // GET ONE - Obtener un viaje específico
   static Future<TripData> getTrip({required int tripId}) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/trips/$tripId/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-        return TripData.fromJson(jsonData);
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 404) {
-        throw Exception('Viaje no encontrado');
-      } else {
-        throw Exception('Error al obtener viaje: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<TripData>(
+        response,
+        (jsonData) => TripData.fromJson(jsonData),
+        operation: 'obtener viaje',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -103,7 +86,7 @@ class TripService {
         return null;
       }
     } catch (e) {
-      throw Exception('Error al obtener viaje actual: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -121,7 +104,7 @@ class TripService {
       pendingTrips.sort((a, b) => a.startDate.compareTo(b.startDate));
       return pendingTrips.first;
     } catch (e) {
-      throw Exception('Error al obtener próximo viaje: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -131,9 +114,6 @@ class TripService {
     required Map<String, dynamic> data,
   }) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final url = Uri.parse('$baseUrl/trips/$tripId');
@@ -142,32 +122,18 @@ class TripService {
       final response = await http
           .put(
             url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
             body: body,
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        return TripData.fromJson(responseData['trip']);
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 403) {
-        throw Exception('No tienes permisos para actualizar este viaje');
-      } else if (response.statusCode == 404) {
-        throw Exception('Viaje no encontrado');
-      } else {
-        throw Exception(
-          'Error al actualizar viaje: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } on TimeoutException catch (_) {
-      throw Exception('Conexión agotada. Intenta de nuevo.');
+      return ApiResponseHandler.handleResponse<TripData>(
+        response,
+        (jsonData) => TripData.fromJson(jsonData['trip']),
+        operation: 'actualizar viaje',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -190,9 +156,6 @@ class TripService {
     double? fuelLiters,
   }) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final payload = {
@@ -219,31 +182,18 @@ class TripService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/trips/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
             body: jsonEncode(payload),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
-        return TripData.fromJson(responseData['trip']);
-      } else if (response.statusCode == 400) {
-        final errorData = jsonDecode(response.body);
-        throw Exception(
-          'Datos inválidos: ${errorData['details'] ?? 'Verifique los campos'}',
-        );
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 403) {
-        throw Exception('No tienes permisos para crear viajes');
-      } else {
-        throw Exception('Error al crear viaje: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<TripData>(
+        response,
+        (jsonData) => TripData.fromJson(jsonData['trip']),
+        operation: 'crear viaje',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 }

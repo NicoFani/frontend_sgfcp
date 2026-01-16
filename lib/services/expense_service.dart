@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/expense_data.dart';
+import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ExpenseService {
@@ -15,22 +15,19 @@ class ExpenseService {
       final response = await http
           .get(
             Uri.parse('$baseUrl/expenses/trip/$tripId'),
-            headers: {'Content-Type': 'application/json'},
+            headers: ApiResponseHandler.createHeaders(null, includeContentType: false),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData
+      return ApiResponseHandler.handleResponse<List<ExpenseData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
             .map((expense) => ExpenseData.fromJson(expense))
-            .toList();
-      } else if (response.statusCode == 404) {
-        return [];
-      } else {
-        throw Exception('Error al obtener gastos: ${response.statusCode}');
-      }
+            .toList(),
+        operation: 'obtener gastos del viaje',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 }

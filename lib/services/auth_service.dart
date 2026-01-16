@@ -1,8 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:frontend_sgfcp/services/api_response_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://localhost:5000';
+  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   static Future<Map<String, dynamic>> login({
     required String email,
@@ -15,28 +17,31 @@ class AuthService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email, 'password': password}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-        return {
+      final jsonData = ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (data) => {
           'success': true,
-          'access_token': jsonData['access_token'],
-          'refresh_token': jsonData['refresh_token'],
-          'user': jsonData['user'],
-        };
-      } else if (response.statusCode == 401) {
-        return {'success': false, 'error': 'Email o contraseña incorrectos'};
-      } else if (response.statusCode == 403) {
-        return {'success': false, 'error': 'Usuario inactivo'};
-      } else {
+          'access_token': data['access_token'],
+          'refresh_token': data['refresh_token'],
+          'user': data['user'],
+        },
+        operation: 'iniciar sesión',
+      );
+
+      return jsonData;
+    } catch (e) {
+      if (e is ApiException) {
         return {
           'success': false,
-          'error': 'Error al iniciar sesión: ${response.statusCode}',
+          'error': e.message,
         };
       }
-    } catch (e) {
-      return {'success': false, 'error': 'Error de conexión: $e'};
+      return {
+        'success': false,
+        'error': 'Error de conexión. Verifica tu conexión a internet.',
+      };
     }
   }
 
@@ -60,21 +65,30 @@ class AuthService {
               'is_admin': isAdmin,
             }),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 201) {
-        return {'success': true, 'message': 'Usuario registrado exitosamente'};
-      } else if (response.statusCode == 409) {
-        return {'success': false, 'error': 'El email ya está registrado'};
-      } else {
-        final jsonData = jsonDecode(response.body);
+      final jsonData = ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (data) => {
+          'success': true,
+          'message': 'Usuario registrado exitosamente',
+          'user': data['user'],
+        },
+        operation: 'registrar usuario',
+      );
+
+      return jsonData;
+    } catch (e) {
+      if (e is ApiException) {
         return {
           'success': false,
-          'error': jsonData['error'] ?? 'Error al registrar usuario',
+          'error': e.message,
         };
       }
-    } catch (e) {
-      return {'success': false, 'error': 'Error de conexión: $e'};
+      return {
+        'success': false,
+        'error': 'Error de conexión. Verifica tu conexión a internet.',
+      };
     }
   }
 }

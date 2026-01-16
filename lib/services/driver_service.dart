@@ -1,8 +1,8 @@
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DriverService {
@@ -11,31 +11,24 @@ class DriverService {
   // GET ALL - Obtener todos los choferes
   static Future<List<DriverData>> getDrivers() async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/drivers/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData.map((driver) => DriverData.fromJson(driver)).toList();
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else {
-        throw Exception('Error al obtener choferes: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<List<DriverData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
+            .map((driver) => DriverData.fromJson(driver))
+            .toList(),
+        operation: 'obtener choferes',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 }

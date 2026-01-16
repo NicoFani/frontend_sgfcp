@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:frontend_sgfcp/models/advance_payment_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AdvancePaymentService {
@@ -11,33 +12,24 @@ class AdvancePaymentService {
   // GET ALL - Obtener todos los adelantos
   static Future<List<AdvancePaymentData>> getAdvancePayments() async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/advance-payments/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData
+      return ApiResponseHandler.handleResponse<List<AdvancePaymentData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
             .map((advance) => AdvancePaymentData.fromJson(advance))
-            .toList();
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else {
-        throw Exception('Error al obtener adelantos: ${response.statusCode}');
-      }
+            .toList(),
+        operation: 'obtener adelantos',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -46,33 +38,22 @@ class AdvancePaymentService {
     required int advancePaymentId,
   }) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/advance-payments/$advancePaymentId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-        return AdvancePaymentData.fromJson(jsonData);
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 404) {
-        throw Exception('Adelanto no encontrado');
-      } else {
-        throw Exception('Error al obtener adelanto: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<AdvancePaymentData>(
+        response,
+        (jsonData) => AdvancePaymentData.fromJson(jsonData),
+        operation: 'obtener adelanto',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -83,9 +64,6 @@ class AdvancePaymentService {
     required double amount,
   }) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final payload = {
@@ -97,31 +75,18 @@ class AdvancePaymentService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/advance-payments/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
             body: jsonEncode(payload),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
-        return AdvancePaymentData.fromJson(responseData['advance_payment']);
-      } else if (response.statusCode == 400) {
-        final errorData = jsonDecode(response.body);
-        throw Exception(
-          'Datos inválidos: ${errorData['details'] ?? 'Verifique los campos'}',
-        );
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 403) {
-        throw Exception('No tienes permisos para crear adelantos');
-      } else {
-        throw Exception('Error al crear adelanto: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<AdvancePaymentData>(
+        response,
+        (jsonData) => AdvancePaymentData.fromJson(jsonData['advance_payment']),
+        operation: 'crear adelanto',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -133,9 +98,6 @@ class AdvancePaymentService {
     required double amount,
   }) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final payload = {
@@ -147,33 +109,18 @@ class AdvancePaymentService {
       final response = await http
           .put(
             Uri.parse('$baseUrl/advance-payments/$advancePaymentId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
             body: jsonEncode(payload),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        return AdvancePaymentData.fromJson(responseData['advance_payment']);
-      } else if (response.statusCode == 400) {
-        final errorData = jsonDecode(response.body);
-        throw Exception(
-          'Datos inválidos: ${errorData['details'] ?? 'Verifique los campos'}',
-        );
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 403) {
-        throw Exception('No tienes permisos para actualizar este adelanto');
-      } else if (response.statusCode == 404) {
-        throw Exception('Adelanto no encontrado');
-      } else {
-        throw Exception('Error al actualizar adelanto: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<AdvancePaymentData>(
+        response,
+        (jsonData) => AdvancePaymentData.fromJson(jsonData['advance_payment']),
+        operation: 'actualizar adelanto',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 
@@ -182,34 +129,22 @@ class AdvancePaymentService {
     required int advancePaymentId,
   }) async {
     final token = TokenStorage.accessToken;
-    if (token == null) {
-      throw Exception('No autenticado. Por favor inicia sesión.');
-    }
 
     try {
       final response = await http
           .delete(
             Uri.parse('$baseUrl/advance-payments/$advancePaymentId'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
+            headers: ApiResponseHandler.createHeaders(token),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(ApiResponseHandler.defaultTimeout);
 
-      if (response.statusCode == 200) {
-        return;
-      } else if (response.statusCode == 401) {
-        throw Exception('No autorizado');
-      } else if (response.statusCode == 403) {
-        throw Exception('No tienes permisos para eliminar este adelanto');
-      } else if (response.statusCode == 404) {
-        throw Exception('Adelanto no encontrado');
-      } else {
-        throw Exception('Error al eliminar adelanto: ${response.statusCode}');
-      }
+      ApiResponseHandler.handleResponse<void>(
+        response,
+        (_) {},
+        operation: 'eliminar adelanto',
+      );
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      ApiResponseHandler.handleNetworkError(e);
     }
   }
 }
