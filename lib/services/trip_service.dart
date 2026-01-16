@@ -196,4 +196,74 @@ class TripService {
       ApiResponseHandler.handleNetworkError(e);
     }
   }
+
+  // DELETE - Eliminar un viaje
+  static Future<void> deleteTrip({required int tripId}) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/trips/$tripId'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      ApiResponseHandler.handleResponse<void>(
+        response,
+        (_) {},
+        operation: 'eliminar viaje',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  // GET BY DRIVER - Obtener viajes de un conductor específico
+  static Future<List<TripData>> getTripsByDriver({required int driverId}) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/trips/driver/$driverId'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<List<TripData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
+            .map((trip) => TripData.fromJson(trip))
+            .toList(),
+        operation: 'obtener viajes del conductor',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  // GET BY STATE - Obtener viajes por estado
+  static Future<List<TripData>> getTripsByState({required String state}) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/trips/state/$state'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<List<TripData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
+            .map((trip) => TripData.fromJson(trip))
+            .toList(),
+        operation: 'obtener viajes por estado',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
 }

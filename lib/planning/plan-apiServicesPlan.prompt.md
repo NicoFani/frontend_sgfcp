@@ -9,30 +9,30 @@
 - [x] getNextTrip()
 - [x] updateTrip()
 - [x] createTrip()
-- [ ] deleteTrip()
-- [ ] getTripsByDriver()
-- [ ] getTripsByState()
+- [x] deleteTrip()
+- [x] getTripsByDriver()
+- [x] getTripsByState()
 
 ### driver_service.dart:
 - [x] getDrivers()
-- [ ] getDriverById()
-- [ ] createDriver()
-- [ ] updateDriver()
-- [ ] deleteDriver()
+- [x] getDriverById()
+- [x] createDriver()
+- [x] updateDriver()
+- [x] deleteDriver()
 
 ### client_service.dart:
 - [x] getClients()
-- [ ] getClientById()
-- [ ] createClient()
-- [ ] updateClient()
-- [ ] deleteClient()
+- [x] getClientById()
+- [x] createClient()
+- [x] updateClient()
+- [x] deleteClient()
 
 ### load_owner_service.dart:
 - [x] getLoadOwners()
-- [ ] getLoadOwnerById()
-- [ ] createLoadOwner()
-- [ ] updateLoadOwner()
-- [ ] deleteLoadOwner()
+- [x] getLoadOwnerById()
+- [x] createLoadOwner()
+- [x] updateLoadOwner()
+- [x] deleteLoadOwner()
 
 ### advance_payment_service.dart:
 - [x] getAdvancePayments()
@@ -43,12 +43,12 @@
 
 ### expense_service.dart:
 - [x] getExpensesByTrip()
-- [ ] getAllExpenses()
-- [ ] getExpenseById()
-- [ ] createExpense()
-- [ ] updateExpense()
-- [ ] deleteExpense()
-- [ ] getExpensesByType()
+- [x] getAllExpenses()
+- [x] getExpenseById()
+- [x] createExpense()
+- [x] updateExpense()
+- [x] deleteExpense()
+- [x] getExpensesByType()
 
 ### auth_service.dart:
 - [x] login()
@@ -62,19 +62,19 @@
 ## Missing Services (Need Creation)
 
 ### truck_service.dart:
-- [ ] getTrucks()
-- [ ] getTruckById()
-- [ ] createTruck()
-- [ ] updateTruck()
-- [ ] deleteTruck()
+- [x] getTrucks()
+- [x] getTruckById()
+- [x] createTruck()
+- [x] updateTruck()
+- [x] deleteTruck()
 
 ### driver_truck_service.dart:
-- [ ] getDriverTrucks()
-- [ ] getDriverTruckById()
-- [ ] assignDriverToTruck()
-- [ ] removeDriverFromTruck()
-- [ ] getTrucksByDriver()
-- [ ] getDriversByTruck()
+- [x] getDriverTrucks()
+- [x] getDriverTruckById()
+- [x] assignDriverToTruck()
+- [x] removeDriverFromTruck()
+- [ ] getTrucksByDriver() *(requires backend implementation)*
+- [ ] getDriversByTruck() *(requires backend implementation)*
 
 ### summary_service.dart (Monthly Summaries):
 - [ ] getMonthlySummaries()
@@ -84,12 +84,12 @@
 - [ ] exportMonthlySummaryPdf()
 - [ ] exportMonthlySummaryExcel()
 
-### payroll_concept_service.dart:
-- [ ] getPayrollConcepts()
-- [ ] getPayrollConceptById()
-- [ ] createPayrollConcept()
-- [ ] updatePayrollConcept()
-- [ ] deletePayrollConcept()
+### payroll_item_service.dart:
+- [ ] getPayrollItems()
+- [ ] getPayrollItemById()
+- [ ] createPayrollItem()
+- [ ] updatePayrollItem()
+- [ ] deletePayrollItem()
 
 ### payroll_calculation_service.dart:
 - [ ] calculatePayroll()
@@ -150,35 +150,21 @@
 - [ ] updateDriverGuaranteedMinimum()
 - [ ] deleteDriverGuaranteedMinimum()
 
-### driver_documentation_service.dart:
-- [ ] getDriverDocumentations()
-- [ ] getDriverDocumentationById()
-- [ ] createDriverDocumentation()
-- [ ] updateDriverDocumentation()
-- [ ] deleteDriverDocumentation()
-
-### truck_Documentation_service.dart:
-- [ ] getTruckDocumentations()
-- [ ] getTruckDocumentationById()
-- [ ] createTruckDocumentation()
-- [ ] updateTruckDocumentation()
-- [ ] deleteTruckDocumentation()
-
 ## Implementation Priority
 
 ### High Priority (Core Functionality):
-1. Complete expense_service.dart - Full CRUD operations
-2. Complete client_service.dart - Full CRUD operations
-3. Complete driver_service.dart - Full CRUD operations
-4. Complete load_owner_service.dart - Full CRUD operations
-5. Create truck_service.dart - Vehicle management
-6. Create driver_truck_service.dart - Driver-vehicle assignments
+1. ~~Complete expense_service.dart - Full CRUD operations~~ ✅ COMPLETED
+2. ~~Complete client_service.dart - Full CRUD operations~~ ✅ COMPLETED
+3. ~~Complete driver_service.dart - Full CRUD operations~~ ✅ COMPLETED
+4. ~~Complete load_owner_service.dart - Full CRUD operations~~ ✅ COMPLETED
+5. ~~Create truck_service.dart - Vehicle management~~ ✅ COMPLETED
+6. ~~Create driver_truck_service.dart - Driver-vehicle assignments~~ ✅ COMPLETED
 
 ### Medium Priority (Admin Features):
 7. Complete auth_service.dart - User management functions
 8. Create user_service.dart - Admin user management
 9. Create summary_service.dart - Monthly summaries
-10. Create payroll_Concept_service.dart - Payroll concepts
+10. Create payroll_item_service.dart - Other payroll concepts
 
 ### Low Priority (Advanced Features):
 11. Create payroll_calculation_service.dart - Payroll calculations
