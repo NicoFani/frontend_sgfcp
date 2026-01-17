@@ -7,7 +7,8 @@ import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class LoadOwnerService {
-  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
+  static String get baseUrl =>
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET ALL - Obtener todos los dadores de carga
   static Future<List<LoadOwnerData>> getLoadOwners() async {
@@ -34,7 +35,9 @@ class LoadOwnerService {
   }
 
   // GET ONE - Obtener un dador de carga específico
-  static Future<LoadOwnerData> getLoadOwnerById({required int loadOwnerId}) async {
+  static Future<LoadOwnerData> getLoadOwnerById({
+    required int loadOwnerId,
+  }) async {
     final token = TokenStorage.accessToken;
 
     try {
@@ -56,15 +59,11 @@ class LoadOwnerService {
   }
 
   // POST - Crear un nuevo dador de carga
-  static Future<LoadOwnerData> createLoadOwner({
-    required String name,
-  }) async {
+  static Future<LoadOwnerData> createLoadOwner({required String name}) async {
     final token = TokenStorage.accessToken;
 
     try {
-      final payload = {
-        'name': name,
-      };
+      final payload = {'name': name};
 
       final response = await http
           .post(
@@ -76,7 +75,8 @@ class LoadOwnerService {
 
       return ApiResponseHandler.handleResponse<LoadOwnerData>(
         response,
-        (jsonData) => LoadOwnerData.fromJson(jsonData),
+        (jsonData) =>
+            LoadOwnerData.fromJson(jsonData['load_owner'] ?? jsonData),
         operation: 'crear dador de carga',
       );
     } catch (e) {
@@ -92,9 +92,7 @@ class LoadOwnerService {
     final token = TokenStorage.accessToken;
 
     try {
-      final payload = {
-        'name': name,
-      };
+      final payload = {'name': name};
 
       final response = await http
           .put(
@@ -106,7 +104,8 @@ class LoadOwnerService {
 
       return ApiResponseHandler.handleResponse<LoadOwnerData>(
         response,
-        (jsonData) => LoadOwnerData.fromJson(jsonData),
+        (jsonData) =>
+            LoadOwnerData.fromJson(jsonData['load_owner'] ?? jsonData),
         operation: 'actualizar dador de carga',
       );
     } catch (e) {
@@ -130,6 +129,30 @@ class LoadOwnerService {
         response,
         (_) {},
         operation: 'eliminar dador de carga',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  // POST - Convertir dador de carga a cliente
+  static Future<Map<String, dynamic>> convertToClient({
+    required int loadOwnerId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/load-owners/$loadOwnerId/convert-to-client'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (jsonData) => jsonData as Map<String, dynamic>,
+        operation: 'convertir dador a cliente',
       );
     } catch (e) {
       ApiResponseHandler.handleNetworkError(e);

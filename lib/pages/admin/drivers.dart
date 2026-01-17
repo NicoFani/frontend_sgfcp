@@ -41,7 +41,11 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
     List<AdvancePaymentData> advances,
   ) {
     final startOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
-    final endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+    final endOfMonth = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month + 1,
+      0,
+    );
 
     return advances.where((advance) {
       return !advance.date.isBefore(startOfMonth) &&
@@ -95,7 +99,8 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          _advancesFuture = AdvancePaymentService.getAdvancePayments();
+                          _advancesFuture =
+                              AdvancePaymentService.getAdvancePayments();
                         });
                       },
                       child: const Text('Reintentar'),
@@ -108,13 +113,6 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
             final drivers = driversSnapshot.data ?? [];
             final allAdvances = advancesSnapshot.data ?? [];
             final filteredAdvances = _filterAdvancesByDateRange(allAdvances);
-            final driverTilesData = drivers
-              .map((d) => dl.DriverData(
-                  name: '${d.firstName} ${d.lastName}',
-                  status: dl.DriverStatus.inactive,
-                  //TODO: Implementar estado real
-                ))
-              .toList();
 
             return SafeArea(
               child: SingleChildScrollView(
@@ -136,42 +134,33 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                       )
                     else
                       dl.DriversList(
-                        drivers: driverTilesData,
-                        onDriverTap: (tileDriver) {
-                          final originalDriver = drivers.firstWhere(
-                            (d) =>
-                                '${d.firstName} ${d.lastName}' ==
-                                tileDriver.name,
-                            orElse: () => DriverData(
-                              id: -1,
-                              firstName: 'Chofer',
-                              lastName: 'desconocido',
+                        drivers: drivers,
+                        onDriverTap: (driverId) {
+                          final driver = drivers.firstWhere(
+                            (d) => d.id == driverId,
+                          );
+                          Navigator.of(context).push(
+                            DriverDetailPageAdmin.route(
+                              driverId: driver.id,
+                              driverName: driver.fullName,
                             ),
                           );
-
-                          if (originalDriver.id != -1) {
-                            Navigator.of(context).push(
-                              DriverDetailPageAdmin.route(
-                                driverId: originalDriver.id,
-                                driverName:
-                                    '${originalDriver.firstName} ${originalDriver.lastName}',
-                              ),
-                            );
-                          }
                         },
                       ),
-                    
+
                     gap24,
-                    
+
                     // Sección Adelantos
                     Text('Adelantos', style: textTheme.titleLarge),
-                    
+
                     gap12,
-                    
+
                     // Botón Cargar adelanto
                     FilledButton.icon(
                       onPressed: () {
-                        Navigator.of(context).push(AddAdvancePaymentPage.route());
+                        Navigator.of(
+                          context,
+                        ).push(AddAdvancePaymentPage.route());
                       },
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
@@ -179,9 +168,9 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                       icon: const Icon(Symbols.mintmark),
                       label: const Text('Cargar adelanto'),
                     ),
-                    
+
                     gap16,
-                    
+
                     // Selector de mes
                     MonthSelectorHeader(
                       initialMonth: _selectedMonth,
@@ -192,9 +181,9 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                         });
                       },
                     ),
-                    
+
                     gap16,
-                    
+
                     // Lista de adelantos
                     if (filteredAdvances.isEmpty)
                       Center(
@@ -213,7 +202,7 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                         advancePayments: filteredAdvances,
                         drivers: drivers,
                       ),
-              ],  
+                  ],
                 ),
               ),
             );
@@ -223,7 +212,6 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
     );
   }
 }
-
 
 class _AdvancePaymentsList extends StatelessWidget {
   final List<AdvancePaymentData> advancePayments;

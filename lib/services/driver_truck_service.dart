@@ -2,11 +2,38 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 import 'package:frontend_sgfcp/models/driver_truck_data.dart';
+import 'package:frontend_sgfcp/models/truck_data.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DriverTruckService {
-  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
+  static String get baseUrl =>
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
+
+  // GET - Obtener todos los camiones de un chofer
+  static Future<List<TruckData>> getTrucksByDriver(int driverId) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/driver-trucks/driver/$driverId/trucks'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<List<TruckData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
+            .map((truck) => TruckData.fromJson(truck))
+            .toList(),
+        operation: 'obtener vehículos del chofer',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
 
   // GET ALL - Obtener todas las asignaciones conductor-camión
   static Future<List<DriverTruckData>> getDriverTrucks() async {
@@ -14,7 +41,10 @@ class DriverTruckService {
       final response = await http
           .get(
             Uri.parse('$baseUrl/driver-trucks/'),
-            headers: ApiResponseHandler.createHeaders(null, includeContentType: false),
+            headers: ApiResponseHandler.createHeaders(
+              null,
+              includeContentType: false,
+            ),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 
@@ -31,12 +61,17 @@ class DriverTruckService {
   }
 
   // GET ONE - Obtener una asignación específica
-  static Future<DriverTruckData> getDriverTruckById({required int driverTruckId}) async {
+  static Future<DriverTruckData> getDriverTruckById({
+    required int driverTruckId,
+  }) async {
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/driver-trucks/$driverTruckId'),
-            headers: ApiResponseHandler.createHeaders(null, includeContentType: false),
+            headers: ApiResponseHandler.createHeaders(
+              null,
+              includeContentType: false,
+            ),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 
@@ -66,7 +101,10 @@ class DriverTruckService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/driver-trucks/'),
-            headers: ApiResponseHandler.createHeaders(null, includeContentType: false),
+            headers: ApiResponseHandler.createHeaders(
+              null,
+              includeContentType: false,
+            ),
             body: jsonEncode(payload),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
@@ -98,7 +136,10 @@ class DriverTruckService {
       final response = await http
           .put(
             Uri.parse('$baseUrl/driver-trucks/$driverTruckId'),
-            headers: ApiResponseHandler.createHeaders(null, includeContentType: false),
+            headers: ApiResponseHandler.createHeaders(
+              null,
+              includeContentType: false,
+            ),
             body: jsonEncode(payload),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
@@ -114,12 +155,17 @@ class DriverTruckService {
   }
 
   // DELETE - Remover asignación conductor-camión
-  static Future<void> removeDriverFromTruck({required int driverTruckId}) async {
+  static Future<void> removeDriverFromTruck({
+    required int driverTruckId,
+  }) async {
     try {
       final response = await http
           .delete(
             Uri.parse('$baseUrl/driver-trucks/$driverTruckId'),
-            headers: ApiResponseHandler.createHeaders(null, includeContentType: false),
+            headers: ApiResponseHandler.createHeaders(
+              null,
+              includeContentType: false,
+            ),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
 import 'package:frontend_sgfcp/pages/shared/documentation_update.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
-// import 'package:material_symbols_icons/symbols.dart';
-// import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:intl/intl.dart';
 
-class DriverDocumentationPage extends StatelessWidget {
+class DriverDocumentationPage extends StatefulWidget {
   final DriverData driver;
 
   const DriverDocumentationPage({super.key, required this.driver});
@@ -21,59 +20,93 @@ class DriverDocumentationPage extends StatelessWidget {
   }
 
   @override
+  State<DriverDocumentationPage> createState() =>
+      _DriverDocumentationPageState();
+}
+
+class _DriverDocumentationPageState extends State<DriverDocumentationPage> {
+  late Future<DriverData> _driverFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDriver();
+  }
+
+  void _loadDriver() {
+    _driverFuture = DriverService.getDriverById(driverId: widget.driver.id);
+  }
+
+  Future<void> _onEditDocument(DocumentType documentType) async {
+    final driverData = await _driverFuture;
+
+    if (!mounted) return;
+
+    final result = await Navigator.of(context).push(
+      DocumentationUpdatePage.route(
+        driver: driverData,
+        documentType: documentType,
+      ),
+    );
+
+    // Si se actualizó, recargar los datos
+    if (result == true) {
+      setState(() {
+        _loadDriver();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // final colors = Theme.of(context).colorScheme;
-    // final textTheme = Theme.of(context).textTheme;
     final dateFormatter = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Documentación')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          
-          SimpleTable.statusColumn(
-            headers: ['Documentación', 'Vencimiento', 'Vigente', 'Editar'],
-            rows: [
-              SimpleTableRowData(
-                col1: 'Licencia de conducir',
-                col2: driver.driverLicenseDueDate != null
-                    ? dateFormatter.format(driver.driverLicenseDueDate!)
-                    : 'Sin fecha',
-                dateToValidate: driver.driverLicenseDueDate,
-                onEdit: () { Navigator.of(context).push(DocumentationUpdatePage.route()); },
-              ),
-              SimpleTableRowData(
-                col1: 'Examen médico',
-                col2: driver.medicalExamDueDate != null
-                    ? dateFormatter.format(driver.medicalExamDueDate!)
-                    : 'Sin fecha',
-                dateToValidate: driver.medicalExamDueDate,
-                onEdit: () { Navigator.of(context).push(DocumentationUpdatePage.route()); },
+      body: FutureBuilder<DriverData>(
+        future: _driverFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error al cargar documentación'));
+          }
+
+          if (!snapshot.hasData) {
+            return Center(child: Text('No se encontró información'));
+          }
+
+          final driver = snapshot.data!;
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              SimpleTable.statusColumn(
+                headers: ['Documentación', 'Vencimiento', 'Vigente', 'Editar'],
+                rows: [
+                  SimpleTableRowData(
+                    col1: 'Licencia de conducir',
+                    col2: driver.driverLicenseDueDate != null
+                        ? dateFormatter.format(driver.driverLicenseDueDate!)
+                        : 'Sin fecha',
+                    dateToValidate: driver.driverLicenseDueDate,
+                    onEdit: () => _onEditDocument(DocumentType.driverLicense),
+                  ),
+                  SimpleTableRowData(
+                    col1: 'Examen médico',
+                    col2: driver.medicalExamDueDate != null
+                        ? dateFormatter.format(driver.medicalExamDueDate!)
+                        : 'Sin fecha',
+                    dateToValidate: driver.medicalExamDueDate,
+                    onEdit: () => _onEditDocument(DocumentType.medicalExam),
+                  ),
+                ],
               ),
             ],
-          ),
-
-          // // Licencia de conducir
-          // _DocumentCard(
-          //   title: 'Licencia de conducir',
-          //   dueDate: driver.driverLicenseDueDate,
-          //   dateFormatter: dateFormatter,
-          //   colors: colors,
-          //   textTheme: textTheme,
-          // ),
-
-          // gap16,
-
-          // // Examen médico
-          // _DocumentCard(
-          //   title: 'Examen médico',
-          //   dueDate: driver.medicalExamDueDate,
-          //   dateFormatter: dateFormatter,
-          //   colors: colors,
-          //   textTheme: textTheme,
-          // ),
-        ],
+          );
+        },
       ),
     );
   }

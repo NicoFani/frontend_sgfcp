@@ -3,6 +3,8 @@ import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/pages/admin/edit_account.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/pages/shared/login_page.dart';
 
 class AccountPageAdmin extends StatelessWidget {
   const AccountPageAdmin({super.key});
@@ -18,7 +20,9 @@ class AccountPageAdmin extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reestablecer contraseña'),
-        content: const Text('Se enviará un correo para reestablecer la contraseña'),
+        content: const Text(
+          'Se enviará un correo para reestablecer la contraseña',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -60,20 +64,42 @@ class AccountPageAdmin extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: InfoCard.footerButton(
-            title: 'Datos de la cuenta',
-            items: [
-              InfoItem(label: 'Nombre(s)', value: 'Omar'),
-              InfoItem(label: 'Apellido(s)', value: 'José'),
-              InfoItem(label: 'Email', value: 'omar@gmail.com'),
-              InfoItem(label: 'Contraseña', value: '***********'),
+          child: Column(
+            children: [
+              InfoCard.footerButton(
+                title: 'Datos de la cuenta',
+                items: [
+                  InfoItem(label: 'Nombre(s)', value: 'Omar'),
+                  InfoItem(label: 'Apellido(s)', value: 'José'),
+                  InfoItem(label: 'Email', value: 'omar@gmail.com'),
+                  InfoItem(label: 'Contraseña', value: '***********'),
+                ],
+                buttonIcon: Symbols.lock_reset,
+                buttonLabel: 'Reestablecer contraseña',
+                onPressed: () {
+                  _showResetPasswordDialog(context);
+                },
+                labelColumnWidth: infoLabelWidth,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    TokenStorage.clear();
+                    Navigator.of(
+                      context,
+                    ).pushAndRemoveUntil(LoginPage.route(), (route) => false);
+                  },
+                  icon: const Icon(Symbols.logout),
+                  label: const Text('Cerrar sesión'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
             ],
-            buttonIcon: Symbols.lock_reset,
-            buttonLabel: 'Reestablecer contraseña',
-            onPressed: () {
-              _showResetPasswordDialog(context);
-            },
-            labelColumnWidth: infoLabelWidth,
           ),
         ),
       ),

@@ -1,29 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-
-
-enum DriverStatus { onTrip, inactive }
-
-class DriverData {
-  final String name;
-  final DriverStatus status;
-
-  const DriverData({
-    required this.name,
-    required this.status,
-  });
-}
+import 'package:frontend_sgfcp/models/driver_data.dart';
 
 /// Listado de choferes (como en el diseño)
 class DriversList extends StatelessWidget {
   final List<DriverData> drivers;
-  final void Function(DriverData driver)? onDriverTap; // opcional por item
+  final void Function(int driverId)? onDriverTap; // opcional por item
 
-  const DriversList({
-    super.key,
-    required this.drivers,
-    this.onDriverTap,
-  });
+  const DriversList({super.key, required this.drivers, this.onDriverTap});
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +19,8 @@ class DriversList extends StatelessWidget {
         for (int i = 0; i < drivers.length; i++) ...[
           _DriverTile(
             driver: drivers[i],
-            driverStatus: drivers[i].status,
             onTap: () {
-              if (onDriverTap != null) onDriverTap!(drivers[i]);
+              if (onDriverTap != null) onDriverTap!(drivers[i].id);
             },
             textTheme: textTheme,
             colors: colors,
@@ -51,27 +34,20 @@ class DriversList extends StatelessWidget {
 
 class _DriverTile extends StatelessWidget {
   final DriverData driver;
-  final DriverStatus driverStatus;
   final VoidCallback onTap;
   final TextTheme textTheme;
   final ColorScheme colors;
 
   const _DriverTile({
     required this.driver,
-    required this.driverStatus,
     required this.onTap,
     required this.textTheme,
     required this.colors,
   });
 
-  String get _statusLabel {
-    switch (driver.status) {
-      case DriverStatus.onTrip:
-        return 'En viaje';
-      case DriverStatus.inactive:
-        return 'Inactivo';
-    }
-  }
+  // TODO: Determinar el estado del chofer (En viaje/Inactivo) consultando viajes activos
+  String get _statusLabel => 'Inactivo';
+  bool get _isOnTrip => false;
 
   @override
   Widget build(BuildContext context) {
@@ -79,8 +55,8 @@ class _DriverTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: Icon(
         Symbols.delivery_truck_speed,
-        color: driverStatus == DriverStatus.onTrip ? colors.secondaryContainer : colors.onSurfaceVariant,
-        fill: driverStatus == DriverStatus.onTrip ? 1 : 0,
+        color: _isOnTrip ? colors.secondaryContainer : colors.onSurfaceVariant,
+        fill: _isOnTrip ? 1 : 0,
       ),
       title: Text(
         _statusLabel,
@@ -89,10 +65,7 @@ class _DriverTile extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      subtitle: Text(
-        driver.name,
-        style: textTheme.titleMedium,
-      ),
+      subtitle: Text(driver.fullName, style: textTheme.titleMedium),
       trailing: const Icon(Icons.arrow_right),
       onTap: onTap,
     );

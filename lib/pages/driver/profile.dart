@@ -5,9 +5,12 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
 import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
-import 'package:frontend_sgfcp/pages/shared/vehicle.dart';
+import 'package:frontend_sgfcp/pages/driver/driver_vehicles.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/models/driver_data.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   /// Route name you can use with Navigator.pushNamed
@@ -19,9 +22,30 @@ class ProfilePage extends StatelessWidget {
   }
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  late Future<DriverData> _driverFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDriver();
+  }
+
+  void _loadDriver() {
+    final user = TokenStorage.user;
+    if (user != null && user['id'] != null) {
+      _driverFuture = DriverService.getDriverById(driverId: user['id'] as int);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
+    final user = TokenStorage.user;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -36,12 +60,12 @@ class ProfilePage extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Juan',
+                    '${user?['name'] ?? ''} ${user?['surname'] ?? ''}',
                     style: textTheme.titleLarge,
                   ),
                   gap4,
                   Text(
-                    'juan@gmail.com',
+                    user?['email'] ?? '',
                     style: textTheme.labelMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -53,7 +77,28 @@ class ProfilePage extends StatelessWidget {
             gap32,
 
             // ----- Lista de opciones -----
-            _ProfileOptionsList(),
+            FutureBuilder<DriverData>(
+              future: _driverFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error al cargar información del chofer'),
+                  );
+                }
+
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: Text('No se encontró información del chofer'),
+                  );
+                }
+
+                return _ProfileOptionsList(driver: snapshot.data!);
+              },
+            ),
           ],
         ),
       ),
@@ -63,11 +108,12 @@ class ProfilePage extends StatelessWidget {
 
 /// Lista de opciones del perfil
 class _ProfileOptionsList extends StatelessWidget {
-  get driver => null;
+  final DriverData driver;
+
+  const _ProfileOptionsList({required this.driver});
 
   @override
   Widget build(BuildContext context) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
@@ -77,7 +123,9 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Documentación'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              Navigator.of(context).push(DriverDocumentationPage.route(driver: driver));
+              Navigator.of(
+                context,
+              ).push(DriverDocumentationPage.route(driver: driver));
             },
           ),
           Padding(
@@ -89,7 +137,9 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Vehículo'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              Navigator.of(context).push(VehiclePage.route());
+              Navigator.of(
+                context,
+              ).push(DriverVehiclesPage.route(driverId: driver.id));
             },
           ),
           Padding(
@@ -101,9 +151,7 @@ class _ProfileOptionsList extends StatelessWidget {
             title: Text('Datos personales'),
             trailing: const Icon(Icons.arrow_right),
             onTap: () {
-              Navigator.of(context).push(
-                DriverDataPage.route(driver: driver)
-              );
+              Navigator.of(context).push(DriverDataPage.route(driver: driver));
             },
           ),
         ],

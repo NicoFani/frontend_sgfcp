@@ -7,7 +7,8 @@ import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ClientService {
-  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
+  static String get baseUrl =>
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET ALL - Obtener todos los clientes
   static Future<List<ClientData>> getClients() async {
@@ -56,15 +57,11 @@ class ClientService {
   }
 
   // POST - Crear un nuevo cliente
-  static Future<ClientData> createClient({
-    required String name,
-  }) async {
+  static Future<ClientData> createClient({required String name}) async {
     final token = TokenStorage.accessToken;
 
     try {
-      final payload = {
-        'name': name,
-      };
+      final payload = {'name': name};
 
       final response = await http
           .post(
@@ -76,7 +73,7 @@ class ClientService {
 
       return ApiResponseHandler.handleResponse<ClientData>(
         response,
-        (jsonData) => ClientData.fromJson(jsonData),
+        (jsonData) => ClientData.fromJson(jsonData['client'] ?? jsonData),
         operation: 'crear cliente',
       );
     } catch (e) {
@@ -92,9 +89,7 @@ class ClientService {
     final token = TokenStorage.accessToken;
 
     try {
-      final payload = {
-        'name': name,
-      };
+      final payload = {'name': name};
 
       final response = await http
           .put(
@@ -106,7 +101,7 @@ class ClientService {
 
       return ApiResponseHandler.handleResponse<ClientData>(
         response,
-        (jsonData) => ClientData.fromJson(jsonData),
+        (jsonData) => ClientData.fromJson(jsonData['client'] ?? jsonData),
         operation: 'actualizar cliente',
       );
     } catch (e) {
@@ -130,6 +125,30 @@ class ClientService {
         response,
         (_) {},
         operation: 'eliminar cliente',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  // POST - Convertir cliente a dador de carga
+  static Future<Map<String, dynamic>> convertToLoadOwner({
+    required int clientId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/clients/$clientId/convert-to-load-owner'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (jsonData) => jsonData as Map<String, dynamic>,
+        operation: 'convertir cliente a dador',
       );
     } catch (e) {
       ApiResponseHandler.handleNetworkError(e);

@@ -4,8 +4,11 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/create_trip.dart';
 import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
 
-class HomePageAdmin extends StatelessWidget {
+class HomePageAdmin extends StatefulWidget {
   const HomePageAdmin({super.key});
 
   static const String routeName = '/admin/home';
@@ -15,79 +18,156 @@ class HomePageAdmin extends StatelessWidget {
   }
 
   @override
+  State<HomePageAdmin> createState() => _HomePageAdminState();
+}
+
+class _HomePageAdminState extends State<HomePageAdmin> {
+  late Future<List<DriverData>> _driversFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDrivers();
+  }
+
+  void _loadDrivers() {
+    setState(() {
+      _driversFuture = DriverService.getDrivers();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final drivers = [
-      const DriverData(name: 'Carlos Sainz', status: DriverStatus.onTrip),
-      const DriverData(name: 'Alexander Albon', status: DriverStatus.inactive),
-      const DriverData(name: 'Fernando Alonso', status: DriverStatus.onTrip),
-    ];
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Sección Choferes ---
-            Text(
-              'Choferes',
-              style: textTheme.titleLarge,
-            ),
-            gap8,
-            DriversList(
-              drivers: drivers,
-              onDriverTap: (driver) {
-                // TODO: navegar al detalle del chofer
-              },
-            ),
+      child: RefreshIndicator(
+        onRefresh: () async {
+          _loadDrivers();
+          await _driversFuture;
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Sección Choferes ---
+              Text('Choferes', style: textTheme.titleLarge),
+              gap8,
+              FutureBuilder<List<DriverData>>(
+                future: _driversFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
 
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 32,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Error al cargar choferes',
+                              style: textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _loadDrivers,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
-            gap24,
+                  final drivers = snapshot.data ?? [];
 
-            // --- Sección Atajos ---
-            Text(
-              'Atajos',
-              style: textTheme.titleLarge,
-            ),
-            gap12,
+                  if (drivers.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'No hay choferes registrados',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
 
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(CreateTripPageAdmin.route());
+                  return DriversList(
+                    drivers: drivers,
+                    onDriverTap: (driverId) {
+                      // Buscar el driver completo para obtener el nombre
+                      final driver = drivers.firstWhere(
+                        (d) => d.id == driverId,
+                      );
+                      Navigator.of(context).push(
+                        DriverDetailPageAdmin.route(
+                          driverId: driverId,
+                          driverName: driver.fullName,
+                        ),
+                      );
+                    },
+                  );
                 },
-                icon: const Icon(Symbols.add_road),
-                label: const Text('Crear viaje'),
               ),
-            ),
-            gap8,
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: () {
-                  Navigator.of(context).push(AddAdvancePaymentPage.route());
-                },
-                icon: const Icon(Symbols.mintmark),
-                label: const Text('Cargar adelanto'),
+
+              gap24,
+
+              // --- Sección Atajos ---
+              Text('Atajos', style: textTheme.titleLarge),
+              gap12,
+
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(CreateTripPageAdmin.route());
+                  },
+                  icon: const Icon(Symbols.add_road),
+                  label: const Text('Crear viaje'),
+                ),
               ),
-            ), 
+              gap8,
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () {
+                    Navigator.of(context).push(AddAdvancePaymentPage.route());
+                  },
+                  icon: const Icon(Symbols.mintmark),
+                  label: const Text('Cargar adelanto'),
+                ),
+              ),
 
-            gap24,
+              gap24,
 
-            // --- Sección Próximos viajes ---
-            Text(
-              'Próximos viajes',
-              style: textTheme.titleLarge,
-            ),
-            gap8,
+              // --- Sección Próximos viajes ---
+              Text('Próximos viajes', style: textTheme.titleLarge),
+              gap8,
 
-            // Calendario
-            // const CalendarWidget(),
-            // TODO: calendar widget will go here later
-            Container(
+              // Calendario
+              // const CalendarWidget(),
+              // TODO: calendar widget will go here later
+              Container(
                 height: 200,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -101,7 +181,8 @@ class HomePageAdmin extends StatelessWidget {
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -221,7 +302,7 @@ class HomePageAdmin extends StatelessWidget {
 //             final weekDays = <Widget>[];
 //             for (int dayIndex = 0; dayIndex < 7; dayIndex++) {
 //               final dayNumber = weekIndex * 7 + dayIndex - firstWeekday + 1;
-              
+
 //               if (dayNumber < 1 || dayNumber > daysInMonth) {
 //                 weekDays.add(const SizedBox(width: 32, height: 32));
 //               } else {

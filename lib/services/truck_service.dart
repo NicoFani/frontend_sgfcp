@@ -7,7 +7,8 @@ import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TruckService {
-  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
+  static String get baseUrl =>
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET ALL - Obtener todos los camiones
   static Future<List<TruckData>> getTrucks() async {
@@ -119,9 +120,12 @@ class TruckService {
         if (brand != null) 'brand': brand,
         if (modelName != null) 'model_name': modelName,
         if (fabricationYear != null) 'fabrication_year': fabricationYear,
-        if (serviceDueDate != null) 'service_due_date': serviceDueDate.toIso8601String().split('T')[0],
-        if (vtvDueDate != null) 'vtv_due_date': vtvDueDate.toIso8601String().split('T')[0],
-        if (plateDueDate != null) 'plate_due_date': plateDueDate.toIso8601String().split('T')[0],
+        if (serviceDueDate != null)
+          'service_due_date': serviceDueDate.toIso8601String().split('T')[0],
+        if (vtvDueDate != null)
+          'vtv_due_date': vtvDueDate.toIso8601String().split('T')[0],
+        if (plateDueDate != null)
+          'plate_due_date': plateDueDate.toIso8601String().split('T')[0],
       };
 
       final response = await http
@@ -158,6 +162,30 @@ class TruckService {
         response,
         (_) {},
         operation: 'eliminar camión',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  // GET - Obtener el chofer actual asignado a un camión
+  static Future<Map<String, dynamic>?> getTruckCurrentDriver({
+    required int truckId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/trucks/$truckId/current-driver'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<Map<String, dynamic>?>(
+        response,
+        (jsonData) => jsonData as Map<String, dynamic>?,
+        operation: 'obtener chofer del camión',
       );
     } catch (e) {
       ApiResponseHandler.handleNetworkError(e);
