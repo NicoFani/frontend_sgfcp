@@ -9,7 +9,6 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
 
-
 class EditTripPage extends StatefulWidget {
   final TripData trip;
 
@@ -20,27 +19,26 @@ class EditTripPage extends StatefulWidget {
 
   /// Helper to create a route to this page
   static Route route({required TripData trip}) {
-    return MaterialPageRoute<void>(
-      builder: (_) => EditTripPage(trip: trip),
-    );
+    return MaterialPageRoute<void>(builder: (_) => EditTripPage(trip: trip));
   }
+
   @override
   State<EditTripPage> createState() => _EditTripPageState();
 }
 
 class _EditTripPageState extends State<EditTripPage> {
-
   late Future<List<DriverData>> _driversFuture;
 
   DocumentType _docType = DocumentType.ctg;
   String? _cargoType;
   DateTime? _startDate;
   DriverData? _selectedDriver;
-  
+
   // Controllers
   final TextEditingController _docNumberController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
-  final TextEditingController _transportCodeController = TextEditingController();
+  final TextEditingController _transportCodeController =
+      TextEditingController();
   final TextEditingController _loadOwnerController = TextEditingController();
   final TextEditingController _netWeightController = TextEditingController();
   final TextEditingController _kmsController = TextEditingController();
@@ -49,8 +47,8 @@ class _EditTripPageState extends State<EditTripPage> {
   final TextEditingController _fuelLitersController = TextEditingController();
 
   final bool isAdmin =
-    (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
-  
+      (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
+
   @override
   void initState() {
     super.initState();
@@ -64,11 +62,14 @@ class _EditTripPageState extends State<EditTripPage> {
     _cargoType = 'Maíz'; // assuming, or add to model
     _netWeightController.text = widget.trip.loadWeightOnLoad.toString();
     _kmsController.text = widget.trip.estimatedKms.toString();
-    _rateController.text = widget.trip.ratePerTon.toString();
+    _rateController.text = widget.trip.rate.toString();
     _fuelLitersController.text = widget.trip.fuelLiters.toString();
 
     final locale = Localizations.localeOf(context).toString();
-    _startDateController.text = DateFormat('dd/MM/yyyy', locale).format(_startDate!);
+    _startDateController.text = DateFormat(
+      'dd/MM/yyyy',
+      locale,
+    ).format(_startDate!);
   }
 
   DocumentType _mapStringToDocumentType(String type) {
@@ -98,12 +99,13 @@ class _EditTripPageState extends State<EditTripPage> {
         _startDate = picked;
 
         final locale = Localizations.localeOf(context).toString();
-        _startDateController.text =
-            DateFormat('dd/MM/yyyy', locale).format(picked);
+        _startDateController.text = DateFormat(
+          'dd/MM/yyyy',
+          locale,
+        ).format(picked);
       });
     }
   }
-
 
   @override
   void dispose() {
@@ -124,9 +126,7 @@ class _EditTripPageState extends State<EditTripPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editar Viaje'),
-      ),
+      appBar: AppBar(title: const Text('Editar Viaje')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -134,10 +134,7 @@ class _EditTripPageState extends State<EditTripPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header: origen → destino
-              Text(
-                widget.trip.route,
-                style: textTheme.titleLarge,
-              ),
+              Text(widget.trip.route, style: textTheme.titleLarge),
 
               gap12,
 
@@ -149,7 +146,7 @@ class _EditTripPageState extends State<EditTripPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Documento', style: textTheme.bodySmall,),
+                        Text('Documento', style: textTheme.bodySmall),
                         DocumentTypeSelector(
                           selected: _docType,
                           onChanged: (newType) {
@@ -203,9 +200,14 @@ class _EditTripPageState extends State<EditTripPage> {
                           width: constraints.maxWidth,
                           label: const Text('Chofer asignado'),
                           initialSelection: _selectedDriver,
-                          dropdownMenuEntries: drivers.map((driver) =>
-                            DropdownMenuEntry(value: driver, label: driver.fullName),
-                          ).toList(),
+                          dropdownMenuEntries: drivers
+                              .map(
+                                (driver) => DropdownMenuEntry(
+                                  value: driver,
+                                  label: driver.fullName,
+                                ),
+                              )
+                              .toList(),
                           onSelected: (value) {
                             setState(() {
                               _selectedDriver = value;
@@ -250,7 +252,8 @@ class _EditTripPageState extends State<EditTripPage> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         return DropdownMenu<String>(
-                          width: constraints.maxWidth, // mismo ancho que tendría un TextField
+                          width: constraints
+                              .maxWidth, // mismo ancho que tendría un TextField
                           label: const Text('Tipo de carga'),
                           initialSelection: _cargoType,
                           // TODO: obtener tipos de carga desde backend
@@ -277,8 +280,9 @@ class _EditTripPageState extends State<EditTripPage> {
                         labelText: 'Peso neto (kg)',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
                   ),
                 ],
@@ -311,8 +315,9 @@ class _EditTripPageState extends State<EditTripPage> {
                         labelText: 'Km a recorrer',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
                   ),
                 ],
@@ -327,8 +332,9 @@ class _EditTripPageState extends State<EditTripPage> {
                   labelText: 'Tarifa',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
 
               gap12,
@@ -345,8 +351,9 @@ class _EditTripPageState extends State<EditTripPage> {
                   labelText: 'Importe del adelanto',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
 
               gap12,
@@ -363,8 +370,9 @@ class _EditTripPageState extends State<EditTripPage> {
                   labelText: 'Litros del vale',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
 
               gap16,
@@ -378,20 +386,30 @@ class _EditTripPageState extends State<EditTripPage> {
                   final data = <String, dynamic>{
                     'document_type': _docType.name.toUpperCase(),
                     'document_number': _docNumberController.text,
-                    'driver_id': _selectedDriver?.id ?? widget.trip.driver.id,
+                    'driver_id':
+                        _selectedDriver?.id ??
+                        widget.trip.driver?.id ??
+                        widget.trip.driverId,
                     'origin': widget.trip.origin, // assuming not changing
                     'destination': widget.trip.destination,
                     'start_date': _startDate!.toIso8601String().split('T')[0],
-                    'estimated_kms': double.tryParse(_kmsController.text) ?? 0.0,
-                    'load_weight_on_load': double.tryParse(_netWeightController.text) ?? 0.0,
-                    'rate_per_ton': double.tryParse(_rateController.text) ?? 0.0,
-                    'fuel_liters': double.tryParse(_fuelLitersController.text) ?? 0.0,
+                    'estimated_kms':
+                        double.tryParse(_kmsController.text) ?? 0.0,
+                    'load_weight_on_load':
+                        double.tryParse(_netWeightController.text) ?? 0.0,
+                    'rate_per_ton':
+                        double.tryParse(_rateController.text) ?? 0.0,
+                    'fuel_liters':
+                        double.tryParse(_fuelLitersController.text) ?? 0.0,
                     // add other fields if needed
                   };
 
                   final currentContext = context;
                   try {
-                    await TripService.updateTrip(tripId: widget.trip.id, data: data);
+                    await TripService.updateTrip(
+                      tripId: widget.trip.id,
+                      data: data,
+                    );
                   } catch (e) {
                     if (mounted) {
                       // ignore: use_build_context_synchronously

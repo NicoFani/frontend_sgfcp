@@ -26,12 +26,12 @@ class EditExpensePage extends StatefulWidget {
       builder: (_) => EditExpensePage(expense: expense),
     );
   }
+
   @override
   State<EditExpensePage> createState() => _EditExpensePageState();
 }
 
 class _EditExpensePageState extends State<EditExpensePage> {
-
   late Future<TripData> _tripFuture;
 
   DateTime? _startDate;
@@ -50,7 +50,11 @@ class _EditExpensePageState extends State<EditExpensePage> {
   @override
   void initState() {
     super.initState();
-    _tripFuture = TripService.getTrip(tripId: widget.expense.tripId);
+    if (widget.expense.tripId != null) {
+      _tripFuture = TripService.getTrip(tripId: widget.expense.tripId!);
+    } else {
+      _tripFuture = Future.error('Gasto sin viaje asociado');
+    }
 
     // Populate data
     _startDate = widget.expense.createdAt;
@@ -70,7 +74,10 @@ class _EditExpensePageState extends State<EditExpensePage> {
     }
 
     final locale = Localizations.localeOf(context).toString();
-    _startDateController.text = DateFormat('dd/MM/yyyy', locale).format(_startDate!);
+    _startDateController.text = DateFormat(
+      'dd/MM/yyyy',
+      locale,
+    ).format(_startDate!);
   }
 
   ExpenseType _mapTypeToExpenseType(String type) {
@@ -122,12 +129,13 @@ class _EditExpensePageState extends State<EditExpensePage> {
         _startDate = picked;
 
         final locale = Localizations.localeOf(context).toString();
-        _startDateController.text =
-            DateFormat('dd/MM/yyyy', locale).format(picked);
+        _startDateController.text = DateFormat(
+          'dd/MM/yyyy',
+          locale,
+        ).format(picked);
       });
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -157,15 +165,21 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       FilledButton(
                         style: FilledButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.error,
-                          foregroundColor: Theme.of(context).colorScheme.onError,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onError,
                         ),
                         onPressed: () async {
                           try {
-                            await ExpenseService.deleteExpense(expenseId: widget.expense.id);
+                            await ExpenseService.deleteExpense(
+                              expenseId: widget.expense.id,
+                            );
                             Navigator.of(context).pop();
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error al eliminar gasto: $e')),
+                              SnackBar(
+                                content: Text('Error al eliminar gasto: $e'),
+                              ),
                             );
                           }
                         },
@@ -230,10 +244,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Header: origen → destino
-                  Text(
-                    trip.route,
-                    style: textTheme.titleLarge,
-                  ),
+                  Text(trip.route, style: textTheme.titleLarge),
 
                   gap20,
 
@@ -262,11 +273,26 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         label: const Text('Tipo de gasto'),
                         initialSelection: _expenseType,
                         dropdownMenuEntries: const [
-                          DropdownMenuEntry(value: ExpenseType.peaje, label: 'Peaje'),
-                          DropdownMenuEntry(value: ExpenseType.viaticos, label: 'Viáticos'),
-                          DropdownMenuEntry(value: ExpenseType.reparaciones, label: 'Reparaciones'),
-                          DropdownMenuEntry(value: ExpenseType.combustible, label: 'Combustible'),
-                          DropdownMenuEntry(value: ExpenseType.multa, label: 'Multa'),
+                          DropdownMenuEntry(
+                            value: ExpenseType.peaje,
+                            label: 'Peaje',
+                          ),
+                          DropdownMenuEntry(
+                            value: ExpenseType.viaticos,
+                            label: 'Viáticos',
+                          ),
+                          DropdownMenuEntry(
+                            value: ExpenseType.reparaciones,
+                            label: 'Reparaciones',
+                          ),
+                          DropdownMenuEntry(
+                            value: ExpenseType.combustible,
+                            label: 'Combustible',
+                          ),
+                          DropdownMenuEntry(
+                            value: ExpenseType.multa,
+                            label: 'Multa',
+                          ),
                         ],
                         onSelected: (value) {
                           if (value == null) return;
@@ -306,7 +332,9 @@ class _EditExpensePageState extends State<EditExpensePage> {
                             labelText: 'Importe',
                             border: OutlineInputBorder(),
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                         ),
                       ),
                     ],
@@ -322,7 +350,9 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         labelText: 'Litros cargados',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
                     gap12,
                   ],
@@ -340,7 +370,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   ],
 
                   // Subtipo (si aplica)
-                  if (_expenseType == ExpenseType.peaje || _expenseType == ExpenseType.reparaciones) ...[
+                  if (_expenseType == ExpenseType.peaje ||
+                      _expenseType == ExpenseType.reparaciones) ...[
                     LayoutBuilder(
                       builder: (context, constraints) => ExpenseSubtypeDropdown(
                         label: label,
@@ -370,16 +401,22 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       final data = <String, dynamic>{
                         'expense_type': _expenseType.name,
                         'date': _startDate!.toIso8601String().split('T')[0],
-                        'amount': double.tryParse(_amountController.text) ?? 0.0,
-                        'description': _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+                        'amount':
+                            double.tryParse(_amountController.text) ?? 0.0,
+                        'description': _descriptionController.text.isNotEmpty
+                            ? _descriptionController.text
+                            : null,
                         'accounting_paid': _accountingPaid,
                       };
 
                       if (_expenseType == ExpenseType.combustible) {
-                        data['fuel_liters'] = double.tryParse(_litersController.text);
+                        data['fuel_liters'] = double.tryParse(
+                          _litersController.text,
+                        );
                       }
                       if (_expenseType == ExpenseType.multa) {
-                        data['fine_municipality'] = _municipalityController.text;
+                        data['fine_municipality'] =
+                            _municipalityController.text;
                       }
                       if (_subtype != null) {
                         if (_expenseType == ExpenseType.peaje) {
@@ -390,12 +427,17 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       }
 
                       try {
-                        await ExpenseService.updateExpense(expenseId: widget.expense.id, data: data);
+                        await ExpenseService.updateExpense(
+                          expenseId: widget.expense.id,
+                          data: data,
+                        );
                         if (mounted) Navigator.of(context).pop();
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error al guardar cambios: $e')),
+                            SnackBar(
+                              content: Text('Error al guardar cambios: $e'),
+                            ),
                           );
                         }
                       }

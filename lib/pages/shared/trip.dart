@@ -185,21 +185,50 @@ class _TripPageState extends State<TripPage> {
                   gap4,
 
                   if (isAdmin) ...[
-                    SimpleCard.iconOnly(
-                      title: 'Chofer',
-                      subtitle: trip.driver != null
-                          ? trip.driver!.fullName
-                          : 'Sin chofer asignado',
-                      icon: Symbols.arrow_right,
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          DriverDetailPageAdmin.route(
-                            driverName: trip.driver.fullName,
-                            driverId: trip.driver.id,
+                    if (trip.driver != null)
+                      SimpleCard.iconOnly(
+                        title: 'Chofer',
+                        subtitle: trip.driver!.fullName,
+                        icon: Symbols.arrow_right,
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            DriverDetailPageAdmin.route(
+                              driverName: trip.driver!.fullName,
+                              driverId: trip.driver!.id,
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      Card.outlined(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Chofer',
+                                      style: textTheme.titleMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Sin chofer asignado',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
 
                     gap4,
                   ],
@@ -311,7 +340,7 @@ class _TripPageState extends State<TripPage> {
                               onEdit: () {
                                 Navigator.of(
                                   context,
-                                ).push(EditExpensePage.route());
+                                ).push(EditExpensePage.route(expense: expense));
                               },
                             ),
                           )
@@ -376,11 +405,12 @@ class _TripPageState extends State<TripPage> {
                 ).push(ExpensePage.route(trip: _currentTrip!));
               },
               onEditTrip: () {
-                Navigator.of(context).push(EditTripPage.route());
+                Navigator.of(
+                  context,
+                ).push(EditTripPage.route(trip: _currentTrip!));
               },
             )
           : null,
-      f,
     );
   }
 
