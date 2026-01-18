@@ -6,6 +6,8 @@ import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:intl/intl.dart';
 
+enum DocumentType { driverLicense, medicalExam }
+
 class DriverDocumentationPage extends StatefulWidget {
   final DriverData driver;
 
@@ -44,8 +46,11 @@ class _DriverDocumentationPageState extends State<DriverDocumentationPage> {
 
     final result = await Navigator.of(context).push(
       DocumentationUpdatePage.route(
-        driver: driverData,
-        documentType: documentType,
+        type: 'driver',
+        entity: driverData,
+        documentType: documentType == DocumentType.driverLicense
+            ? 'driverLicense'
+            : 'medicalExam',
       ),
     );
 

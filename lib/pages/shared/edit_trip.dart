@@ -253,6 +253,7 @@ class _EditTripPageState extends State<EditTripPage> {
                           width: constraints.maxWidth, // mismo ancho que tendría un TextField
                           label: const Text('Tipo de carga'),
                           initialSelection: _cargoType,
+                          // TODO: obtener tipos de carga desde backend
                           dropdownMenuEntries: const [
                             DropdownMenuEntry(value: 'Maíz', label: 'Maíz'),
                             DropdownMenuEntry(value: 'Soja', label: 'Soja'),

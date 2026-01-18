@@ -131,7 +131,7 @@ class CurrentTripCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton.tonalIcon(
                     onPressed: () {
-                      Navigator.of(context).push(ExpensePage.route());
+                      Navigator.of(context).push(ExpensePage.route(trip: trip));
                     },
                     icon: const Icon(Symbols.garage_money),
                     label: const Text('Cargar gasto'),

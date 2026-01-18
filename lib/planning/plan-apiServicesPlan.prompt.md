@@ -73,8 +73,8 @@
 - [x] getDriverTruckById()
 - [x] assignDriverToTruck()
 - [x] removeDriverFromTruck()
-- [ ] getTrucksByDriver() *(requires backend implementation)*
-- [ ] getDriversByTruck() *(requires backend implementation)*
+- [ ] getTruckByDriver() *(requires backend implementation)*
+- [ ] getDriverByTruck() *(requires backend implementation)*
 
 ### summary_service.dart (Monthly Summaries):
 - [ ] getMonthlySummaries()
@@ -99,7 +99,6 @@
 ### payroll_export_service.dart:
 - [ ] exportPayrollPdf()
 - [ ] exportPayrollExcel()
-- [ ] exportPayrollCsv()
 
 ### payroll_period_service.dart:
 - [ ] getPayrollPeriods()

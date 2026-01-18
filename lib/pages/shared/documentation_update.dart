@@ -3,17 +3,19 @@ import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/models/truck_data.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
-
-enum DocumentType { driverLicense, medicalExam }
+import 'package:frontend_sgfcp/services/truck_service.dart';
 
 class DocumentationUpdatePage extends StatefulWidget {
-  final DriverData driver;
-  final DocumentType documentType;
+  final String type; // "driver" or "truck"
+  final dynamic entity; // DriverData or TruckData
+  final String documentType; // e.g., "driverLicense", "medicalExam", "service", "vtv", "plate"
 
   const DocumentationUpdatePage({
     super.key,
-    required this.driver,
+    required this.type,
+    required this.entity,
     required this.documentType,
   });
 
@@ -22,12 +24,16 @@ class DocumentationUpdatePage extends StatefulWidget {
 
   /// Helper to create a route to this page
   static Route route({
-    required DriverData driver,
-    required DocumentType documentType,
+    required String type,
+    required dynamic entity,
+    required String documentType,
   }) {
     return MaterialPageRoute<void>(
-      builder: (_) =>
-          DocumentationUpdatePage(driver: driver, documentType: documentType),
+      builder: (_) => DocumentationUpdatePage(
+        type: type,
+        entity: entity,
+        documentType: documentType,
+      ),
     );
   }
 
@@ -46,9 +52,23 @@ class _DocumentationUpdatePageState extends State<DocumentationUpdatePage> {
   void initState() {
     super.initState();
     // Inicializar con la fecha actual del documento
-    _expirationDate = widget.documentType == DocumentType.driverLicense
-        ? widget.driver.driverLicenseDueDate
-        : widget.driver.medicalExamDueDate;
+    if (widget.type == 'driver') {
+      final driver = widget.entity as DriverData;
+      if (widget.documentType == 'driverLicense') {
+        _expirationDate = driver.driverLicenseDueDate;
+      } else if (widget.documentType == 'medicalExam') {
+        _expirationDate = driver.medicalExamDueDate;
+      }
+    } else if (widget.type == 'truck') {
+      final truck = widget.entity as TruckData;
+      if (widget.documentType == 'service') {
+        _expirationDate = truck.serviceDueDate;
+      } else if (widget.documentType == 'vtv') {
+        _expirationDate = truck.vtvDueDate;
+      } else if (widget.documentType == 'plate') {
+        _expirationDate = truck.plateDueDate;
+      }
+    }
 
     if (_expirationDate != null) {
       _expirationDateController.text = DateFormat(
@@ -100,16 +120,32 @@ class _DocumentationUpdatePageState extends State<DocumentationUpdatePage> {
     });
 
     try {
-      // Actualizar el driver con la nueva fecha
-      await DriverService.updateDriver(
-        driverId: widget.driver.id,
-        driverLicenseDueDate: widget.documentType == DocumentType.driverLicense
-            ? _expirationDate
-            : null,
-        medicalExamDueDate: widget.documentType == DocumentType.medicalExam
-            ? _expirationDate
-            : null,
-      );
+      if (widget.type == 'driver') {
+        final driver = widget.entity as DriverData;
+        await DriverService.updateDriver(
+          driverId: driver.id,
+          driverLicenseDueDate: widget.documentType == 'driverLicense'
+              ? _expirationDate
+              : null,
+          medicalExamDueDate: widget.documentType == 'medicalExam'
+              ? _expirationDate
+              : null,
+        );
+      } else if (widget.type == 'truck') {
+        final truck = widget.entity as TruckData;
+        await TruckService.updateTruck(
+          truckId: truck.id,
+          serviceDueDate: widget.documentType == 'service'
+              ? _expirationDate
+              : null,
+          vtvDueDate: widget.documentType == 'vtv'
+              ? _expirationDate
+              : null,
+          plateDueDate: widget.documentType == 'plate'
+              ? _expirationDate
+              : null,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,9 +177,20 @@ class _DocumentationUpdatePageState extends State<DocumentationUpdatePage> {
   }
 
   String get _documentTitle {
-    return widget.documentType == DocumentType.driverLicense
-        ? 'Licencia de conducir'
-        : 'Examen médico';
+    switch (widget.documentType) {
+      case 'driverLicense':
+        return 'Licencia de conducir';
+      case 'medicalExam':
+        return 'Examen médico';
+      case 'service':
+        return 'Service';
+      case 'vtv':
+        return 'VTV';
+      case 'plate':
+        return 'Placa';
+      default:
+        return 'Documento';
+    }
   }
 
   @override
