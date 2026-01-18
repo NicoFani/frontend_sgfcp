@@ -1,13 +1,13 @@
 class ExpenseData {
   final int id;
-  final int tripId;
+  final int? tripId;
   final String type;
   final double amount;
   final DateTime createdAt;
 
   ExpenseData({
     required this.id,
-    required this.tripId,
+    this.tripId,
     required this.type,
     required this.amount,
     required this.createdAt,
@@ -16,7 +16,7 @@ class ExpenseData {
   factory ExpenseData.fromJson(Map<String, dynamic> json) {
     return ExpenseData(
       id: json['id'] as int,
-      tripId: json['trip_id'] as int,
+      tripId: json['trip_id'] as int?,
       type:
           (json['expense_type'] as String?) ??
           (json['type'] as String?) ??

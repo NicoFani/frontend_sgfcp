@@ -97,7 +97,9 @@ class _MiTripsPageState extends State<MiTripsPage> {
                   icon: Symbols.delivery_truck_speed,
                   label: 'Abrir',
                   onPressed: () {
-                    Navigator.of(context).push(TripPage.route(trip: currentTrip));
+                    Navigator.of(
+                      context,
+                    ).push(TripPage.route(trip: currentTrip));
                   },
                 );
               },
@@ -227,9 +229,10 @@ class _MiTripsPageState extends State<MiTripsPage> {
                   );
                 }
 
-                // Filtrar viajes por mes seleccionado
+                // Filtrar viajes finalizados por mes seleccionado
                 final tripsForMonth = snapshot.data!.where(
                   (t) =>
+                      t.state == 'Finalizado' &&
                       t.date.year == _selectedMonth.year &&
                       t.date.month == _selectedMonth.month,
                 );

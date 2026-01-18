@@ -5,41 +5,49 @@ import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
+import 'package:frontend_sgfcp/services/expense_service.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
-import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 
 class ExpensePage extends StatefulWidget {
-  const ExpensePage({super.key});
+  final TripData trip;
+
+  const ExpensePage({super.key, required this.trip});
 
   /// Route name you can use with Navigator.pushNamed
   static const String routeName = '/expense';
 
   /// Helper to create a route to this page
-  static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const ExpensePage());
+  static Route route({required TripData trip}) {
+    return MaterialPageRoute<void>(builder: (_) => ExpensePage(trip: trip));
   }
+
   @override
   State<ExpensePage> createState() => _ExpensePageState();
 }
 
 class _ExpensePageState extends State<ExpensePage> {
-
   DateTime? _startDate;
   bool _accountingPaid = false;
+  bool _isLoading = false;
 
   ExpenseType _expenseType = ExpenseType.reparaciones;
   String? _subtype; // será el tipo de peaje o tipo de reparación según el caso
 
-  
-  // Controllers para el selector de tipo de documento y datepicker
-  final TextEditingController _docNumberController = TextEditingController();
+  // Controllers
   final TextEditingController _startDateController = TextEditingController();
-  
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _litersController = TextEditingController();
+  final TextEditingController _municipalityController = TextEditingController();
+
   @override
   void dispose() {
-    _docNumberController.dispose();
     _startDateController.dispose();
+    _amountController.dispose();
+    _litersController.dispose();
+    _municipalityController.dispose();
     super.dispose();
   }
 
@@ -59,12 +67,133 @@ class _ExpensePageState extends State<ExpensePage> {
         _startDate = picked;
 
         final locale = Localizations.localeOf(context).toString();
-        _startDateController.text =
-            DateFormat('dd/MM/yyyy', locale).format(picked);
+        _startDateController.text = DateFormat(
+          'dd/MM/yyyy',
+          locale,
+        ).format(picked);
       });
     }
   }
 
+  Future<void> _saveExpense() async {
+    // Validaciones
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor selecciona una fecha')),
+      );
+      return;
+    }
+
+    if (_amountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa el importe')),
+      );
+      return;
+    }
+
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El importe debe ser un número válido')),
+      );
+      return;
+    }
+
+    // Validaciones específicas por tipo
+    if (_expenseType == ExpenseType.combustible &&
+        _litersController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa los litros cargados')),
+      );
+      return;
+    }
+
+    if (_expenseType == ExpenseType.multa &&
+        _municipalityController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa el municipio')),
+      );
+      return;
+    }
+
+    if ((_expenseType == ExpenseType.peaje ||
+            _expenseType == ExpenseType.reparaciones) &&
+        _subtype == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor selecciona el subtipo')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = TokenStorage.user;
+      if (user == null || user['id'] == null) {
+        throw Exception('No se encontró el ID del chofer');
+      }
+      final driverId = user['id'] as int;
+
+      // Mapear el tipo de gasto al formato que espera el backend
+      String expenseTypeForBackend;
+      switch (_expenseType) {
+        case ExpenseType.peaje:
+          expenseTypeForBackend = 'Peaje';
+          break;
+        case ExpenseType.viaticos:
+          expenseTypeForBackend = 'Viáticos';
+          break;
+        case ExpenseType.reparaciones:
+          expenseTypeForBackend = 'Reparaciones';
+          break;
+        case ExpenseType.combustible:
+          expenseTypeForBackend = 'Combustible';
+          break;
+        case ExpenseType.multa:
+          expenseTypeForBackend = 'Multa';
+          break;
+      }
+
+      await ExpenseService.createExpense(
+        driverId: driverId,
+        tripId: widget.trip.id,
+        expenseType: expenseTypeForBackend,
+        date: _startDate!,
+        amount: amount,
+        fuelLiters: _expenseType == ExpenseType.combustible
+            ? double.tryParse(_litersController.text)
+            : null,
+        fineMunicipality: _expenseType == ExpenseType.multa
+            ? _municipalityController.text
+            : null,
+        repairType: _expenseType == ExpenseType.reparaciones ? _subtype : null,
+        tollType: _expenseType == ExpenseType.peaje ? _subtype : null,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gasto cargado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar gasto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,9 +220,7 @@ class _ExpensePageState extends State<ExpensePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cargar gasto'),
-      ),
+      appBar: AppBar(title: const Text('Cargar gasto')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -101,10 +228,7 @@ class _ExpensePageState extends State<ExpensePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header: origen → destino
-              Text(
-                'Mattaldi → San Lorenzo',
-                style: textTheme.titleLarge,
-              ),
+              Text(widget.trip.route, style: textTheme.titleLarge),
 
               gap20,
 
@@ -132,11 +256,26 @@ class _ExpensePageState extends State<ExpensePage> {
                     label: const Text('Tipo de gasto'),
                     initialSelection: _expenseType,
                     dropdownMenuEntries: const [
-                      DropdownMenuEntry(value: ExpenseType.peaje, label: 'Peaje',),
-                      DropdownMenuEntry(value: ExpenseType.viaticos, label: 'Viáticos',),
-                      DropdownMenuEntry(value: ExpenseType.reparaciones, label: 'Reparaciones',),
-                      DropdownMenuEntry(value: ExpenseType.combustible, label: 'Combustible',),
-                      DropdownMenuEntry(value: ExpenseType.multa, label: 'Multa',),
+                      DropdownMenuEntry(
+                        value: ExpenseType.peaje,
+                        label: 'Peaje',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.viaticos,
+                        label: 'Viáticos',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.reparaciones,
+                        label: 'Reparaciones',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.combustible,
+                        label: 'Combustible',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.multa,
+                        label: 'Multa',
+                      ),
                     ],
                     onSelected: (value) {
                       if (value == null) return;
@@ -171,12 +310,15 @@ class _ExpensePageState extends State<ExpensePage> {
                   Expanded(
                     flex: 2,
                     child: TextField(
+                      controller: _amountController,
+                      enabled: !_isLoading,
                       decoration: const InputDecoration(
                         labelText: 'Importe',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
                   ),
                 ],
@@ -187,12 +329,15 @@ class _ExpensePageState extends State<ExpensePage> {
               // Combustible → input de litros cargados
               if (_expenseType == ExpenseType.combustible) ...[
                 TextField(
+                  controller: _litersController,
+                  enabled: !_isLoading,
                   decoration: const InputDecoration(
                     labelText: 'Litros cargados',
                     border: OutlineInputBorder(),
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
                 gap12,
               ],
@@ -200,6 +345,8 @@ class _ExpensePageState extends State<ExpensePage> {
               // Multa → input de municipio
               if (_expenseType == ExpenseType.multa) ...[
                 TextField(
+                  controller: _municipalityController,
+                  enabled: !_isLoading,
                   decoration: const InputDecoration(
                     labelText: 'Municipio',
                     border: OutlineInputBorder(),
@@ -208,17 +355,19 @@ class _ExpensePageState extends State<ExpensePage> {
                 gap12,
               ],
 
-             // Subtipo (si aplica)
-              if (_expenseType == ExpenseType.peaje || _expenseType == ExpenseType.reparaciones) ...[
-                LayoutBuilder(builder: (context, constraints) => ExpenseSubtypeDropdown(
-                  label: label,
-                  options: subtypeOptions,
-                  value: _subtype,
-                  onChanged: (v) => setState(() => _subtype = v),
-                ),),
+              // Subtipo (si aplica)
+              if (_expenseType == ExpenseType.peaje ||
+                  _expenseType == ExpenseType.reparaciones) ...[
+                LayoutBuilder(
+                  builder: (context, constraints) => ExpenseSubtypeDropdown(
+                    label: label,
+                    options: subtypeOptions,
+                    value: _subtype,
+                    onChanged: (v) => setState(() => _subtype = v),
+                  ),
+                ),
                 gap12,
               ],
-
 
               // Switch: ¿Pagó contaduría?
               LabeledSwitch(
@@ -229,16 +378,25 @@ class _ExpensePageState extends State<ExpensePage> {
 
               gap16,
 
-              // Botón principal: Comenzar viaje
+              // Botón principal: Cargar gasto
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(TripPage.route());
-                },
-                icon: const Icon(Symbols.garage_money),
-                label: const Text('Cargar gasto'),
+                onPressed: _isLoading ? null : _saveExpense,
+                icon: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : const Icon(Symbols.garage_money),
+                label: Text(_isLoading ? 'Cargando...' : 'Cargar gasto'),
               ),
             ],
           ),

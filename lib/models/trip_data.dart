@@ -1,4 +1,5 @@
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/models/load_type_data.dart';
 
 class TripData {
   final int id;
@@ -12,10 +13,14 @@ class TripData {
   final double estimatedKms;
   final double loadWeightOnLoad;
   final double loadWeightOnUnload;
-  final double ratePerTon;
+  final bool calculatedPerKm;
+  final double rate;
   final bool fuelOnClient;
   final double fuelLiters;
-  final List<DriverData> drivers;
+  final int? loadTypeId;
+  final LoadTypeData? loadType;
+  final int driverId;
+  final DriverData? driver;
 
   TripData({
     required this.id,
@@ -29,19 +34,29 @@ class TripData {
     required this.estimatedKms,
     required this.loadWeightOnLoad,
     required this.loadWeightOnUnload,
-    required this.ratePerTon,
+    required this.calculatedPerKm,
+    required this.rate,
     required this.fuelOnClient,
     required this.fuelLiters,
-    this.drivers = const [],
+    this.loadTypeId,
+    this.loadType,
+    required this.driverId,
+    this.driver,
   });
 
   factory TripData.fromJson(Map<String, dynamic> json) {
-    // Parsear drivers si existen
-    List<DriverData> drivers = [];
-    if (json['drivers'] != null && json['drivers'] is List) {
-      drivers = (json['drivers'] as List)
-          .map((driver) => DriverData.fromJson(driver as Map<String, dynamic>))
-          .toList();
+    // Parsear driver si existe
+    DriverData? driver;
+    if (json['driver'] != null) {
+      driver = DriverData.fromJson(json['driver'] as Map<String, dynamic>);
+    }
+
+    // Parsear load_type si existe
+    LoadTypeData? loadType;
+    if (json['load_type'] != null) {
+      loadType = LoadTypeData.fromJson(
+        json['load_type'] as Map<String, dynamic>,
+      );
     }
 
     return TripData(
@@ -60,10 +75,14 @@ class TripData {
           (json['load_weight_on_load'] as num?)?.toDouble() ?? 0.0,
       loadWeightOnUnload:
           (json['load_weight_on_unload'] as num?)?.toDouble() ?? 0.0,
-      ratePerTon: (json['rate_per_ton'] as num?)?.toDouble() ?? 0.0,
+      calculatedPerKm: json['calculated_per_km'] as bool? ?? false,
+      rate: (json['rate'] as num?)?.toDouble() ?? 0.0,
       fuelOnClient: json['fuel_on_client'] as bool? ?? false,
       fuelLiters: (json['fuel_liters'] as num?)?.toDouble() ?? 0.0,
-      drivers: drivers,
+      loadTypeId: json['load_type_id'] as int?,
+      loadType: loadType,
+      driverId: json['driver_id'] as int,
+      driver: driver,
     );
   }
 

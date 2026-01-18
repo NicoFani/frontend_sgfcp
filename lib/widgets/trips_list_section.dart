@@ -27,8 +27,8 @@ class TripsListSection extends StatelessWidget {
               title: Text(trips[i].route),
               subtitle: Text(
                 showDriverNameSubtitle
-                    ? (trips[i].drivers.isNotEmpty
-                          ? trips[i].drivers.map((d) => d.fullName).join(', ')
+                    ? (trips[i].driver != null
+                          ? trips[i].driver!.fullName
                           : 'Sin chofer')
                     : DateFormat('dd/MM/yyyy').format(trips[i].date),
               ),

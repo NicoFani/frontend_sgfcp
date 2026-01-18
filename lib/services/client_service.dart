@@ -130,28 +130,4 @@ class ClientService {
       ApiResponseHandler.handleNetworkError(e);
     }
   }
-
-  // POST - Convertir cliente a dador de carga
-  static Future<Map<String, dynamic>> convertToLoadOwner({
-    required int clientId,
-  }) async {
-    final token = TokenStorage.accessToken;
-
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/clients/$clientId/convert-to-load-owner'),
-            headers: ApiResponseHandler.createHeaders(token),
-          )
-          .timeout(ApiResponseHandler.defaultTimeout);
-
-      return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
-        response,
-        (jsonData) => jsonData as Map<String, dynamic>,
-        operation: 'convertir cliente a dador',
-      );
-    } catch (e) {
-      ApiResponseHandler.handleNetworkError(e);
-    }
-  }
 }

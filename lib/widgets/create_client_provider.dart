@@ -51,16 +51,14 @@ class ClientProviderDialog extends StatefulWidget {
 
 class _ClientProviderDialogState extends State<ClientProviderDialog> {
   final TextEditingController _nameController = TextEditingController();
-  late String _selectedType;
-  late String _originalType;
+  late String _entityType; // Solo para lectura, no se puede cambiar
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.initialName ?? '';
-    _selectedType = widget.initialType ?? 'Cliente';
-    _originalType = widget.initialType ?? 'Cliente';
+    _entityType = widget.initialType ?? 'Cliente';
   }
 
   @override
@@ -84,49 +82,31 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
 
     try {
       if (widget.isEdit) {
-        // Modo edición
-        final typeChanged = _selectedType != _originalType;
-
-        if (typeChanged) {
-          // Cambio de tipo: convertir
-          if (_originalType == 'Cliente' && _selectedType == 'Dador') {
-            await ClientService.convertToLoadOwner(clientId: widget.entityId!);
-          } else if (_originalType == 'Dador' && _selectedType == 'Cliente') {
-            await LoadOwnerService.convertToClient(
-              loadOwnerId: widget.entityId!,
-            );
-          }
+        // Modo edición: solo actualizar nombre
+        if (_entityType == 'Cliente') {
+          await ClientService.updateClient(
+            clientId: widget.entityId!,
+            name: _nameController.text.trim(),
+          );
         } else {
-          // Solo actualizar nombre
-          if (_selectedType == 'Cliente') {
-            await ClientService.updateClient(
-              clientId: widget.entityId!,
-              name: _nameController.text.trim(),
-            );
-          } else {
-            await LoadOwnerService.updateLoadOwner(
-              loadOwnerId: widget.entityId!,
-              name: _nameController.text.trim(),
-            );
-          }
+          await LoadOwnerService.updateLoadOwner(
+            loadOwnerId: widget.entityId!,
+            name: _nameController.text.trim(),
+          );
         }
 
         if (mounted) {
           Navigator.of(context).pop(true);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                typeChanged
-                    ? 'Convertido a $_selectedType correctamente'
-                    : '$_selectedType actualizado correctamente',
-              ),
+              content: Text('$_entityType actualizado correctamente'),
               backgroundColor: Colors.green,
             ),
           );
         }
       } else {
         // Modo creación
-        if (_selectedType == 'Cliente') {
+        if (_entityType == 'Cliente') {
           await ClientService.createClient(name: _nameController.text.trim());
         } else {
           await LoadOwnerService.createLoadOwner(
@@ -138,7 +118,7 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
           Navigator.of(context).pop(true);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('$_selectedType creado correctamente'),
+              content: Text('$_entityType creado correctamente'),
               backgroundColor: Colors.green,
             ),
           );
@@ -159,7 +139,7 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar eliminación'),
-        content: Text('¿Estás seguro de eliminar este $_selectedType?'),
+        content: Text('¿Estás seguro de eliminar este $_entityType?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -181,7 +161,7 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
     setState(() => _isLoading = true);
 
     try {
-      if (_selectedType == 'Cliente') {
+      if (_entityType == 'Cliente') {
         await ClientService.deleteClient(clientId: widget.entityId!);
       } else {
         await LoadOwnerService.deleteLoadOwner(loadOwnerId: widget.entityId!);
@@ -191,7 +171,7 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$_selectedType eliminado correctamente'),
+            content: Text('$_entityType eliminado correctamente'),
             backgroundColor: Colors.green,
           ),
         );
@@ -245,36 +225,38 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
 
             gap16,
 
-            // Radio buttons
-            RadioListTile<String>(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Cliente'),
-              value: 'Cliente',
-              groupValue: _selectedType,
-              onChanged: _isLoading
-                  ? null
-                  : (value) {
-                      setState(() {
-                        _selectedType = value!;
-                      });
-                    },
-            ),
+            // Radio buttons solo en modo creación
+            if (!widget.isEdit) ...[
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Cliente'),
+                value: 'Cliente',
+                groupValue: _entityType,
+                onChanged: _isLoading
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _entityType = value!;
+                        });
+                      },
+              ),
 
-            RadioListTile<String>(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Dador'),
-              value: 'Dador',
-              groupValue: _selectedType,
-              onChanged: _isLoading
-                  ? null
-                  : (value) {
-                      setState(() {
-                        _selectedType = value!;
-                      });
-                    },
-            ),
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Dador'),
+                value: 'Dador',
+                groupValue: _entityType,
+                onChanged: _isLoading
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _entityType = value!;
+                        });
+                      },
+              ),
 
-            gap16,
+              gap16,
+            ],
 
             if (widget.isEdit) ...[
               // Botón Eliminar (solo en edición)

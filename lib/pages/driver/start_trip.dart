@@ -6,9 +6,11 @@ import 'package:frontend_sgfcp/widgets/document_type_selector.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/load_owner_data.dart';
+import 'package:frontend_sgfcp/models/load_type_data.dart';
 
 import 'package:frontend_sgfcp/services/load_owner_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
+import 'package:frontend_sgfcp/services/load_type_service.dart';
 
 class StartTripPage extends StatefulWidget {
   final TripData trip;
@@ -33,6 +35,8 @@ class _StartTripPageState extends State<StartTripPage> {
   bool _isLoading = false;
   bool _fuelDelivered = false; // Checkbox para vale de combustible
   LoadOwnerData? _selectedLoadOwner; // Dador de carga seleccionado
+  int? _selectedLoadTypeId; // Tipo de carga seleccionado
+  bool _calculatedPerKm = false; // Tipo de cálculo
 
   // Controllers para el selector de tipo de documento y datepicker
   final TextEditingController _docNumberController = TextEditingController();
@@ -98,8 +102,10 @@ class _StartTripPageState extends State<StartTripPage> {
         if (_kmController.text.isNotEmpty)
           'estimated_kms': double.tryParse(_kmController.text),
         if (_selectedLoadOwner != null) 'load_owner_id': _selectedLoadOwner!.id,
+        if (_selectedLoadTypeId != null) 'load_type_id': _selectedLoadTypeId,
+        'calculated_per_km': _calculatedPerKm,
         if (_tariffController.text.isNotEmpty)
-          'rate_per_ton': double.tryParse(_tariffController.text),
+          'rate': double.tryParse(_tariffController.text),
         // Incluir combustible solo si fue entregado
         if (_fuelDelivered && _fuelController.text.isNotEmpty)
           'fuel_liters': double.tryParse(_fuelController.text),
@@ -203,7 +209,7 @@ class _StartTripPageState extends State<StartTripPage> {
                       enabled: !_isLoading,
                       controller: _weightController,
                       decoration: const InputDecoration(
-                        labelText: 'Peso de Carga (kg)',
+                        labelText: 'Peso de Carga (Tn)',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
@@ -227,6 +233,101 @@ class _StartTripPageState extends State<StartTripPage> {
                     ),
                   ),
                 ],
+              ),
+
+              gap12,
+
+              // Tipo de Carga
+              FutureBuilder<List<LoadTypeData>>(
+                future: LoadTypeService.getLoadTypes(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return DropdownButtonFormField<int>(
+                      value: null,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de Carga',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      items: const [],
+                      onChanged: null,
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return DropdownButtonFormField<int>(
+                      value: null,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de Carga',
+                        border: OutlineInputBorder(),
+                        errorText: 'Error al cargar tipos',
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      items: const [],
+                      onChanged: null,
+                    );
+                  }
+
+                  final loadTypes = snapshot.data ?? [];
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<int>(
+                        value: _selectedLoadTypeId,
+                        decoration: const InputDecoration(
+                          labelText: 'Tipo de Carga',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
+                        items: loadTypes
+                            .map(
+                              (loadType) => DropdownMenuItem(
+                                value: loadType.id,
+                                child: Text(loadType.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _selectedLoadTypeId = value;
+                                  // Establecer el calculatedPerKm por defecto según el tipo
+                                  final selectedType = loadTypes.firstWhere(
+                                    (lt) => lt.id == value,
+                                  );
+                                  _calculatedPerKm =
+                                      selectedType.defaultCalculatedPerKm;
+                                });
+                              },
+                      ),
+                      gap12,
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Tipo de cálculo'),
+                        subtitle: Text(
+                          _calculatedPerKm ? 'Por Kilómetro' : 'Por Tonelada',
+                        ),
+                        value: _calculatedPerKm,
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() => _calculatedPerKm = value);
+                              },
+                      ),
+                    ],
+                  );
+                },
               ),
 
               gap12,
@@ -301,9 +402,11 @@ class _StartTripPageState extends State<StartTripPage> {
                     child: TextField(
                       enabled: !_isLoading,
                       controller: _tariffController,
-                      decoration: const InputDecoration(
-                        labelText: 'Tarifa por Tonelada',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: widget.trip.calculatedPerKm
+                            ? 'Tarifa por Kilómetro'
+                            : 'Tarifa por Tonelada',
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,

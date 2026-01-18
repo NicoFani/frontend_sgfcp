@@ -43,17 +43,23 @@ class TripPage extends StatefulWidget {
 class _TripPageState extends State<TripPage> {
   late Future<TripData> _tripFuture;
   late Future<List<ExpenseData>> _expensesFuture;
+  TripData? _currentTrip;
 
   @override
   void initState() {
     super.initState();
     // Si ya tenemos el viaje completo, no hacemos otra llamada
     if (widget.trip != null) {
+      _currentTrip = widget.trip;
       _tripFuture = Future.value(widget.trip!);
-      _expensesFuture = ExpenseService.getExpensesByTrip(tripId: widget.trip!.id);
+      _expensesFuture = ExpenseService.getExpensesByTrip(
+        tripId: widget.trip!.id,
+      );
     } else if (widget.tripId != null) {
       _tripFuture = TripService.getTrip(tripId: widget.tripId!);
-      _expensesFuture = ExpenseService.getExpensesByTrip(tripId: widget.tripId!);
+      _expensesFuture = ExpenseService.getExpensesByTrip(
+        tripId: widget.tripId!,
+      );
     } else {
       _tripFuture = TripService.getCurrentTrip().then((trip) {
         if (trip == null) {
@@ -134,6 +140,7 @@ class _TripPageState extends State<TripPage> {
           }
 
           final trip = snapshot.data!;
+          _currentTrip = trip; // Guardar en estado para usar fuera del builder
 
           return SafeArea(
             child: SingleChildScrollView(
@@ -178,8 +185,8 @@ class _TripPageState extends State<TripPage> {
                   if (isAdmin) ...[
                     SimpleCard.iconOnly(
                       title: 'Chofer',
-                      subtitle: trip.drivers.isNotEmpty
-                          ? trip.drivers.map((d) => d.fullName).join(', ')
+                      subtitle: trip.driver != null
+                          ? trip.driver!.fullName
                           : 'Sin chofer asignado',
                       icon: Symbols.arrow_right,
                       onPressed: () {
@@ -192,7 +199,6 @@ class _TripPageState extends State<TripPage> {
                   ],
 
                   // Balance será calculado junto a los gastos más abajo
-
                   InfoCard(
                     title: 'Información',
                     items: [
@@ -202,7 +208,7 @@ class _TripPageState extends State<TripPage> {
                       ),
                       InfoItem(
                         label: 'Tarifa por tonelada',
-                        value: '\$${trip.ratePerTon}',
+                        value: '\$${trip.rate}',
                       ),
                       InfoItem(
                         label: 'Vale para combustible',
@@ -254,7 +260,7 @@ class _TripPageState extends State<TripPage> {
                     leftLabel: 'Tipo',
                     leftValue: 'Por tonelada',
                     rightLabel: 'Tarifa',
-                    rightValue: '${currencyFormat.format(trip.ratePerTon)}/t',
+                    rightValue: '${currencyFormat.format(trip.rate)}/t',
                     leftColumnWidth: infoLabelWidth,
                   ),
 
@@ -281,12 +287,14 @@ class _TripPageState extends State<TripPage> {
                       }
 
                       final expenses = snapshot.data ?? [];
-                      final expensesTotal =
-                          expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+                      final expensesTotal = expenses.fold<double>(
+                        0.0,
+                        (sum, e) => sum + e.amount,
+                      );
                       final weightTons = trip.loadWeightOnUnload > 0
                           ? trip.loadWeightOnUnload
                           : trip.loadWeightOnLoad;
-                      final commissionTotal = trip.ratePerTon * weightTons;
+                      final commissionTotal = trip.rate * weightTons;
                       final balanceFinal = commissionTotal - expensesTotal;
 
                       final rows = expenses
@@ -295,9 +303,9 @@ class _TripPageState extends State<TripPage> {
                               col1: expense.type,
                               col2: currencyFormat.format(expense.amount),
                               onEdit: () {
-                                Navigator.of(context).push(
-                                  EditExpensePage.route(),
-                                );
+                                Navigator.of(
+                                  context,
+                                ).push(EditExpensePage.route());
                               },
                             ),
                           )
@@ -329,8 +337,9 @@ class _TripPageState extends State<TripPage> {
 
                           if (expenses.isEmpty)
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
                               child: Text(
                                 'No hay gastos registrados',
                                 style: textTheme.bodyMedium,
@@ -353,14 +362,18 @@ class _TripPageState extends State<TripPage> {
           );
         },
       ),
-      floatingActionButton: TripFabMenu(
-        onAddExpense: () {
-          Navigator.of(context).push(ExpensePage.route());
-        },
-        onEditTrip: () {
-          Navigator.of(context).push(EditTripPage.route());
-        },
-      ),
+      floatingActionButton: _currentTrip != null
+          ? TripFabMenu(
+              onAddExpense: () {
+                Navigator.of(
+                  context,
+                ).push(ExpensePage.route(trip: _currentTrip!));
+              },
+              onEditTrip: () {
+                Navigator.of(context).push(EditTripPage.route());
+              },
+            )
+          : null,
     );
   }
 

@@ -45,7 +45,9 @@ class _TripDetailPageAdminState extends State<TripDetailPageAdmin> {
     super.initState();
     // Cargar gastos del viaje si existe, de lo contrario lista vacía
     if (widget.trip != null) {
-      _expensesFuture = ExpenseService.getExpensesByTrip(tripId: widget.trip!.id);
+      _expensesFuture = ExpenseService.getExpensesByTrip(
+        tripId: widget.trip!.id,
+      );
     } else {
       _expensesFuture = Future.value(<ExpenseData>[]);
     }
@@ -142,7 +144,7 @@ class _TripDetailPageAdminState extends State<TripDetailPageAdmin> {
                 ),
                 InfoItem(
                   label: 'Tarifa por tonelada',
-                  value: '\$${tripData.ratePerTon}',
+                  value: '\$${tripData.rate}',
                 ),
                 InfoItem(
                   label: 'Vale para combustible',
@@ -193,7 +195,7 @@ class _TripDetailPageAdminState extends State<TripDetailPageAdmin> {
               leftLabel: 'Tipo',
               leftValue: 'Por tonelada',
               rightLabel: 'Tarifa',
-              rightValue: '\$${tripData.ratePerTon}/t',
+              rightValue: '\$${tripData.rate}',
               leftColumnWidth: infoLabelWidth,
             ),
 
@@ -265,7 +267,6 @@ class _TripDetailPageAdminState extends State<TripDetailPageAdmin> {
     return '${date.day}/${date.month}/${date.year}';
   }
 }
-
 
 class FinishedTripCard extends StatelessWidget {
   const FinishedTripCard({super.key});

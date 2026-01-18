@@ -7,7 +7,8 @@ import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TripService {
-  static String get baseUrl => dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
+  static String get baseUrl =>
+      dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
   // GET BY DRIVER- Obtener todos los viajes del conductor autenticado
   static Future<List<TripData>> getTrips() async {
@@ -138,7 +139,7 @@ class TripService {
   }
 
   // POST - Crear un nuevo viaje
-  static Future<TripData> createTrip({
+  static Future<List<TripData>> createTrip({
     required String origin,
     String? originDescription,
     required String destination,
@@ -146,12 +147,12 @@ class TripService {
     required DateTime startDate,
     required int clientId,
     required List<int> driverIds,
+    double? rate,
     String? documentType,
     String? documentNumber,
     double? estimatedKms,
     double? loadWeightOnLoad,
     double? loadWeightOnUnload,
-    double? ratePerTon,
     bool fuelOnClient = false,
     double? fuelLiters,
   }) async {
@@ -168,13 +169,13 @@ class TripService {
         'client_id': clientId,
         'drivers': driverIds,
         'state_id': 'Pendiente', // Todos los viajes nuevos son Pendiente
+        if (rate != null) 'rate': rate,
         if (documentType != null) 'document_type': documentType,
         if (documentNumber != null) 'document_number': documentNumber,
         if (estimatedKms != null) 'estimated_kms': estimatedKms,
         if (loadWeightOnLoad != null) 'load_weight_on_load': loadWeightOnLoad,
         if (loadWeightOnUnload != null)
           'load_weight_on_unload': loadWeightOnUnload,
-        if (ratePerTon != null) 'rate_per_ton': ratePerTon,
         'fuel_on_client': fuelOnClient,
         if (fuelLiters != null) 'fuel_liters': fuelLiters,
       };
@@ -187,9 +188,11 @@ class TripService {
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 
-      return ApiResponseHandler.handleResponse<TripData>(
+      return ApiResponseHandler.handleResponse<List<TripData>>(
         response,
-        (jsonData) => TripData.fromJson(jsonData['trip']),
+        (jsonData) => (jsonData['trips'] as List<dynamic>)
+            .map((trip) => TripData.fromJson(trip))
+            .toList(),
         operation: 'crear viaje',
       );
     } catch (e) {
@@ -220,7 +223,9 @@ class TripService {
   }
 
   // GET BY DRIVER - Obtener viajes de un conductor específico
-  static Future<List<TripData>> getTripsByDriver({required int driverId}) async {
+  static Future<List<TripData>> getTripsByDriver({
+    required int driverId,
+  }) async {
     final token = TokenStorage.accessToken;
 
     try {

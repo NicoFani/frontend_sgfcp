@@ -8,7 +8,6 @@ import 'package:frontend_sgfcp/pages/shared/finish_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
 import 'package:frontend_sgfcp/pages/shared/trip.dart';
 
-
 class HomePageDriver extends StatelessWidget {
   const HomePageDriver({super.key});
 
@@ -26,38 +25,27 @@ class HomePageDriver extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return SafeArea(
-      
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // --- Current Trip section ---
-            Text(
-              'Viaje actual',
-              style: textTheme.titleLarge,
-            ),
+            Text('Viaje actual', style: textTheme.titleLarge),
             gap8,
             const CurrentTripCard(),
 
             gap24,
 
             // --- Next Trip section ---
-            Text(
-              'Tu próximo viaje',
-              style: textTheme.titleLarge,
-            ),
+            Text('Tu próximo viaje', style: textTheme.titleLarge),
             gap8,
             const NextTripCard(trip: null),
 
             gap24,
 
             // --- Upcoming trips + calendar title ---
-            Text(
-              'Próximos viajes',
-              style: textTheme.titleLarge,
-            ),
+            Text('Próximos viajes', style: textTheme.titleLarge),
             gap8,
 
             // TODO: calendar widget will go here later
@@ -85,7 +73,7 @@ class HomePageDriver extends StatelessWidget {
 /// Card: "Viaje actual"
 class CurrentTripCard extends StatelessWidget {
   final dynamic trip;
-  
+
   const CurrentTripCard({super.key, this.trip});
 
   @override
@@ -101,10 +89,7 @@ class CurrentTripCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Text(
-              'Mattaldi → San Lorenzo',
-              style: textTheme.titleMedium,
-            ),
+            Text('Mattaldi → San Lorenzo', style: textTheme.titleMedium),
             gap4,
             Text(
               'Viaje iniciado hace 3 horas',
@@ -122,8 +107,14 @@ class CurrentTripCard extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(TripPage.route());
                   },
-                  icon: Icon(Icons.info_outline, color: colors.onSurfaceVariant,),
-                  label: Text('Info', style: TextStyle(color: colors.onSurfaceVariant),),
+                  icon: Icon(
+                    Icons.info_outline,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    'Info',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
                 ),
 
                 gapW8,
@@ -131,7 +122,7 @@ class CurrentTripCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton.tonalIcon(
                     onPressed: () {
-                      Navigator.of(context).push(ExpensePage.route());
+                      Navigator.of(context).push(ExpensePage.route(trip: trip));
                     },
                     icon: const Icon(Symbols.garage_money),
                     label: const Text('Cargar gasto'),
@@ -163,7 +154,7 @@ class CurrentTripCard extends StatelessWidget {
 /// Card: "Tu próximo viaje"
 class NextTripCard extends StatelessWidget {
   final dynamic trip;
-  
+
   const NextTripCard({super.key, required this.trip});
 
   @override
@@ -178,10 +169,7 @@ class NextTripCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Mattaldi → San Lorenzo',
-              style: textTheme.titleMedium,
-            ),
+            Text('Mattaldi → San Lorenzo', style: textTheme.titleMedium),
             gap4,
             Text(
               'Faltan 2 días',
@@ -191,11 +179,15 @@ class NextTripCard extends StatelessWidget {
             ),
             gap16,
             FilledButton.icon(
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
               onPressed: () {
                 Navigator.of(context).push(StartTripPage.route(trip: trip));
               },
-              icon: const Icon(Icons.add_road), // poné el ícono que usaste en Figma
+              icon: const Icon(
+                Icons.add_road,
+              ), // poné el ícono que usaste en Figma
               label: const Text('Comenzar viaje'),
             ),
           ],

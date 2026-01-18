@@ -30,20 +30,33 @@ class _FinishTripPageState extends State<FinishTripPage> {
 
   final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
+  final FocusNode _dateFocusNode = FocusNode();
 
   @override
   void dispose() {
     _endDateController.dispose();
     _weightController.dispose();
+    _dateFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _pickEndDate() async {
     final now = DateTime.now();
+    
+    // Si la fecha de inicio del viaje es posterior a hoy, usar esa como inicial
+    // De lo contrario, usar hoy o la fecha ya seleccionada
+    DateTime initialDate;
+    if (_endDate != null) {
+      initialDate = _endDate!;
+    } else if (widget.trip.startDate.isAfter(now)) {
+      initialDate = widget.trip.startDate;
+    } else {
+      initialDate = now;
+    }
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: _endDate ?? now,
+      initialDate: initialDate,
       firstDate: widget.trip.startDate,
       lastDate: DateTime(now.year + 5),
     );
@@ -80,12 +93,16 @@ class _FinishTripPageState extends State<FinishTripPage> {
     setState(() => _isLoading = true);
 
     try {
+      // Convertir toneladas a kilogramos (1 Tn = 1000 kg)
+      final weightInTons = double.tryParse(_weightController.text) ?? 0;
+      final weightInKg = weightInTons * 1000;
+
       await TripService.updateTrip(
         tripId: widget.trip.id,
         data: {
           'state_id': 'Finalizado',
           'end_date': _endDate!.toIso8601String().split('T')[0],
-          'load_weight_on_unload': double.tryParse(_weightController.text) ?? 0,
+          'load_weight_on_unload': weightInKg,
         },
       );
 
@@ -136,16 +153,22 @@ class _FinishTripPageState extends State<FinishTripPage> {
                 children: [
                   Expanded(
                     flex: 1,
-                    child: TextField(
-                      enabled: !_isLoading,
-                      controller: _endDateController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Fecha de fin',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today_outlined),
-                      ),
+                    child: InkWell(
                       onTap: _isLoading ? null : _pickEndDate,
+                      borderRadius: BorderRadius.circular(4),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Fecha de fin',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today_outlined),
+                        ),
+                        child: Text(
+                          _endDateController.text.isEmpty
+                              ? ''
+                              : _endDateController.text,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
                     ),
                   ),
                   gapW12,
@@ -155,7 +178,7 @@ class _FinishTripPageState extends State<FinishTripPage> {
                       enabled: !_isLoading,
                       controller: _weightController,
                       decoration: const InputDecoration(
-                        labelText: 'Peso neto descarga (kg)',
+                        labelText: 'Peso neto descarga (Tn)',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(

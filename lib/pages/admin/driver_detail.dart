@@ -67,11 +67,7 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
   }
 
   List<TripData> _filterTripsByDriver(List<TripData> trips) {
-    return trips
-        .where(
-          (trip) => trip.drivers.any((driver) => driver.id == widget.driverId),
-        )
-        .toList();
+    return trips.where((trip) => trip.driver?.id == widget.driverId).toList();
   }
 
   List<TripData> _getCurrentAndNextTrips(List<TripData> trips) {
@@ -246,7 +242,7 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
                       onTripTap: (trip) {
                         Navigator.of(context).push(TripPage.route(trip: trip));
                       },
-                    )
+                    ),
                 ],
               );
             },
@@ -271,10 +267,8 @@ class _ProfileOptionsList extends StatelessWidget {
           title: Text('Datos del chofer'),
           trailing: const Icon(Icons.arrow_right),
           onTap: () {
-            Navigator.of(context).push(
-              DriverDataPage.route(driver: driver)
-              );
-          }
+            Navigator.of(context).push(DriverDataPage.route(driver: driver));
+          },
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -285,10 +279,10 @@ class _ProfileOptionsList extends StatelessWidget {
           title: Text('Documentación'),
           trailing: const Icon(Icons.arrow_right),
           onTap: () {
-                Navigator.of(context).push(
-                  DriverDocumentationPage.route(driver: driver),
-                );
-              }
+            Navigator.of(
+              context,
+            ).push(DriverDocumentationPage.route(driver: driver));
+          },
         ),
       ],
     );

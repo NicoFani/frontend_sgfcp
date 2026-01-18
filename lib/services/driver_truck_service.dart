@@ -35,6 +35,33 @@ class DriverTruckService {
     }
   }
 
+  // GET - Obtener el camión actual de un chofer (el más reciente)
+  static Future<TruckData?> getCurrentTruckByDriver(int driverId) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/driver-trucks/driver/$driverId/current-truck'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      if (response.statusCode == 404) {
+        return null;
+      }
+
+      return ApiResponseHandler.handleResponse<TruckData>(
+        response,
+        (jsonData) => TruckData.fromJson(jsonData),
+        operation: 'obtener vehículo actual del chofer',
+      );
+    } catch (e) {
+      // Si no hay camión asignado, retornar null
+      return null;
+    }
+  }
+
   // GET ALL - Obtener todas las asignaciones conductor-camión
   static Future<List<DriverTruckData>> getDriverTrucks() async {
     try {

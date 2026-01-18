@@ -116,7 +116,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
     setState(() => _isLoading = true);
 
     try {
-      await TripService.createTrip(
+      final createdTrips = await TripService.createTrip(
         origin: _originController.text,
         originDescription: _originDescController.text.isNotEmpty
             ? _originDescController.text
@@ -133,8 +133,10 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Viaje creado correctamente'),
+          SnackBar(
+            content: Text(
+              '${createdTrips.length} viaje(s) creado(s) correctamente',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -372,7 +374,9 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
 
               // Botón Crear viaje
               FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
                 onPressed: _isLoading ? null : _createTrip,
                 icon: _isLoading
                     ? const SizedBox(

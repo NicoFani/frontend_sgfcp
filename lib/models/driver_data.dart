@@ -1,3 +1,5 @@
+import 'package:frontend_sgfcp/models/truck_data.dart';
+
 class DriverData {
   final int id;
   final String firstName;
@@ -8,6 +10,7 @@ class DriverData {
   final String? cbu;
   final DateTime? driverLicenseDueDate;
   final DateTime? medicalExamDueDate;
+  final TruckData? currentTruck;
 
   DriverData({
     required this.id,
@@ -19,6 +22,7 @@ class DriverData {
     this.cbu,
     this.driverLicenseDueDate,
     this.medicalExamDueDate,
+    this.currentTruck,
   });
 
   String get fullName => '$firstName $lastName';
@@ -38,6 +42,9 @@ class DriverData {
       medicalExamDueDate: json['medical_exam_due_date'] != null
           ? DateTime.parse(json['medical_exam_due_date'] as String)
           : null,
+      currentTruck: json['current_truck'] != null
+          ? TruckData.fromJson(json['current_truck'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -52,6 +59,7 @@ class DriverData {
       'cbu': cbu,
       'driver_license_due_date': driverLicenseDueDate?.toIso8601String(),
       'medical_exam_due_date': medicalExamDueDate?.toIso8601String(),
+      if (currentTruck != null) 'current_truck': currentTruck!.toJson(),
     };
   }
 }

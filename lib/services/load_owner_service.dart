@@ -134,28 +134,4 @@ class LoadOwnerService {
       ApiResponseHandler.handleNetworkError(e);
     }
   }
-
-  // POST - Convertir dador de carga a cliente
-  static Future<Map<String, dynamic>> convertToClient({
-    required int loadOwnerId,
-  }) async {
-    final token = TokenStorage.accessToken;
-
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/load-owners/$loadOwnerId/convert-to-client'),
-            headers: ApiResponseHandler.createHeaders(token),
-          )
-          .timeout(ApiResponseHandler.defaultTimeout);
-
-      return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
-        response,
-        (jsonData) => jsonData as Map<String, dynamic>,
-        operation: 'convertir dador a cliente',
-      );
-    } catch (e) {
-      ApiResponseHandler.handleNetworkError(e);
-    }
-  }
 }

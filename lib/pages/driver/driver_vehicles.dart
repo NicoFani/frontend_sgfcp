@@ -23,16 +23,18 @@ class DriverVehiclesPage extends StatefulWidget {
 }
 
 class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
-  late Future<List<TruckData>> _trucksFuture;
+  late Future<TruckData?> _currentTruckFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadTrucks();
+    _loadCurrentTruck();
   }
 
-  void _loadTrucks() {
-    _trucksFuture = DriverTruckService.getTrucksByDriver(widget.driverId);
+  void _loadCurrentTruck() {
+    _currentTruckFuture = DriverTruckService.getCurrentTruckByDriver(
+      widget.driverId,
+    );
   }
 
   @override
@@ -41,9 +43,9 @@ class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis Vehículos')),
-      body: FutureBuilder<List<TruckData>>(
-        future: _trucksFuture,
+      appBar: AppBar(title: const Text('Mi Vehículo')),
+      body: FutureBuilder<TruckData?>(
+        future: _currentTruckFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -57,7 +59,7 @@ class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
                   Icon(Symbols.error_outline, size: 64, color: colors.error),
                   gap16,
                   Text(
-                    'Error al cargar vehículos',
+                    'Error al cargar vehículo',
                     style: textTheme.titleMedium,
                   ),
                   gap8,
@@ -73,9 +75,9 @@ class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
             );
           }
 
-          final trucks = snapshot.data ?? [];
+          final truck = snapshot.data;
 
-          if (trucks.isEmpty) {
+          if (truck == null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -87,12 +89,12 @@ class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
                   ),
                   gap16,
                   Text(
-                    'No hay vehículos asignados',
+                    'No hay vehículo asignado',
                     style: textTheme.titleMedium,
                   ),
                   gap8,
                   Text(
-                    'No tienes vehículos asignados actualmente',
+                    'No tienes un vehículo asignado actualmente',
                     style: textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -102,47 +104,119 @@ class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
             );
           }
 
-          return ListView.builder(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            itemCount: trucks.length,
-            itemBuilder: (context, index) {
-              final truck = trucks[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: colors.primaryContainer,
-                    child: Icon(
-                      Symbols.local_shipping,
-                      color: colors.onPrimaryContainer,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: colors.primaryContainer,
+                          child: Icon(
+                            Symbols.local_shipping,
+                            size: 32,
+                            color: colors.onPrimaryContainer,
+                          ),
+                        ),
+                        gap16,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${truck.brand} ${truck.modelName}',
+                                style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              gap4,
+                              Text(
+                                'Patente: ${truck.plate}',
+                                style: textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  title: Text(
-                    '${truck.brand} ${truck.modelName}',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      gap4,
-                      Text('Patente: ${truck.plate}'),
-                      Text('Año: ${truck.fabricationYear}'),
-                    ],
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.of(
+                    gap24,
+                    const Divider(),
+                    gap16,
+                    _buildInfoRow(
                       context,
-                    ).push(VehiclePage.route(truckId: truck.id));
-                  },
+                      'Año de fabricación',
+                      truck.fabricationYear.toString(),
+                    ),
+                    gap12,
+                    _buildInfoRow(
+                      context,
+                      'Estado',
+                      truck.operational ? 'Operativo' : 'No operativo',
+                    ),
+                    gap12,
+                    _buildInfoRow(
+                      context,
+                      'Vencimiento VTV',
+                      '${truck.vtvDueDate.day}/${truck.vtvDueDate.month}/${truck.vtvDueDate.year}',
+                    ),
+                    gap12,
+                    _buildInfoRow(
+                      context,
+                      'Vencimiento Service',
+                      '${truck.serviceDueDate.day}/${truck.serviceDueDate.month}/${truck.serviceDueDate.year}',
+                    ),
+                    gap24,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(
+                            context,
+                          ).push(VehiclePage.route(truckId: truck.id));
+                        },
+                        icon: const Icon(Symbols.info),
+                        label: const Text('Ver detalles completos'),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
     );
   }
 }
