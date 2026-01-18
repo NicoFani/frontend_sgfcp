@@ -53,11 +53,11 @@
 ### auth_service.dart:
 - [x] login()
 - [x] register()
-- [ ] refreshToken()
-- [ ] getCurrentUser()
-- [ ] logout()
-- [ ] updateProfile()
-- [ ] resetPassword()
+- [x] refreshToken()
+- [x] getCurrentUser()
+- [x] logout()
+- [ ] updateProfile() *(requires backend implementation)*
+- [ ] resetPassword() *(requires backend implementation)*
 
 ## Missing Services (Need Creation)
 
@@ -161,7 +161,7 @@
 6. ~~Create driver_truck_service.dart - Driver-vehicle assignments~~ ✅ COMPLETED
 
 ### Medium Priority (Admin Features):
-7. Complete auth_service.dart - User management functions
+7. ~~Complete auth_service.dart - User management functions~~ ✅ COMPLETED
 8. Create user_service.dart - Admin user management
 9. Create summary_service.dart - Monthly summaries
 10. Create payroll_item_service.dart - Other payroll concepts

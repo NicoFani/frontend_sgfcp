@@ -170,7 +170,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
 								ratePerTon: 0,
 								fuelOnClient: false,
 								fuelLiters: 0,
-								drivers: [DriverData(id: 1, firstName: 'Carlos', lastName: 'Sainz')],
+								driver: DriverData(id: 1, firstName: 'Carlos', lastName: 'Sainz'),
 							),
 							TripData(
 								id: 2,
@@ -186,7 +186,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
 								ratePerTon: 0,
 								fuelOnClient: false,
 								fuelLiters: 0,
-								drivers: [DriverData(id: 2, firstName: 'Fernando', lastName: 'Alonso')],
+								driver: DriverData(id: 2, firstName: 'Fernando', lastName: 'Alonso'),
 							),
 						],
 						onTripTap: (trip) {

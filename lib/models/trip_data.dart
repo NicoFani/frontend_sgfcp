@@ -15,7 +15,7 @@ class TripData {
   final double ratePerTon;
   final bool fuelOnClient;
   final double fuelLiters;
-  final List<DriverData> drivers;
+  final DriverData driver;
 
   TripData({
     required this.id,
@@ -32,17 +32,10 @@ class TripData {
     required this.ratePerTon,
     required this.fuelOnClient,
     required this.fuelLiters,
-    this.drivers = const [],
+    required this.driver
   });
 
   factory TripData.fromJson(Map<String, dynamic> json) {
-    // Parsear drivers si existen
-    List<DriverData> drivers = [];
-    if (json['drivers'] != null && json['drivers'] is List) {
-      drivers = (json['drivers'] as List)
-          .map((driver) => DriverData.fromJson(driver as Map<String, dynamic>))
-          .toList();
-    }
 
     return TripData(
       id: json['id'] as int,
@@ -63,7 +56,7 @@ class TripData {
       ratePerTon: (json['rate_per_ton'] as num?)?.toDouble() ?? 0.0,
       fuelOnClient: json['fuel_on_client'] as bool? ?? false,
       fuelLiters: (json['fuel_liters'] as num?)?.toDouble() ?? 0.0,
-      drivers: drivers,
+      driver: DriverData.fromJson(json['driver'] as Map<String, dynamic>),
     );
   }
 

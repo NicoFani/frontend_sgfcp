@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
@@ -148,7 +149,8 @@ class _TripPageState extends State<TripPage> {
                   // Card de estado y acción
                   if (trip.state != 'Finalizado')
                     SimpleCard(
-                      title: trip.state,
+                      // title: trip.state,
+                      title: 'Viaje en curso',
                       icon: Symbols.where_to_vote,
                       label: 'Finalizar',
                       onPressed: () {
@@ -178,13 +180,12 @@ class _TripPageState extends State<TripPage> {
                   if (isAdmin) ...[
                     SimpleCard.iconOnly(
                       title: 'Chofer',
-                      subtitle: trip.drivers.isNotEmpty
-                          ? trip.drivers.map((d) => d.fullName).join(', ')
+                      subtitle: trip.driver.fullName.isNotEmpty
+                          ? trip.driver.fullName
                           : 'Sin chofer asignado',
                       icon: Symbols.arrow_right,
                       onPressed: () {
-                        // TODO: Add navigation to driver detail page
-                        // Navigator.of(context).push(FinishTripPage.route());
+                        Navigator.of(context).push(DriverDetailPageAdmin.route(driverName: trip.driver.fullName, driverId: trip.driver.id));
                       },
                     ),
 
@@ -193,28 +194,30 @@ class _TripPageState extends State<TripPage> {
 
                   // Balance será calculado junto a los gastos más abajo
 
-                  InfoCard(
-                    title: 'Información',
-                    items: [
-                      InfoItem(
-                        label: 'Distancia',
-                        value: '${trip.estimatedKms} km',
-                      ),
-                      InfoItem(
-                        label: 'Tarifa por tonelada',
-                        value: '\$${trip.ratePerTon}',
-                      ),
-                      InfoItem(
-                        label: 'Vale para combustible',
-                        value: '${trip.fuelLiters} lts',
-                      ),
-                      InfoItem(
-                        label: 'Tipo de documento',
-                        value: trip.documentType,
-                      ),
-                    ],
-                    labelColumnWidth: infoLabelWidth,
-                  ),
+                  if (trip.state == 'Finalizado')... [
+                    InfoCard(
+                      title: 'Información',
+                      items: [
+                        InfoItem(
+                          label: 'Distancia',
+                          value: '${trip.estimatedKms} km',
+                        ),
+                        InfoItem(
+                          label: 'Tarifa por tonelada',
+                          value: '\$${trip.ratePerTon}',
+                        ),
+                        InfoItem(
+                          label: 'Vale para combustible',
+                          value: '${trip.fuelLiters} lts',
+                        ),
+                        InfoItem(
+                          label: 'Tipo de documento',
+                          value: trip.documentType,
+                        ),
+                      ],
+                      labelColumnWidth: infoLabelWidth,
+                    )
+                  ],
 
                   gap4,
 
@@ -296,7 +299,7 @@ class _TripPageState extends State<TripPage> {
                               col2: currencyFormat.format(expense.amount),
                               onEdit: () {
                                 Navigator.of(context).push(
-                                  EditExpensePage.route(),
+                                  EditExpensePage.route(expense: expense),
                                 );
                               },
                             ),
@@ -355,10 +358,10 @@ class _TripPageState extends State<TripPage> {
       ),
       floatingActionButton: TripFabMenu(
         onAddExpense: () {
-          Navigator.of(context).push(ExpensePage.route());
+          Navigator.of(context).push(ExpensePage.route(trip: widget.trip!));
         },
         onEditTrip: () {
-          Navigator.of(context).push(EditTripPage.route());
+          Navigator.of(context).push(EditTripPage.route(trip: widget.trip!));
         },
       ),
     );

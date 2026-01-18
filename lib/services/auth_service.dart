@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -91,4 +92,148 @@ class AuthService {
       };
     }
   }
+
+  static Future<Map<String, dynamic>> refreshToken() async {
+    final refreshToken = TokenStorage.refreshToken;
+
+    if (refreshToken == null) {
+      return {
+        'success': false,
+        'error': 'No hay token de refresco disponible',
+      };
+    }
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/refresh'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $refreshToken',
+            },
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      final jsonData = ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (data) => {
+          'success': true,
+          'access_token': data['access_token'],
+        },
+        operation: 'renovar token',
+      );
+
+      return jsonData;
+    } catch (e) {
+      if (e is ApiException) {
+        return {
+          'success': false,
+          'error': e.message,
+        };
+      }
+      return {
+        'success': false,
+        'error': 'Error de conexión. Verifica tu conexión a internet.',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getCurrentUser() async {
+    final token = TokenStorage.accessToken;
+
+    if (token == null) {
+      return {
+        'success': false,
+        'error': 'No hay token de acceso disponible',
+      };
+    }
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/auth/me'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      final jsonData = ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (data) => {
+          'success': true,
+          'user': data,
+        },
+        operation: 'obtener usuario actual',
+      );
+
+      return jsonData;
+    } catch (e) {
+      if (e is ApiException) {
+        return {
+          'success': false,
+          'error': e.message,
+        };
+      }
+      return {
+        'success': false,
+        'error': 'Error de conexión. Verifica tu conexión a internet.',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> logout() async {
+    final token = TokenStorage.accessToken;
+
+    if (token == null) {
+      return {
+        'success': false,
+        'error': 'No hay token de acceso disponible',
+      };
+    }
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/logout'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      ApiResponseHandler.handleResponse<void>(
+        response,
+        (_) {},
+        operation: 'cerrar sesión',
+      );
+
+      return {
+        'success': true,
+        'message': 'Sesión cerrada exitosamente',
+      };
+    } catch (e) {
+      if (e is ApiException) {
+        return {
+          'success': false,
+          'error': e.message,
+        };
+      }
+      return {
+        'success': false,
+        'error': 'Error de conexión. Verifica tu conexión a internet.',
+      };
+    }
+  }
+
+  // TODO: These functions require backend implementation
+  // static Future<Map<String, dynamic>> updateProfile({
+  //   String? name,
+  //   String? surname,
+  //   String? email,
+  // }) async {
+  //   // This would require a new backend endpoint like /auth/profile
+  // }
+
+  // static Future<Map<String, dynamic>> resetPassword({
+  //   required String email,
+  // }) async {
+  //   // This would require a new backend endpoint like /auth/reset-password
+  // }
 }

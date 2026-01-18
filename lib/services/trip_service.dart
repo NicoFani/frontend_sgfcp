@@ -108,7 +108,7 @@ class TripService {
     }
   }
 
-  // PUT - Actualizar estado de un viaje
+  // PUT - Actualizar un viaje
   static Future<TripData> updateTrip({
     required int tripId,
     required Map<String, dynamic> data,

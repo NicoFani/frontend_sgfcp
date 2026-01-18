@@ -53,23 +53,14 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
   }
 
   Future<DriverData> _getDriverData() async {
-    // Por ahora retornaremos datos básicos, idealmente necesitaríamos
-    // un endpoint para obtener un driver específico por ID
-    final drivers = await DriverService.getDrivers();
-    return drivers.firstWhere(
-      (d) => d.id == widget.driverId || d.fullName == widget.driverName,
-      orElse: () => DriverData(
-        id: widget.driverId,
-        firstName: widget.driverName.split(' ').first,
-        lastName: widget.driverName.split(' ').skip(1).join(' '),
-      ),
-    );
+    // Usar el endpoint específico para obtener un driver por ID
+    return DriverService.getDriverById(driverId: widget.driverId);
   }
 
   List<TripData> _filterTripsByDriver(List<TripData> trips) {
     return trips
         .where(
-          (trip) => trip.drivers.any((driver) => driver.id == widget.driverId),
+          (trip) => trip.driver.id == widget.driverId,
         )
         .toList();
   }
