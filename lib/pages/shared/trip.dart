@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
@@ -155,7 +156,8 @@ class _TripPageState extends State<TripPage> {
                   // Card de estado y acción
                   if (trip.state != 'Finalizado')
                     SimpleCard(
-                      title: trip.state,
+                      // title: trip.state,
+                      title: 'Viaje en curso',
                       icon: Symbols.where_to_vote,
                       label: 'Finalizar',
                       onPressed: () {
@@ -190,8 +192,12 @@ class _TripPageState extends State<TripPage> {
                           : 'Sin chofer asignado',
                       icon: Symbols.arrow_right,
                       onPressed: () {
-                        // TODO: Add navigation to driver detail page
-                        // Navigator.of(context).push(FinishTripPage.route());
+                        Navigator.of(context).push(
+                          DriverDetailPageAdmin.route(
+                            driverName: trip.driver.fullName,
+                            driverId: trip.driver.id,
+                          ),
+                        );
                       },
                     ),
 
@@ -374,6 +380,7 @@ class _TripPageState extends State<TripPage> {
               },
             )
           : null,
+      f,
     );
   }
 

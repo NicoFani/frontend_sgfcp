@@ -10,6 +10,7 @@ import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
+import 'package:frontend_sgfcp/services/expense_service.dart';
 
 class ExpensePage extends StatefulWidget {
   final TripData trip;
@@ -21,10 +22,10 @@ class ExpensePage extends StatefulWidget {
 
   /// Helper to create a route to this page
   static Route route({required TripData trip}) {
+<<<<<<< HEAD
     return MaterialPageRoute<void>(builder: (_) => ExpensePage(trip: trip));
-  }
-
-  @override
+=======
+      builder: (_) => ExpensePage(trip: trip),
   State<ExpensePage> createState() => _ExpensePageState();
 }
 
@@ -34,9 +35,10 @@ class _ExpensePageState extends State<ExpensePage> {
   bool _isLoading = false;
 
   ExpenseType _expenseType = ExpenseType.reparaciones;
-  String? _subtype; // será el tipo de peaje o tipo de reparación según el caso
+  String? _subtype;
 
   // Controllers
+<<<<<<< HEAD
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _litersController = TextEditingController();
@@ -49,6 +51,20 @@ class _ExpensePageState extends State<ExpensePage> {
     _litersController.dispose();
     _municipalityController.dispose();
     super.dispose();
+=======
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _litersController = TextEditingController();
+  final TextEditingController _municipalityController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _startDate = DateTime.now();
+    final locale = Localizations.localeOf(context).toString();
+    _startDateController.text = DateFormat('dd/MM/yyyy', locale).format(_startDate!);
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
   }
 
   // Datepicker para seleccionar fecha de inicio
@@ -196,6 +212,16 @@ class _ExpensePageState extends State<ExpensePage> {
   }
 
   @override
+  void dispose() {
+    _amountController.dispose();
+    _litersController.dispose();
+    _municipalityController.dispose();
+    _descriptionController.dispose();
+    _startDateController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
@@ -220,15 +246,27 @@ class _ExpensePageState extends State<ExpensePage> {
     }
 
     return Scaffold(
+<<<<<<< HEAD
       appBar: AppBar(title: const Text('Cargar gasto')),
       body: SafeArea(
+=======
+      appBar: AppBar(title: const Text('Agregar Gasto')),
+        body: SafeArea(
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header: origen → destino
+<<<<<<< HEAD
               Text(widget.trip.route, style: textTheme.titleLarge),
+=======
+              Text(
+                widget.trip.route,
+                style: textTheme.titleLarge,
+              ),
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
 
               gap20,
 
@@ -311,7 +349,10 @@ class _ExpensePageState extends State<ExpensePage> {
                     flex: 2,
                     child: TextField(
                       controller: _amountController,
+<<<<<<< HEAD
                       enabled: !_isLoading,
+=======
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
                       decoration: const InputDecoration(
                         labelText: 'Importe',
                         border: OutlineInputBorder(),
@@ -330,7 +371,10 @@ class _ExpensePageState extends State<ExpensePage> {
               if (_expenseType == ExpenseType.combustible) ...[
                 TextField(
                   controller: _litersController,
+<<<<<<< HEAD
                   enabled: !_isLoading,
+=======
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
                   decoration: const InputDecoration(
                     labelText: 'Litros cargados',
                     border: OutlineInputBorder(),
@@ -346,7 +390,10 @@ class _ExpensePageState extends State<ExpensePage> {
               if (_expenseType == ExpenseType.multa) ...[
                 TextField(
                   controller: _municipalityController,
+<<<<<<< HEAD
                   enabled: !_isLoading,
+=======
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
                   decoration: const InputDecoration(
                     labelText: 'Municipio',
                     border: OutlineInputBorder(),
@@ -383,6 +430,7 @@ class _ExpensePageState extends State<ExpensePage> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
+<<<<<<< HEAD
                 onPressed: _isLoading ? null : _saveExpense,
                 icon: _isLoading
                     ? const SizedBox(
@@ -397,6 +445,35 @@ class _ExpensePageState extends State<ExpensePage> {
                       )
                     : const Icon(Symbols.garage_money),
                 label: Text(_isLoading ? 'Cargando...' : 'Cargar gasto'),
+=======
+                onPressed: () async {
+                  try {
+                    await ExpenseService.createExpense(
+                      driverId: widget.trip.driver.id,
+                      expenseType: _expenseType.name,
+                      date: _startDate!,
+                      amount: double.tryParse(_amountController.text) ?? 0.0,
+                      tripId: widget.trip.id,
+                      description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+                      fineMunicipality: _expenseType == ExpenseType.multa ? _municipalityController.text : null,
+                      repairType: _expenseType == ExpenseType.reparaciones ? _subtype : null,
+                      fuelLiters: _expenseType == ExpenseType.combustible ? double.tryParse(_litersController.text) : null,
+                      tollType: _expenseType == ExpenseType.peaje ? _subtype : null,
+                      tollPaidBy: null,
+                      tollPortFeeName: null,
+                    );
+                    if (mounted) Navigator.of(context).pop();
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error al agregar gasto: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Symbols.garage_money),
+                label: const Text('Cargar gasto'),
+>>>>>>> 95c597e60a30d2a5661bf43f3c578f09f3e11918
               ),
             ],
           ),

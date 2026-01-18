@@ -5,19 +5,26 @@ import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
+import 'package:frontend_sgfcp/models/expense_data.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
 
-import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
+import 'package:frontend_sgfcp/services/expense_service.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class EditExpensePage extends StatefulWidget {
-  const EditExpensePage({super.key});
+  final ExpenseData expense;
+
+  const EditExpensePage({super.key, required this.expense});
 
   /// Route name you can use with Navigator.pushNamed
   static const String routeName = '/edit_expense';
 
   /// Helper to create a route to this page
-  static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const EditExpensePage());
+  static Route route({required ExpenseData expense}) {
+    return MaterialPageRoute<void>(
+      builder: (_) => EditExpensePage(expense: expense),
+    );
   }
   @override
   State<EditExpensePage> createState() => _EditExpensePageState();
@@ -25,20 +32,76 @@ class EditExpensePage extends StatefulWidget {
 
 class _EditExpensePageState extends State<EditExpensePage> {
 
+  late Future<TripData> _tripFuture;
+
   DateTime? _startDate;
   bool _accountingPaid = false;
 
   ExpenseType _expenseType = ExpenseType.reparaciones;
-  String? _subtype; // será el tipo de peaje o tipo de reparación según el caso
+  String? _subtype;
 
-  
-  // Controllers para el selector de tipo de documento y datepicker
-  final TextEditingController _docNumberController = TextEditingController();
+  // Controllers
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _litersController = TextEditingController();
+  final TextEditingController _municipalityController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
-  
+
+  @override
+  void initState() {
+    super.initState();
+    _tripFuture = TripService.getTrip(tripId: widget.expense.tripId);
+
+    // Populate data
+    _startDate = widget.expense.createdAt;
+    _accountingPaid = widget.expense.accountingPaid ?? false;
+    _expenseType = _mapTypeToExpenseType(widget.expense.type);
+    _subtype = _getSubtype(widget.expense);
+
+    _amountController.text = widget.expense.amount.toString();
+    if (widget.expense.fuelLiters != null) {
+      _litersController.text = widget.expense.fuelLiters!.toString();
+    }
+    if (widget.expense.fineMunicipality != null) {
+      _municipalityController.text = widget.expense.fineMunicipality!;
+    }
+    if (widget.expense.description != null) {
+      _descriptionController.text = widget.expense.description!;
+    }
+
+    final locale = Localizations.localeOf(context).toString();
+    _startDateController.text = DateFormat('dd/MM/yyyy', locale).format(_startDate!);
+  }
+
+  ExpenseType _mapTypeToExpenseType(String type) {
+    switch (type) {
+      case 'peaje':
+        return ExpenseType.peaje;
+      case 'reparaciones':
+        return ExpenseType.reparaciones;
+      case 'combustible':
+        return ExpenseType.combustible;
+      case 'multa':
+        return ExpenseType.multa;
+      case 'viaticos':
+        return ExpenseType.viaticos;
+      default:
+        return ExpenseType.reparaciones;
+    }
+  }
+
+  String? _getSubtype(ExpenseData expense) {
+    if (expense.type == 'peaje') return expense.tollType;
+    if (expense.type == 'reparaciones') return expense.repairType;
+    return null;
+  }
+
   @override
   void dispose() {
-    _docNumberController.dispose();
+    _amountController.dispose();
+    _litersController.dispose();
+    _municipalityController.dispose();
+    _descriptionController.dispose();
     _startDateController.dispose();
     super.dispose();
   }
@@ -70,220 +133,281 @@ class _EditExpensePageState extends State<EditExpensePage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    final peajeOptions = ['Tasa portuaria', 'Ruta'];
-    final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
-
-    List<String> subtypeOptions;
-    String label;
-
-    switch (_expenseType) {
-      case ExpenseType.peaje:
-        label = 'Tipo de peaje';
-        subtypeOptions = peajeOptions;
-        break;
-      case ExpenseType.reparaciones:
-        label = 'Tipo de reparación';
-        subtypeOptions = reparacionOptions;
-        break;
-      default:
-        label = 'Tipo';
-        subtypeOptions = const [];
-    }
-
     return Scaffold(
       appBar: AppBar(
-      title: const Text('Editar gasto'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: const Text('¿Eliminar gasto?'),
-                  content: const Text(
-                    '¿Estás seguro de que querés eliminar este gasto? '
-                    'Esta acción no se puede deshacer.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar'),
+        title: const Text('Editar gasto'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () async {
+              await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('¿Eliminar gasto?'),
+                    content: const Text(
+                      '¿Estás seguro de que querés eliminar este gasto? '
+                      'Esta acción no se puede deshacer.',
                     ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        foregroundColor: Theme.of(context).colorScheme.onError,
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancelar'),
                       ),
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text('Eliminar'),
-                    ),
-                  ],
-                );
-              },
-            );
-
-            if (confirmed == true) {
-              // TODO: lógica real de eliminación
-              // Por ejemplo: llamar a la API y luego:
-              Navigator.of(context).pop(); // volver a la pantalla anterior
-            }
-          },
-        ),
-      ],
-    ),
-
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: origen → destino
-              Text(
-                'Mattaldi → San Lorenzo',
-                style: textTheme.titleLarge,
-              ),
-
-              gap20,
-
-              FilledButton.tonalIcon(
-                onPressed: () {
-                  // TODO: AI tool to take photo of receipt
-                },
-                icon: const Icon(Symbols.add_a_photo),
-                label: const Text('Tomar nueva foto del comprobante'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-              ),
-
-              gap20,
-
-              // Tipo de gasto
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return DropdownMenu<ExpenseType>(
-                    enabled: false,
-                    width: constraints.maxWidth,
-                    label: const Text('Tipo de gasto'),
-                    initialSelection: _expenseType,
-                    dropdownMenuEntries: const [
-                      DropdownMenuEntry(value: ExpenseType.peaje, label: 'Peaje',),
-                      DropdownMenuEntry(value: ExpenseType.viaticos, label: 'Viáticos',),
-                      DropdownMenuEntry(value: ExpenseType.reparaciones, label: 'Reparaciones',),
-                      DropdownMenuEntry(value: ExpenseType.combustible, label: 'Combustible',),
-                      DropdownMenuEntry(value: ExpenseType.multa, label: 'Multa',),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                          foregroundColor: Theme.of(context).colorScheme.onError,
+                        ),
+                        onPressed: () async {
+                          try {
+                            await ExpenseService.deleteExpense(expenseId: widget.expense.id);
+                            Navigator.of(context).pop();
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error al eliminar gasto: $e')),
+                            );
+                          }
+                        },
+                        child: const Text('Eliminar'),
+                      ),
                     ],
-                    onSelected: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _expenseType = value;
-                        _subtype = null; // resetear subtipo al cambiar tipo
-                      });
-                    },
                   );
                 },
-              ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: FutureBuilder<TripData>(
+        future: _tripFuture,
+        builder: (context, tripSnapshot) {
+          if (tripSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              gap12,
-
-              // Fecha de inicio + Importe
-              Row(
+          if (tripSnapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      controller: _startDateController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Fecha',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today_outlined),
+                  const Icon(Icons.error_outline, size: 48),
+                  gap8,
+                  Text('Error al cargar el viaje'),
+                  gap8,
+                  Text(tripSnapshot.error.toString()),
+                ],
+              ),
+            );
+          }
+
+          final trip = tripSnapshot.data!;
+
+          final peajeOptions = ['Tasa portuaria', 'Ruta'];
+          final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
+
+          List<String> subtypeOptions;
+          String label;
+
+          switch (_expenseType) {
+            case ExpenseType.peaje:
+              label = 'Tipo de peaje';
+              subtypeOptions = peajeOptions;
+              break;
+            case ExpenseType.reparaciones:
+              label = 'Tipo de reparación';
+              subtypeOptions = reparacionOptions;
+              break;
+            default:
+              label = 'Tipo';
+              subtypeOptions = const [];
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header: origen → destino
+                  Text(
+                    trip.route,
+                    style: textTheme.titleLarge,
+                  ),
+
+                  gap20,
+
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      // TODO: AI tool to take photo of receipt
+                    },
+                    icon: const Icon(Symbols.add_a_photo),
+                    label: const Text('Tomar nueva foto del comprobante'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
                       ),
-                      onTap: _pickStartDate,
                     ),
                   ),
-                  gapW12,
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
+
+                  gap20,
+
+                  // Tipo de gasto
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return DropdownMenu<ExpenseType>(
+                        enabled: true,
+                        width: constraints.maxWidth,
+                        label: const Text('Tipo de gasto'),
+                        initialSelection: _expenseType,
+                        dropdownMenuEntries: const [
+                          DropdownMenuEntry(value: ExpenseType.peaje, label: 'Peaje'),
+                          DropdownMenuEntry(value: ExpenseType.viaticos, label: 'Viáticos'),
+                          DropdownMenuEntry(value: ExpenseType.reparaciones, label: 'Reparaciones'),
+                          DropdownMenuEntry(value: ExpenseType.combustible, label: 'Combustible'),
+                          DropdownMenuEntry(value: ExpenseType.multa, label: 'Multa'),
+                        ],
+                        onSelected: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _expenseType = value;
+                            _subtype = null; // resetear subtipo al cambiar tipo
+                          });
+                        },
+                      );
+                    },
+                  ),
+
+                  gap12,
+
+                  // Fecha de inicio + Importe
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _startDateController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Fecha',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today_outlined),
+                          ),
+                          onTap: _pickStartDate,
+                        ),
+                      ),
+                      gapW12,
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _amountController,
+                          decoration: const InputDecoration(
+                            labelText: 'Importe',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  gap12,
+
+                  // Combustible → input de litros cargados
+                  if (_expenseType == ExpenseType.combustible) ...[
+                    TextField(
+                      controller: _litersController,
                       decoration: const InputDecoration(
-                        labelText: 'Importe',
+                        labelText: 'Litros cargados',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     ),
+                    gap12,
+                  ],
+
+                  // Multa → input de municipio
+                  if (_expenseType == ExpenseType.multa) ...[
+                    TextField(
+                      controller: _municipalityController,
+                      decoration: const InputDecoration(
+                        labelText: 'Municipio',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    gap12,
+                  ],
+
+                  // Subtipo (si aplica)
+                  if (_expenseType == ExpenseType.peaje || _expenseType == ExpenseType.reparaciones) ...[
+                    LayoutBuilder(
+                      builder: (context, constraints) => ExpenseSubtypeDropdown(
+                        label: label,
+                        options: subtypeOptions,
+                        value: _subtype,
+                        onChanged: (v) => setState(() => _subtype = v),
+                      ),
+                    ),
+                    gap12,
+                  ],
+
+                  // Switch: ¿Pagó contaduría?
+                  LabeledSwitch(
+                    label: '¿Pagó contaduría?',
+                    value: _accountingPaid,
+                    onChanged: (v) => setState(() => _accountingPaid = v),
+                  ),
+
+                  gap16,
+
+                  // Botón principal: Guardar cambios
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    onPressed: () async {
+                      final data = <String, dynamic>{
+                        'expense_type': _expenseType.name,
+                        'date': _startDate!.toIso8601String().split('T')[0],
+                        'amount': double.tryParse(_amountController.text) ?? 0.0,
+                        'description': _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+                        'accounting_paid': _accountingPaid,
+                      };
+
+                      if (_expenseType == ExpenseType.combustible) {
+                        data['fuel_liters'] = double.tryParse(_litersController.text);
+                      }
+                      if (_expenseType == ExpenseType.multa) {
+                        data['fine_municipality'] = _municipalityController.text;
+                      }
+                      if (_subtype != null) {
+                        if (_expenseType == ExpenseType.peaje) {
+                          data['toll_type'] = _subtype;
+                        } else if (_expenseType == ExpenseType.reparaciones) {
+                          data['repair_type'] = _subtype;
+                        }
+                      }
+
+                      try {
+                        await ExpenseService.updateExpense(expenseId: widget.expense.id, data: data);
+                        if (mounted) Navigator.of(context).pop();
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error al guardar cambios: $e')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.check),
+                    label: const Text('Guardar cambios'),
                   ),
                 ],
               ),
-
-              gap12,
-
-              // Combustible → input de litros cargados
-              if (_expenseType == ExpenseType.combustible) ...[
-                TextField(
-                  decoration: const InputDecoration(
-                    labelText: 'Litros cargados',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-                gap12,
-              ],
-
-              // Multa → input de municipio
-              if (_expenseType == ExpenseType.multa) ...[
-                TextField(
-                  decoration: const InputDecoration(
-                    labelText: 'Municipio',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                gap12,
-              ],
-
-             // Subtipo (si aplica)
-              if (_expenseType == ExpenseType.peaje || _expenseType == ExpenseType.reparaciones) ...[
-                LayoutBuilder(builder: (context, constraints) => ExpenseSubtypeDropdown(
-                  label: label,
-                  options: subtypeOptions,
-                  value: _subtype,
-                  onChanged: (v) => setState(() => _subtype = v),
-                ),),
-                gap12,
-              ],
-
-
-              // Switch: ¿Pagó contaduría?
-              LabeledSwitch(
-                label: '¿Pagó contaduría?',
-                value: _accountingPaid,
-                onChanged: (v) => setState(() => _accountingPaid = v),
-              ),
-
-              gap16,
-
-              // Botón principal: Comenzar viaje
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(TripPage.route());
-                },
-                icon: const Icon(Icons.check),
-                label: const Text('Guardar cambios'),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
