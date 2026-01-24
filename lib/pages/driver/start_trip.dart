@@ -403,7 +403,7 @@ class _StartTripPageState extends State<StartTripPage> {
                       enabled: !_isLoading,
                       controller: _tariffController,
                       decoration: InputDecoration(
-                        labelText: widget.trip.calculatedPerKm
+                        labelText: _calculatedPerKm
                             ? 'Tarifa por Kilómetro'
                             : 'Tarifa por Tonelada',
                         border: const OutlineInputBorder(),

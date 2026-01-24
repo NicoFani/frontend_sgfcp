@@ -98,7 +98,7 @@ class ExpenseService {
     String? repairType,
     double? fuelLiters,
     String? tollType,
-    String? tollPaidBy,
+    bool? paidByAdmin,
     String? tollPortFeeName,
   }) async {
     final token = TokenStorage.accessToken;
@@ -116,7 +116,7 @@ class ExpenseService {
         if (repairType != null) 'repair_type': repairType,
         if (fuelLiters != null) 'fuel_liters': fuelLiters,
         if (tollType != null) 'toll_type': tollType,
-        if (tollPaidBy != null) 'toll_paid_by': tollPaidBy,
+        if (paidByAdmin != null) 'paid_by_admin': paidByAdmin,
         if (tollPortFeeName != null) 'toll_port_fee_name': tollPortFeeName,
       };
 

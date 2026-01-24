@@ -55,8 +55,12 @@ class SummaryList extends StatelessWidget {
                 ),
                 title: Row(
                   children: [
-                    Expanded(child: Text(row.driver, style: textTheme.bodyMedium)),
-                    Expanded(child: Text(row.period, style: textTheme.bodyMedium)),
+                    Expanded(
+                      child: Text(row.driver, style: textTheme.bodyMedium),
+                    ),
+                    Expanded(
+                      child: Text(row.period, style: textTheme.bodyMedium),
+                    ),
                     Expanded(
                       child: Text(
                         _formatDate(row.date),
@@ -69,7 +73,9 @@ class SummaryList extends StatelessWidget {
                   width: sizedBoxWidth,
                   child: Icon(row.status.icon, color: row.status.color(colors)),
                 ),
-                onTap: () => Navigator.of(context).push(SummaryDetailPage.route()),
+                onTap: () => Navigator.of(
+                  context,
+                ).push(SummaryDetailPage.route(summaryId: row.summaryId)),
               ),
               if (!isLast) const Divider(height: 1),
             ],

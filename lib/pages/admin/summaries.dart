@@ -7,346 +7,402 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
 import 'package:frontend_sgfcp/models/summary_row_data.dart';
 import 'package:frontend_sgfcp/widgets/summary_list.dart';
+import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
 import 'package:intl/intl.dart';
 
 class SummariesPageAdmin extends StatefulWidget {
-	const SummariesPageAdmin({super.key});
+  const SummariesPageAdmin({super.key});
 
-	static const String routeName = '/admin/summaries';
+  static const String routeName = '/admin/summaries';
 
-	static Route route() {
-		return MaterialPageRoute<void>(
-			builder: (_) => const SummariesPageAdmin(),
-		);
-	}
-  
-	@override
-	State<SummariesPageAdmin> createState() => _SummariesPageAdminState();
+  static Route route() {
+    return MaterialPageRoute<void>(builder: (_) => const SummariesPageAdmin());
+  }
+
+  @override
+  State<SummariesPageAdmin> createState() => _SummariesPageAdminState();
 }
 
 // Row data moved to models/summary_row_data.dart
 
 class _SummariesPageAdminState extends State<SummariesPageAdmin> {
-	late final List<SummaryRowData> _rows;
-	final Set<String> _selectedDrivers = {};
-	final Set<SummaryStatus> _selectedStatuses = {};
-	DateTime? _selectedMonth;
+  List<SummaryRowData> _rows = [];
+  bool _isLoading = true;
+  final Set<String> _selectedDrivers = {};
+  final Set<SummaryStatus> _selectedStatuses = {};
+  DateTime? _selectedMonth;
 
-	@override
-	void initState() {
-		super.initState();
-		_rows = [
-			SummaryRowData(
-				id: '0003',
-				driver: 'Albon',
-				period: 'Enero 2025',
-				date: DateTime(2025, 1, 31),
-				status: SummaryStatus.pendingApproval,
-			),
-			SummaryRowData(
-				id: '0002',
-				driver: 'Sainz',
-				period: 'Enero 2025',
-				date: DateTime(2025, 1, 31),
-				status: SummaryStatus.calculationError,
-			),
-			SummaryRowData(
-				id: '0001',
-				driver: 'Alonso',
-				period: 'Enero 2025',
-				date: DateTime(2025, 1, 15),
-				status: SummaryStatus.draft,
-			),
-		];
-	}
+  @override
+  void initState() {
+    super.initState();
+    _loadSummaries();
+  }
 
-	@override
-	Widget build(BuildContext context) {
-		final locale = Localizations.localeOf(context).toString();
-		final monthLabel = _selectedMonth == null
-				? 'Mes'
-				: _capitalize(DateFormat.yMMMM(locale).format(_selectedMonth!));
+  Future<void> _loadSummaries() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-		final filteredRows = _applyFilters();
+    try {
+      final summaries = await PayrollSummaryService.getAllSummaries();
 
-		return Scaffold(
-			appBar: AppBar(
-				title: const Text('Resúmenes'),
-				actions: [
-					IconButton(
-						icon: const Icon(Symbols.settings),
-						onPressed: () {
+      setState(() {
+        _rows = summaries.map((summary) {
+          // Formatear periodo
+          String period = 'N/A';
+          if (summary.periodYear != null && summary.periodMonth != null) {
+            final date = DateTime(summary.periodYear!, summary.periodMonth!);
+            period = DateFormat.yMMMM('es').format(date);
+            period = period[0].toUpperCase() + period.substring(1);
+          }
+
+          return SummaryRowData(
+            summaryId: summary.id,
+            id: summary.id.toString().padLeft(4, '0'),
+            driver: summary.driverName ?? 'N/A',
+            period: period,
+            date: summary.createdAt ?? DateTime.now(),
+            status: _getStatusFromString(summary.status),
+          );
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar resúmenes: $e')),
+        );
+      }
+    }
+  }
+
+  SummaryStatus _getStatusFromString(String status) {
+    switch (status) {
+      case 'approved':
+        return SummaryStatus.approved;
+      case 'pending_approval':
+        return SummaryStatus.pendingApproval;
+      case 'error':
+        return SummaryStatus.calculationError;
+      case 'draft':
+        return SummaryStatus.draft;
+      case 'calculation_pending':
+        return SummaryStatus.calculationPending;
+      default:
+        return SummaryStatus.draft;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    final monthLabel = _selectedMonth == null
+        ? 'Mes'
+        : _capitalize(DateFormat.yMMMM(locale).format(_selectedMonth!));
+
+    final filteredRows = _applyFilters();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Resúmenes'),
+        actions: [
+          IconButton(
+            icon: const Icon(Symbols.settings),
+            onPressed: () {
               Navigator.of(context).push(SummariesSettingsPageAdmin.route());
             },
-						tooltip: 'Configuración',
-					),
-				],
-			),
-			body: ListView(
-				padding: const EdgeInsets.all(16),
-				children: [
-					// Primary actions
-					SizedBox(
-						width: double.infinity,
-						child: FilledButton.icon(
-							icon: const Icon(Symbols.receipt_long),
-							label: const Text('Generar resumen'),
-							onPressed: () => Navigator.of(context).push(GenerateSummary.route()),
-						),
-					),
-					gap8,
-					SizedBox(
-						width: double.infinity,
-						child: FilledButton.tonalIcon(
-							icon: const Icon(Symbols.request_quote),
-							label: const Text('Cargar otros conceptos'),
-							onPressed: () => Navigator.of(context).push(OtherItemsPage.route()),
-						),
-					),
+            tooltip: 'Configuración',
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Primary actions
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Symbols.receipt_long),
+                    label: const Text('Generar resumen'),
+                    onPressed: () =>
+                        Navigator.of(context).push(GenerateSummary.route()),
+                  ),
+                ),
+                gap8,
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    icon: const Icon(Symbols.request_quote),
+                    label: const Text('Cargar otros conceptos'),
+                    onPressed: () =>
+                        Navigator.of(context).push(OtherItemsPage.route()),
+                  ),
+                ),
 
-					gap24,
+                gap24,
 
-					// Filters
-					Wrap(
-						spacing: 4,
-						runSpacing: 4,
-						children: [
-							OutlinedButton.icon(
-								onPressed: _openDriverFilterDialog,
-								icon: const Icon(Symbols.group, size: 16,),
-								label: Text(
-									_selectedDrivers.isEmpty
-											? 'Choferes'
-											: 'Choferes (${_selectedDrivers.length})',
-                  style: Theme.of(context).textTheme.labelLarge,
-                  
-								),
-								style: OutlinedButton.styleFrom(
-									// Hug content horizontally; keep compact height
-									fixedSize: const Size.fromHeight(36),
-									tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(12)
-								),
-							),
-							OutlinedButton.icon(
-								onPressed: _openStatusFilterDialog,
-								icon: const Icon(Symbols.filter_alt, size: 16,),
-								label: Text(
-									_selectedStatuses.isEmpty
-											? 'Estado'
-											: 'Estado (${_selectedStatuses.length})',
-                  style: Theme.of(context).textTheme.labelLarge,
-								),
-                style: OutlinedButton.styleFrom(
-									// Hug content horizontally; keep compact height
-									fixedSize: const Size.fromHeight(36),
-									tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(12)
-								),
-							),
-							OutlinedButton.icon(
-								onPressed: _pickMonth,
-								icon: const Icon(Icons.calendar_today_outlined, size: 16,),
-								label: Text(monthLabel, style: Theme.of(context).textTheme.labelLarge),
-                style: OutlinedButton.styleFrom(
-									// Hug content horizontally; keep compact height
-									fixedSize: const Size.fromHeight(36),
-									tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(12)
-								),
-							),
-							TextButton(
-								onPressed: _hasAnyFilter
-										? () {
-												setState(() {
-													_selectedDrivers.clear();
-													_selectedStatuses.clear();
-													_selectedMonth = null;
-												});
-											}
-										: null,
-                style: TextButton.styleFrom(
-									// Hug content horizontally; keep compact height
-									fixedSize: const Size.fromHeight(36),
-									tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(12)
-								),
-                child: const Icon(Icons.filter_alt_off_outlined, size: 16),
-							),
-						],
-					),
+                // Filters
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _openDriverFilterDialog,
+                      icon: const Icon(Symbols.group, size: 16),
+                      label: Text(
+                        _selectedDrivers.isEmpty
+                            ? 'Choferes'
+                            : 'Choferes (${_selectedDrivers.length})',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        // Hug content horizontally; keep compact height
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _openStatusFilterDialog,
+                      icon: const Icon(Symbols.filter_alt, size: 16),
+                      label: Text(
+                        _selectedStatuses.isEmpty
+                            ? 'Estado'
+                            : 'Estado (${_selectedStatuses.length})',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        // Hug content horizontally; keep compact height
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _pickMonth,
+                      icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                      label: Text(
+                        monthLabel,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        // Hug content horizontally; keep compact height
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _hasAnyFilter
+                          ? () {
+                              setState(() {
+                                _selectedDrivers.clear();
+                                _selectedStatuses.clear();
+                                _selectedMonth = null;
+                              });
+                            }
+                          : null,
+                      style: TextButton.styleFrom(
+                        // Hug content horizontally; keep compact height
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      child: const Icon(
+                        Icons.filter_alt_off_outlined,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
 
-					gap12,
+                gap12,
 
-					// Summary list (header + rows)
-					SummaryList(rows: filteredRows),
-				],
-			),
-		);
-	}
+                // Summary list (header + rows)
+                SummaryList(rows: filteredRows),
+              ],
+            ),
+    );
+  }
 
-	List<SummaryRowData> _applyFilters() {
-		return _rows.where((row) {
-			if (_selectedDrivers.isNotEmpty && !_selectedDrivers.contains(row.driver)) {
-				return false;
-			}
-			if (_selectedStatuses.isNotEmpty && !_selectedStatuses.contains(row.status)) {
-				return false;
-			}
-			if (_selectedMonth != null) {
-				if (!(_selectedMonth!.year == row.date.year &&
-						_selectedMonth!.month == row.date.month)) {
-					return false;
-				}
-			}
-			return true;
-		}).toList();
-	}
+  List<SummaryRowData> _applyFilters() {
+    return _rows.where((row) {
+      if (_selectedDrivers.isNotEmpty &&
+          !_selectedDrivers.contains(row.driver)) {
+        return false;
+      }
+      if (_selectedStatuses.isNotEmpty &&
+          !_selectedStatuses.contains(row.status)) {
+        return false;
+      }
+      if (_selectedMonth != null) {
+        if (!(_selectedMonth!.year == row.date.year &&
+            _selectedMonth!.month == row.date.month)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
 
-	bool get _hasAnyFilter =>
-			_selectedDrivers.isNotEmpty ||
-			_selectedStatuses.isNotEmpty ||
-			_selectedMonth != null;
+  bool get _hasAnyFilter =>
+      _selectedDrivers.isNotEmpty ||
+      _selectedStatuses.isNotEmpty ||
+      _selectedMonth != null;
 
-	Future<void> _openDriverFilterDialog() async {
-		final options = _rows.map((e) => e.driver).toSet().toList()..sort();
-		final temp = {..._selectedDrivers};
-		await showDialog<void>(
-			context: context,
-			builder: (ctx) {
-				return StatefulBuilder(builder: (ctx, setLocalState) {
-					return AlertDialog(
-						title: const Text('Filtrar por chofer'),
-						content: SizedBox(
-							width: 360,
-							child: ListView(
-								shrinkWrap: true,
-								children: [
-									for (final d in options)
-										CheckboxListTile(
-											value: temp.contains(d),
-											onChanged: (v) {
-												setLocalState(() {
-													if (v == true) {
-														temp.add(d);
-													} else {
-														temp.remove(d);
-													}
-												});
-											},
-											title: Text(d),
-										),
-								],
-							),
-						),
-						actions: [
-							TextButton(
-								onPressed: () => Navigator.of(ctx).pop(),
-								child: const Text('Cancelar'),
-							),
-							FilledButton(
-								onPressed: () {
-									setState(() => _selectedDrivers
-										..clear()
-										..addAll(temp));
-									Navigator.of(ctx).pop();
-								},
-								child: const Text('Aplicar'),
-							),
-						],
-					);
-				});
-			},
-		);
-	}
+  Future<void> _openDriverFilterDialog() async {
+    final options = _rows.map((e) => e.driver).toSet().toList()..sort();
+    final temp = {..._selectedDrivers};
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocalState) {
+            return AlertDialog(
+              title: const Text('Filtrar por chofer'),
+              content: SizedBox(
+                width: 360,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final d in options)
+                      CheckboxListTile(
+                        value: temp.contains(d),
+                        onChanged: (v) {
+                          setLocalState(() {
+                            if (v == true) {
+                              temp.add(d);
+                            } else {
+                              temp.remove(d);
+                            }
+                          });
+                        },
+                        title: Text(d),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    setState(
+                      () => _selectedDrivers
+                        ..clear()
+                        ..addAll(temp),
+                    );
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
-	Future<void> _openStatusFilterDialog() async {
-		final options = SummaryStatus.values;
-		final temp = {..._selectedStatuses};
-		await showDialog<void>(
-			context: context,
-			builder: (ctx) {
-				final colors = Theme.of(ctx).colorScheme;
-				return StatefulBuilder(builder: (ctx, setLocalState) {
-					return AlertDialog(
-						title: const Text('Filtrar por estado'),
-						content: SizedBox(
-							width: 360,
-							child: ListView(
-								shrinkWrap: true,
-								children: [
-									for (final s in options)
-										CheckboxListTile(
-											value: temp.contains(s),
-											onChanged: (v) {
-												setLocalState(() {
-													if (v == true) {
-														temp.add(s);
-													} else {
-														temp.remove(s);
-													}
-												});
-											},
-											title: Row(
-												crossAxisAlignment: CrossAxisAlignment.center,
-												children: [
-													Icon(s.icon, color: s.color(colors), size: 20),
-													const SizedBox(width: 8),
-													Expanded(
-													  child: Text(
-														s.label,
-														softWrap: true,
-														maxLines: 2,
-														overflow: TextOverflow.ellipsis,
-													  ),
-													),
-												],
-											),
-										),
-								],
-							),
-						),
-						actions: [
-							TextButton(
-								onPressed: () => Navigator.of(ctx).pop(),
-								child: const Text('Cancelar'),
-							),
-							FilledButton(
-								onPressed: () {
-									setState(() => _selectedStatuses
-										..clear()
-										..addAll(temp));
-									Navigator.of(ctx).pop();
-								},
-								child: const Text('Aplicar'),
-							),
-						],
-					);
-				});
-			},
-		);
-	}
+  Future<void> _openStatusFilterDialog() async {
+    final options = SummaryStatus.values;
+    final temp = {..._selectedStatuses};
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        final colors = Theme.of(ctx).colorScheme;
+        return StatefulBuilder(
+          builder: (ctx, setLocalState) {
+            return AlertDialog(
+              title: const Text('Filtrar por estado'),
+              content: SizedBox(
+                width: 360,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final s in options)
+                      CheckboxListTile(
+                        value: temp.contains(s),
+                        onChanged: (v) {
+                          setLocalState(() {
+                            if (v == true) {
+                              temp.add(s);
+                            } else {
+                              temp.remove(s);
+                            }
+                          });
+                        },
+                        title: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(s.icon, color: s.color(colors), size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                s.label,
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    setState(
+                      () => _selectedStatuses
+                        ..clear()
+                        ..addAll(temp),
+                    );
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
-	Future<void> _pickMonth() async {
-		final now = DateTime.now();
-		final initial = _selectedMonth ?? DateTime(now.year, now.month);
-		final picked = await showDatePicker(
-			context: context,
-			initialDate: initial,
-			firstDate: DateTime(now.year - 5),
-			lastDate: DateTime(now.year + 5),
-			helpText: 'Elegir mes',
-		);
-		if (picked != null) {
-			setState(() {
-				_selectedMonth = DateTime(picked.year, picked.month);
-			});
-		}
-	}
+  Future<void> _pickMonth() async {
+    final now = DateTime.now();
+    final initial = _selectedMonth ?? DateTime(now.year, now.month);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'Elegir mes',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedMonth = DateTime(picked.year, picked.month);
+      });
+    }
+  }
 
-	String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }

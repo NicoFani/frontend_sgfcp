@@ -406,7 +406,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         'description': _descriptionController.text.isNotEmpty
                             ? _descriptionController.text
                             : null,
-                        'accounting_paid': _accountingPaid,
+                        'paid_by_admin': _accountingPaid,
                       };
 
                       if (_expenseType == ExpenseType.combustible) {

@@ -35,6 +35,8 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
   final TextEditingController _destinationDescController =
       TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _clientAdvanceController =
+      TextEditingController();
 
   @override
   void dispose() {
@@ -43,6 +45,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
     _destinationController.dispose();
     _destinationDescController.dispose();
     _startDateController.dispose();
+    _clientAdvanceController.dispose();
     super.dispose();
   }
 
@@ -128,6 +131,9 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
         startDate: _startDate!,
         clientId: _selectedClientId!,
         driverIds: _selectedDriverIds,
+        clientAdvancePayment: _clientAdvanceController.text.isNotEmpty
+            ? double.tryParse(_clientAdvanceController.text)
+            : null,
       );
 
       if (mounted) {
@@ -245,6 +251,25 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                   ),
                 ),
                 onTap: _isLoading ? null : _pickStartDate,
+              ),
+              gap16,
+
+              // Adelanto del Cliente
+              TextField(
+                controller: _clientAdvanceController,
+                enabled: !_isLoading,
+                decoration: const InputDecoration(
+                  labelText: 'Adelanto del Cliente (opcional)',
+                  border: OutlineInputBorder(),
+                  prefixText: '\$ ',
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               gap16,
 

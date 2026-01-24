@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
+import 'package:frontend_sgfcp/models/payroll_summary_data.dart';
+import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
 import 'package:frontend_sgfcp/widgets/summary_data_card.dart';
 import 'package:frontend_sgfcp/widgets/summary_item_group_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:intl/intl.dart';
 
 class SummaryDetailPage extends StatefulWidget {
-  const SummaryDetailPage({super.key});
+  final int summaryId;
+
+  const SummaryDetailPage({super.key, required this.summaryId});
 
   static const String routeName = '/admin/summaries';
 
-  static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const SummaryDetailPage());
+  static Route route({required int summaryId}) {
+    return MaterialPageRoute<void>(
+      builder: (_) => SummaryDetailPage(summaryId: summaryId),
+    );
   }
 
   @override
@@ -23,13 +30,70 @@ class SummaryDetailPage extends StatefulWidget {
 // Row data moved to models/summary_row_data.dart
 
 class _SummaryDetailPageState extends State<SummaryDetailPage> {
+  PayrollSummaryData? _summary;
+  bool _isLoading = true;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    try {
+      final summary = await PayrollSummaryService.getSummaryById(
+        summaryId: widget.summaryId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _summary = summary;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar resumen: $e';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Resumen')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Resumen')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              gap16,
+              Text(_errorMessage!, textAlign: TextAlign.center),
+              gap16,
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Volver'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final summary = _summary!;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resumen'),
@@ -57,216 +121,238 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Primary actions
+          // Datos del resumen
           SummaryDataCard(
-            numberValue: '0001',
-            date: DateTime(2026, 1, 31),
-            driverValue: 'Albon',
-            periodValue: 'Enero 2026',
-            status: SummaryStatus.approved,
+            numberValue: summary.id.toString().padLeft(4, '0'),
+            date: summary.createdAt ?? DateTime.now(),
+            driverValue: summary.driverName ?? 'N/A',
+            periodValue: _formatPeriod(summary.periodYear, summary.periodMonth),
+            status: _getStatusFromString(summary.status),
             leftColumnWidth: 160,
           ),
 
           gap4,
 
+          // Comisión por viajes
           SummaryItemGroupCard(
             title: 'Comisión por viajes',
             items: [
               SummaryItemEntry(
-                label: 'San Lorenzo → Laboulaye',
-                amount: 200000,
-                navigable: true,
-              ),
-              SummaryItemEntry(
-                label: 'Venado Tuerto → San Nicolás',
-                amount: 200000,
-                navigable: true,
-              ),
-              SummaryItemEntry(
-                label: 'Corral de Bustos → Armstrong',
-                amount: 400000,
-                navigable: true,
+                label: 'Total comisiones',
+                amount: summary.commissionFromTrips,
               ),
             ],
-            onItemTap: (i) {},
           ),
 
           gap4,
 
+          // Gastos
           SummaryItemGroupCard(
             title: 'Gastos',
             items: [
-              SummaryItemEntry(label: 'Peaje', amount: 17000),
-              SummaryItemEntry(label: 'Reparaciones', amount: 130000),
-              SummaryItemEntry(label: 'Multas', amount: -150000),
+              if (summary.expensesToReimburse > 0)
+                SummaryItemEntry(
+                  label: 'Gastos a reintegrar',
+                  amount: summary.expensesToReimburse,
+                ),
+              if (summary.expensesToDeduct > 0)
+                SummaryItemEntry(
+                  label: 'Gastos a descontar',
+                  amount: -summary.expensesToDeduct,
+                ),
             ],
           ),
 
           gap4,
 
-          SummaryItemGroupCard(
-            title: 'Adelantos',
-            items: [
-              SummaryItemEntry(
-                label: 'Adelantos de administración',
-                amount: -300000,
-              ),
-              SummaryItemEntry(label: 'Adelantos de clientes', amount: -230000),
-            ],
-          ),
+          // Adelantos
+          if (summary.advancesDeducted > 0) ...[
+            SummaryItemGroupCard(
+              title: 'Adelantos',
+              items: [
+                SummaryItemEntry(
+                  label: 'Adelantos descontados',
+                  amount: -summary.advancesDeducted,
+                ),
+              ],
+            ),
+            gap4,
+          ],
 
-          gap4,
-
+          // Otros conceptos
           SummaryItemGroupCard(
             title: 'Otros conceptos',
             items: [
-              SummaryItemEntry(
-                label: 'Ajuste Diciembre 2025',
-                amount: -30000,
-                navigable: true,
-              ),
-              SummaryItemEntry(
-                label: 'Mínimo garantizado',
-                amount: 200000,
-                navigable: true,
-              ),
+              if (summary.guaranteedMinimumApplied > 0)
+                SummaryItemEntry(
+                  label: 'Mínimo garantizado aplicado',
+                  amount: summary.guaranteedMinimumApplied,
+                ),
+              if (summary.otherItemsTotal != 0)
+                SummaryItemEntry(
+                  label: 'Otros ajustes',
+                  amount: summary.otherItemsTotal,
+                ),
             ],
-            onItemTap: (i) {},
           ),
 
           gap4,
 
-          SummaryItemGroupCard.total(
-            creditBalance: 1300000,
-            debitBalance: -500000,
-            total: 800000,
+          // Totales
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total', style: Theme.of(context).textTheme.titleMedium),
+                  gap16,
+                  _buildTotalRow(
+                    'Saldo a favor',
+                    summary.totalAmount > 0 ? summary.totalAmount : 0,
+                  ),
+                  gap8,
+                  _buildTotalRow(
+                    'Saldo en contra',
+                    summary.totalAmount < 0 ? summary.totalAmount : 0,
+                  ),
+                  const Divider(height: 24),
+                  _buildTotalRow('Total', summary.totalAmount, isBold: true),
+                ],
+              ),
+            ),
           ),
 
-          // Recalculate + Error section
-          // TODO: Handle error
-          gap8,
+          gap16,
 
+          // Mensaje de error si existe
+          if (summary.errorMessage != null) ...[
+            Card(
+              color: Colors.red.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700),
+                        gap8,
+                        Text(
+                          'Error',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: Colors.red.shade700),
+                        ),
+                      ],
+                    ),
+                    gap8,
+                    Text(
+                      summary.errorMessage!,
+                      style: TextStyle(color: Colors.red.shade700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            gap16,
+          ],
+
+          // Botón recalcular
           FilledButton.icon(
-            onPressed: () {
-              // TODO: Trigger recalculation of summary
-            },
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
+            onPressed: _recalculateSummary,
             icon: const Icon(Icons.refresh),
             label: const Text('Recalcular resumen'),
-            style: FilledButton.styleFrom(
-              fixedSize: const Size(double.infinity, 48),
-            ),
           ),
-
-          gap8,
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Error', style: Theme.of(context).textTheme.titleMedium),
-                gap8,
-                Text(
-                  'Resumen no generado porque los siguientes viajes tienen datos faltantes:',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          gap12,
-
-          // Sample trips showing missing-data errors (replace with real data)
-          TripsListSection(
-            trips: [
-              TripData(
-                id: 1,
-                origin: 'San Lorenzo',
-                destination: 'Laboulaye',
-                startDate: DateTime(2026, 1, 10),
-                state: 'missing_data',
-                documentType: '',
-                documentNumber: '',
-                estimatedKms: 0,
-                loadWeightOnLoad: 0,
-                loadWeightOnUnload: 0,
-                calculatedPerKm: false,
-                rate: 0,
-                fuelOnClient: false,
-                fuelLiters: 0,
-                loadTypeId: 1,
-                driverId: 1,
-                driver: DriverData(
-                  id: 1,
-                  firstName: 'Carlos',
-                  lastName: 'Sainz',
-                ),
-              ),
-              TripData(
-                id: 2,
-                origin: 'Corral de Bustos',
-                destination: 'Armstrong',
-                startDate: DateTime(2026, 1, 12),
-                state: 'missing_data',
-                documentType: '',
-                documentNumber: '',
-                estimatedKms: 0,
-                loadWeightOnLoad: 0,
-                loadWeightOnUnload: 0,
-                calculatedPerKm: false,
-                rate: 0,
-                fuelOnClient: false,
-                fuelLiters: 0,
-                loadTypeId: 1,
-                driverId: 2,
-                driver: DriverData(
-                  id: 2,
-                  firstName: 'Fernando',
-                  lastName: 'Alonso',
-                ),
-              ),
-            ],
-            onTripTap: (trip) {
-              // TODO: Handle trip tap/navigation
-            },
-          ),
-
-          // Leave space for the FAB
-          const SizedBox(height: 64),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.check),
-        onPressed: () async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Aprobar resumen'),
-              content: const Text(
-                'Estás seguro de que querés aprobar este resumen?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    // TODO: Implement approve summary functionality
-                    Navigator.of(context).pop(true);
-                  },
-                  child: const Text('Aprobar'),
-                ),
-              ],
-            ),
-          );
-          if (confirmed ?? false) {
-            // TODO: call backend / update state to mark summary as approved
-          }
-        },
-      ),
+      floatingActionButton: summary.status != 'approved'
+          ? FloatingActionButton(
+              child: const Icon(Icons.check),
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Aprobar resumen'),
+                    content: const Text(
+                      '¿Estás seguro de que querés aprobar este resumen?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(true);
+                        },
+                        child: const Text('Aprobar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed ?? false) {
+                  // TODO: Implementar aprobación del resumen
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Funcionalidad en desarrollo'),
+                    ),
+                  );
+                }
+              },
+            )
+          : null,
+    );
+  }
+
+  Widget _buildTotalRow(String label, double amount, {bool isBold = false}) {
+    final textStyle = isBold
+        ? Theme.of(context).textTheme.titleMedium
+        : Theme.of(context).textTheme.bodyLarge;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: textStyle),
+        Text(
+          '\$${amount.toStringAsFixed(2)}',
+          style: textStyle?.copyWith(color: amount < 0 ? Colors.red : null),
+        ),
+      ],
+    );
+  }
+
+  SummaryStatus _getStatusFromString(String status) {
+    switch (status) {
+      case 'approved':
+        return SummaryStatus.approved;
+      case 'pending_approval':
+        return SummaryStatus.pendingApproval;
+      case 'draft':
+        return SummaryStatus.draft;
+      case 'error':
+        return SummaryStatus.calculationError;
+      case 'calculation_pending':
+        return SummaryStatus.calculationPending;
+      default:
+        return SummaryStatus.draft;
+    }
+  }
+
+  String _formatPeriod(int? year, int? month) {
+    if (year == null || month == null) return 'N/A';
+
+    final date = DateTime(year, month);
+    final formatted = DateFormat.yMMMM('es').format(date);
+    // Capitalizar primera letra
+    return formatted[0].toUpperCase() + formatted.substring(1);
+  }
+
+  Future<void> _recalculateSummary() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Funcionalidad en desarrollo')),
     );
   }
 }

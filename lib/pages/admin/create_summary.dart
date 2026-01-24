@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
-
+import 'package:frontend_sgfcp/models/payroll_period_data.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/payroll_period_service.dart';
+import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
+import 'package:frontend_sgfcp/pages/admin/summary_detail.dart';
 
 class GenerateSummary extends StatefulWidget {
   const GenerateSummary({super.key});
@@ -19,92 +21,22 @@ class GenerateSummary extends StatefulWidget {
 }
 
 class _GenerateSummaryState extends State<GenerateSummary> {
-  DateTime? _startDate;
-  final List<int> _selectedDriverIds = [];
-  int? _selectedClientId;
+  int? _selectedPeriodId;
+  int? _selectedDriverId;
   bool _isLoading = false;
 
-  // Controllers
-  final TextEditingController _originController = TextEditingController();
-  final TextEditingController _originDescController = TextEditingController();
-  final TextEditingController _destinationController = TextEditingController();
-  final TextEditingController _destinationDescController =
-      TextEditingController();
-  final TextEditingController _startDateController = TextEditingController();
-
-  @override
-  void dispose() {
-    _originController.dispose();
-    _originDescController.dispose();
-    _destinationController.dispose();
-    _destinationDescController.dispose();
-    _startDateController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickPeriod() async {
-    final now = DateTime.now();
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _startDate ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
-    );
-
-    if (picked != null) {
-      setState(() {
-        _startDate = picked;
-        final locale = Localizations.localeOf(context).toString();
-        _startDateController.text = DateFormat(
-          'dd/MM/yyyy',
-          locale,
-        ).format(picked);
-      });
-    }
-  }
-
-  void _generateSummary() async {
+  Future<void> _generateSummary() async {
     // Validaciones
-    if (_originController.text.isEmpty) {
+    if (_selectedPeriodId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa la localidad de origen'),
-        ),
+        const SnackBar(content: Text('Por favor selecciona un período')),
       );
       return;
     }
 
-    if (_destinationController.text.isEmpty) {
+    if (_selectedDriverId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa la localidad de destino'),
-        ),
-      );
-      return;
-    }
-
-    if (_startDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona la fecha de inicio'),
-        ),
-      );
-      return;
-    }
-
-    if (_selectedClientId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona un cliente')),
-      );
-      return;
-    }
-
-    if (_selectedDriverIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona al menos un chofer'),
-        ),
+        const SnackBar(content: Text('Por favor selecciona un chofer')),
       );
       return;
     }
@@ -112,29 +44,17 @@ class _GenerateSummaryState extends State<GenerateSummary> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implementar la llamada a la API para generar el resumen
-      // await ApiService.createTrip(
-      //   origin: _originController.text,
-      //   originDescription: _originDescController.text.isNotEmpty
-      //       ? _originDescController.text
-      //       : null,
-      //   destination: _destinationController.text,
-      //   destinationDescription: _destinationDescController.text.isNotEmpty
-      //       ? _destinationDescController.text
-      //       : null,
-      //   startDate: _startDate!,
-      //   clientId: _selectedClientId!,
-      //   driverIds: _selectedDriverIds,
-      // );
+      // Generar el resumen
+      final summary = await PayrollSummaryService.generateSummary(
+        periodId: _selectedPeriodId!,
+        driverId: _selectedDriverId!,
+      );
 
       if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Resumen generado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // Navegar al detalle del resumen generado
+        Navigator.of(
+          context,
+        ).pushReplacement(SummaryDetailPage.route(summaryId: summary.id));
       }
     } catch (e) {
       if (mounted) {
@@ -165,25 +85,69 @@ class _GenerateSummaryState extends State<GenerateSummary> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              // Periodo
-              TextField(
-                controller: _startDateController,
-                readOnly: true,
-                enabled: !_isLoading,
-                decoration: const InputDecoration(
-                  labelText: 'Fecha Inicio',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today_outlined),
-                ),
-                onTap: _isLoading ? null : _pickPeriod,
-              ),
-                            gap16,
-
-              // Choferes
-              Text('Choferes', style: textTheme.titleMedium),
+              // Dropdown de Períodos
+              Text('Período', style: textTheme.titleMedium),
               gap8,
+              FutureBuilder<List<PayrollPeriodData>>(
+                future: PayrollPeriodService.getAllPeriods(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
 
+                  if (snapshot.hasError) {
+                    return Text(
+                      'Error al cargar períodos: ${snapshot.error}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.error,
+                      ),
+                    );
+                  }
+
+                  final periods = snapshot.data ?? [];
+
+                  if (periods.isEmpty) {
+                    return Text(
+                      'No hay períodos disponibles',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    );
+                  }
+
+                  return DropdownButtonFormField<int>(
+                    value: _selectedPeriodId,
+                    decoration: const InputDecoration(
+                      labelText: 'Seleccionar período',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: periods.map((period) {
+                      return DropdownMenuItem<int>(
+                        value: period.id,
+                        child: Text(period.periodLabel),
+                      );
+                    }).toList(),
+                    onChanged: _isLoading
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _selectedPeriodId = value;
+                            });
+                          },
+                  );
+                },
+              ),
+              gap16,
+
+              // Dropdown de Choferes
+              Text('Chofer', style: textTheme.titleMedium),
+              gap8,
               FutureBuilder<List<DriverData>>(
                 future: DriverService.getDrivers(),
                 builder: (context, snapshot) {
@@ -217,27 +181,25 @@ class _GenerateSummaryState extends State<GenerateSummary> {
                     );
                   }
 
-                  return Column(
-                    children: drivers.map((driver) {
-                      final isSelected = _selectedDriverIds.contains(driver.id);
-                      return CheckboxListTile(
-                        enabled: !_isLoading,
-                        contentPadding: EdgeInsets.zero,
-                        visualDensity: const VisualDensity(vertical: -4),
-                        title: Text(driver.fullName),
-                        value: isSelected,
-                        onChanged: (value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedDriverIds.add(driver.id);
-                            } else {
-                              _selectedDriverIds.remove(driver.id);
-                            }
-                          });
-                        },
-                        controlAffinity: ListTileControlAffinity.leading,
+                  return DropdownButtonFormField<int>(
+                    value: _selectedDriverId,
+                    decoration: const InputDecoration(
+                      labelText: 'Seleccionar chofer',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: drivers.map((driver) {
+                      return DropdownMenuItem<int>(
+                        value: driver.id,
+                        child: Text(driver.fullName),
                       );
                     }).toList(),
+                    onChanged: _isLoading
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _selectedDriverId = value;
+                            });
+                          },
                   );
                 },
               ),
@@ -245,7 +207,9 @@ class _GenerateSummaryState extends State<GenerateSummary> {
 
               // Botón Generar resumen
               FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
                 onPressed: _isLoading ? null : _generateSummary,
                 icon: _isLoading
                     ? const SizedBox(

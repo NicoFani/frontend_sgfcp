@@ -155,6 +155,7 @@ class TripService {
     double? loadWeightOnUnload,
     bool fuelOnClient = false,
     double? fuelLiters,
+    double? clientAdvancePayment,
   }) async {
     final token = TokenStorage.accessToken;
 
@@ -178,6 +179,8 @@ class TripService {
           'load_weight_on_unload': loadWeightOnUnload,
         'fuel_on_client': fuelOnClient,
         if (fuelLiters != null) 'fuel_liters': fuelLiters,
+        if (clientAdvancePayment != null)
+          'client_advance_payment': clientAdvancePayment,
       };
 
       final response = await http

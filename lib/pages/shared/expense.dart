@@ -168,6 +168,7 @@ class _ExpensePageState extends State<ExpensePage> {
             : null,
         repairType: _expenseType == ExpenseType.reparaciones ? _subtype : null,
         tollType: _expenseType == ExpenseType.peaje ? _subtype : null,
+        paidByAdmin: _accountingPaid,
       );
 
       if (mounted) {

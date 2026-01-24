@@ -10,7 +10,7 @@ class ExpenseData {
   final String? repairType;
   final double? fuelLiters;
   final String? tollType;
-  final String? tollPaidBy;
+  final bool? paidByAdmin;
   final String? tollPortFeeName;
   final bool? accountingPaid;
 
@@ -26,7 +26,7 @@ class ExpenseData {
     this.repairType,
     this.fuelLiters,
     this.tollType,
-    this.tollPaidBy,
+    this.paidByAdmin,
     this.tollPortFeeName,
     this.accountingPaid,
   });
@@ -51,7 +51,7 @@ class ExpenseData {
       repairType: json['repair_type'] as String?,
       fuelLiters: (json['fuel_liters'] as num?)?.toDouble(),
       tollType: json['toll_type'] as String?,
-      tollPaidBy: json['toll_paid_by'] as String?,
+      paidByAdmin: json['paid_by_admin'] as bool?,
       tollPortFeeName: json['toll_port_fee_name'] as String?,
       accountingPaid: json['accounting_paid'] as bool?,
     );

@@ -21,6 +21,7 @@ class TripData {
   final LoadTypeData? loadType;
   final int driverId;
   final DriverData? driver;
+  final double clientAdvancePayment;
 
   TripData({
     required this.id,
@@ -42,6 +43,7 @@ class TripData {
     this.loadType,
     required this.driverId,
     this.driver,
+    required this.clientAdvancePayment,
   });
 
   factory TripData.fromJson(Map<String, dynamic> json) {
@@ -83,6 +85,8 @@ class TripData {
       loadType: loadType,
       driverId: json['driver_id'] as int,
       driver: driver,
+      clientAdvancePayment:
+          (json['client_advance_payment'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
