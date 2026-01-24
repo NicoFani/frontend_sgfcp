@@ -351,8 +351,60 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
   }
 
   Future<void> _recalculateSummary() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidad en desarrollo')),
-    );
+    try {
+      // Mostrar diálogo de carga
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text('Recalculando resumen...'),
+            ],
+          ),
+        ),
+      );
+
+      // Recalcular el resumen
+      final recalculatedSummary =
+          await PayrollSummaryService.recalculateSummary(
+            summaryId: widget.summaryId,
+          );
+
+      if (!context.mounted) return;
+
+      // Cerrar diálogo de carga
+      Navigator.of(context).pop();
+
+      // Actualizar el estado con el resumen recalculado
+      setState(() {
+        _summary = recalculatedSummary;
+      });
+
+      // Mostrar mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resumen recalculado exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      // Cerrar diálogo de carga si aún está abierto
+      Navigator.of(context).pop();
+
+      // Mostrar error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

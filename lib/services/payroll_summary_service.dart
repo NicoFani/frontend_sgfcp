@@ -9,7 +9,7 @@ class PayrollSummaryService {
   static String get baseUrl =>
       dotenv.env['BACKEND_URL'] ?? 'http://localhost:5000';
 
-  /// Generar nómina para un período y chofer específico
+  /// Generar nómina para un período y chofer específico (MANUAL)
   static Future<PayrollSummaryData> generateSummary({
     required int periodId,
     required int driverId,
@@ -20,7 +20,7 @@ class PayrollSummaryService {
       final payload = {
         'period_id': periodId,
         'driver_ids': [driverId],
-        'is_manual': false,
+        'is_manual': true, // Generación MANUAL, estado inicial será "draft"
       };
 
       final response = await http
@@ -121,6 +121,36 @@ class PayrollSummaryService {
         final data = jsonData['data'];
         return PayrollSummaryData.fromJson(data['summary']);
       }, operation: 'obtener resumen de nómina');
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  /// Recalcular un resumen existente
+  ///
+  /// Útil cuando:
+  /// - Se toca el botón "Recalcular resumen" manualmente
+  /// - Se finaliza un viaje y necesita recalcularse un resumen en 'calculation_pending'
+  static Future<PayrollSummaryData> recalculateSummary({
+    required int summaryId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/payroll/summaries/$summaryId/recalculate'),
+            headers: ApiResponseHandler.createHeaders(token),
+            body: jsonEncode({}),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<PayrollSummaryData>(response, (
+        jsonData,
+      ) {
+        final data = jsonData['data'];
+        return PayrollSummaryData.fromJson(data['summary']);
+      }, operation: 'recalcular resumen de nómina');
     } catch (e) {
       ApiResponseHandler.handleNetworkError(e);
     }
