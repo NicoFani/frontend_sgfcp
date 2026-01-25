@@ -97,9 +97,9 @@ class _MiTripsPageState extends State<MiTripsPage> {
                   icon: Symbols.delivery_truck_speed,
                   label: 'Abrir',
                   onPressed: () {
-                    Navigator.of(
-                      context,
-                    ).push(TripPage.route(trip: currentTrip));
+                    Navigator.of(context)
+                        .push(TripPage.route(trip: currentTrip))
+                        .then((_) => _loadTrips());
                   },
                 );
               },
@@ -154,9 +154,9 @@ class _MiTripsPageState extends State<MiTripsPage> {
                   icon: Symbols.add_road,
                   label: 'Comenzar',
                   onPressed: () {
-                    Navigator.of(
-                      context,
-                    ).push(StartTripPage.route(trip: nextTrip));
+                    Navigator.of(context)
+                        .push(StartTripPage.route(trip: nextTrip))
+                        .then((_) => _loadTrips());
                   },
                 );
               },

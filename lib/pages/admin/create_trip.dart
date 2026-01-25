@@ -55,7 +55,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate ?? now,
-      firstDate: DateTime(now.year - 5),
+      firstDate: now,
       lastDate: DateTime(now.year + 5),
     );
 
@@ -95,6 +95,26 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor selecciona la fecha de inicio'),
+        ),
+      );
+      return;
+    }
+
+    // Validar que la fecha de inicio no sea anterior a hoy
+    final today = DateTime.now();
+    final startDateOnly = DateTime(
+      _startDate!.year,
+      _startDate!.month,
+      _startDate!.day,
+    );
+    final todayOnly = DateTime(today.year, today.month, today.day);
+
+    if (startDateOnly.isBefore(todayOnly)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La fecha de inicio no puede ser anterior al día actual',
+          ),
         ),
       );
       return;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
 
 class CreateDriverPageAdmin extends StatefulWidget {
   const CreateDriverPageAdmin({super.key});
@@ -8,7 +9,9 @@ class CreateDriverPageAdmin extends StatefulWidget {
   static const String routeName = '/admin/create-driver';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const CreateDriverPageAdmin());
+    return MaterialPageRoute<void>(
+      builder: (_) => const CreateDriverPageAdmin(),
+    );
   }
 
   @override
@@ -22,6 +25,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
   final TextEditingController _cuilController = TextEditingController();
   final TextEditingController _cvuController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -34,15 +38,89 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
     super.dispose();
   }
 
-  void _createDriver() {
-    // TODO: Validar y crear en el backend
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chofer creado correctamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _createDriver() async {
+    // Validaciones
+    if (_emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa el email')),
+      );
+      return;
+    }
+
+    if (_nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa el nombre')),
+      );
+      return;
+    }
+
+    if (_lastNameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa el apellido')),
+      );
+      return;
+    }
+
+    if (_cuilController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor ingresa el CUIL')),
+      );
+      return;
+    }
+
+    if (_cvuController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Por favor ingresa el CVU')));
+      return;
+    }
+
+    if (_phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor ingresa el número de teléfono'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await DriverService.createDriverComplete(
+        email: _emailController.text.trim(),
+        name: _nameController.text.trim(),
+        surname: _lastNameController.text.trim(),
+        cuil: _cuilController.text.trim().replaceAll('-', ''),
+        cvu: _cvuController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pop(true); // Return true to indicate driver was created
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chofer creado correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al crear chofer: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -50,9 +128,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Crear nuevo chofer'),
-      ),
+      appBar: AppBar(title: const Text('Crear nuevo chofer')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -165,9 +241,15 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
                   backgroundColor: colors.primary,
                   minimumSize: const Size.fromHeight(48),
                 ),
-                onPressed: _createDriver,
-                icon: const Icon(Symbols.person_add),
-                label: const Text('Crear chofer'),
+                onPressed: _isLoading ? null : _createDriver,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Symbols.person_add),
+                label: Text(_isLoading ? 'Creando...' : 'Crear chofer'),
               ),
             ],
           ),

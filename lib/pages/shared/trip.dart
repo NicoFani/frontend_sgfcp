@@ -49,28 +49,38 @@ class _TripPageState extends State<TripPage> {
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
     // Si ya tenemos el viaje completo, no hacemos otra llamada
     if (widget.trip != null) {
       _currentTrip = widget.trip;
-      _tripFuture = Future.value(widget.trip!);
-      _expensesFuture = ExpenseService.getExpensesByTrip(
-        tripId: widget.trip!.id,
-      );
-    } else if (widget.tripId != null) {
-      _tripFuture = TripService.getTrip(tripId: widget.tripId!);
-      _expensesFuture = ExpenseService.getExpensesByTrip(
-        tripId: widget.tripId!,
-      );
-    } else {
-      _tripFuture = TripService.getCurrentTrip().then((trip) {
-        if (trip == null) {
-          throw Exception('No hay viaje actual disponible');
-        }
-        return trip;
+      setState(() {
+        _tripFuture = Future.value(widget.trip!);
+        _expensesFuture = ExpenseService.getExpensesByTrip(
+          tripId: widget.trip!.id,
+        );
       });
-      _expensesFuture = _tripFuture.then(
-        (trip) => ExpenseService.getExpensesByTrip(tripId: trip.id),
-      );
+    } else if (widget.tripId != null) {
+      setState(() {
+        _tripFuture = TripService.getTrip(tripId: widget.tripId!);
+        _expensesFuture = ExpenseService.getExpensesByTrip(
+          tripId: widget.tripId!,
+        );
+      });
+    } else {
+      setState(() {
+        _tripFuture = TripService.getCurrentTrip().then((trip) {
+          if (trip == null) {
+            throw Exception('No hay viaje actual disponible');
+          }
+          return trip;
+        });
+        _expensesFuture = _tripFuture.then(
+          (trip) => ExpenseService.getExpensesByTrip(tripId: trip.id),
+        );
+      });
     }
   }
 
@@ -338,9 +348,11 @@ class _TripPageState extends State<TripPage> {
                               col1: expense.type,
                               col2: currencyFormat.format(expense.amount),
                               onEdit: () {
-                                Navigator.of(
-                                  context,
-                                ).push(EditExpensePage.route(expense: expense));
+                                Navigator.of(context)
+                                    .push(
+                                      EditExpensePage.route(expense: expense),
+                                    )
+                                    .then((_) => _loadData());
                               },
                             ),
                           )
@@ -400,14 +412,14 @@ class _TripPageState extends State<TripPage> {
       floatingActionButton: _currentTrip != null
           ? TripFabMenu(
               onAddExpense: () {
-                Navigator.of(
-                  context,
-                ).push(ExpensePage.route(trip: _currentTrip!));
+                Navigator.of(context)
+                    .push(ExpensePage.route(trip: _currentTrip!))
+                    .then((_) => _loadData());
               },
               onEditTrip: () {
-                Navigator.of(
-                  context,
-                ).push(EditTripPage.route(trip: _currentTrip!));
+                Navigator.of(context)
+                    .push(EditTripPage.route(trip: _currentTrip!))
+                    .then((_) => _loadData());
               },
             )
           : null,

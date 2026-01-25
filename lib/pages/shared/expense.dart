@@ -200,7 +200,10 @@ class _ExpensePageState extends State<ExpensePage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    final peajeOptions = ['Tasa portuaria', 'Ruta'];
+    final peajeOptions = [
+      'Peaje de ruta',
+      'Derecho de Ingreso a establecimiento',
+    ];
     final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
 
     List<String> subtypeOptions;

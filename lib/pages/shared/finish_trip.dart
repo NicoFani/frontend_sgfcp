@@ -42,7 +42,7 @@ class _FinishTripPageState extends State<FinishTripPage> {
 
   Future<void> _pickEndDate() async {
     final now = DateTime.now();
-    
+
     // Si la fecha de inicio del viaje es posterior a hoy, usar esa como inicial
     // De lo contrario, usar hoy o la fecha ya seleccionada
     DateTime initialDate;
@@ -90,19 +90,33 @@ class _FinishTripPageState extends State<FinishTripPage> {
       return;
     }
 
+    // Validar que el peso de descarga no sea mayor al peso de carga
+    final weightInTons = double.tryParse(_weightController.text) ?? 0;
+    final loadWeightInTons = widget.trip.loadWeightOnLoad;
+
+    if (weightInTons > loadWeightInTons) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'El peso de descarga (${weightInTons.toStringAsFixed(2)} Tn) no puede ser mayor '
+            'al peso de carga (${loadWeightInTons.toStringAsFixed(2)} Tn)',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // Convertir toneladas a kilogramos (1 Tn = 1000 kg)
       final weightInTons = double.tryParse(_weightController.text) ?? 0;
-      final weightInKg = weightInTons * 1000;
 
       await TripService.updateTrip(
         tripId: widget.trip.id,
         data: {
           'state_id': 'Finalizado',
           'end_date': _endDate!.toIso8601String().split('T')[0],
-          'load_weight_on_unload': weightInKg,
+          'load_weight_on_unload': weightInTons,
         },
       );
 

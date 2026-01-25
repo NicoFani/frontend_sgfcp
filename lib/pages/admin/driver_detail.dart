@@ -48,8 +48,14 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
     super.initState();
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month, 1);
-    _tripsFuture = TripService.getTrips();
-    _driverFuture = _getDriverData();
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      _tripsFuture = TripService.getTrips();
+      _driverFuture = _getDriverData();
+    });
   }
 
   Future<DriverData> _getDriverData() async {
@@ -231,7 +237,9 @@ class _DriverDetailPageAdminState extends State<DriverDetailPageAdmin> {
                     TripsListSection(
                       trips: previousTrips.toList(),
                       onTripTap: (trip) {
-                        Navigator.of(context).push(TripPage.route(trip: trip));
+                        Navigator.of(context)
+                            .push(TripPage.route(trip: trip))
+                            .then((_) => _loadData());
                       },
                     ),
                 ],

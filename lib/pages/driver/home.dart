@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
 import 'package:frontend_sgfcp/pages/shared/expense.dart';
 import 'package:frontend_sgfcp/pages/shared/finish_trip.dart';
 import 'package:frontend_sgfcp/pages/driver/start_trip.dart';
 import 'package:frontend_sgfcp/pages/shared/trip.dart';
 
-class HomePageDriver extends StatelessWidget {
+class HomePageDriver extends StatefulWidget {
   const HomePageDriver({super.key});
 
   /// Route name you can use with Navigator.pushNamed
@@ -20,50 +23,124 @@ class HomePageDriver extends StatelessWidget {
   }
 
   @override
+  State<HomePageDriver> createState() => _HomePageDriverState();
+}
+
+class _HomePageDriverState extends State<HomePageDriver> {
+  bool _isLoading = true;
+  String? _error;
+  TripData? _currentTrip;
+  TripData? _nextTrip;
+  String _driverName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Obtener nombre del conductor
+      final user = TokenStorage.user;
+      _driverName = user?['username'] ?? 'Conductor';
+
+      // Cargar viajes en paralelo
+      final results = await Future.wait([
+        TripService.getCurrentTrip(),
+        TripService.getNextTrip(),
+      ]);
+
+      setState(() {
+        _currentTrip = results[0];
+        _nextTrip = results[1];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error al cargar datos: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // --- Current Trip section ---
-            Text('Viaje actual', style: textTheme.titleLarge),
-            gap8,
-            const CurrentTripCard(),
-
-            gap24,
-
-            // --- Next Trip section ---
-            Text('Tu próximo viaje', style: textTheme.titleLarge),
-            gap8,
-            const NextTripCard(trip: null),
-
-            gap24,
-
-            // --- Upcoming trips + calendar title ---
-            Text('Próximos viajes', style: textTheme.titleLarge),
-            gap8,
-
-            // TODO: calendar widget will go here later
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: colors.surfaceContainerHighest,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Calendario (por implementar)',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
+            Icon(Icons.error_outline, size: 48, color: colors.error),
+            gap16,
+            Text(_error!, style: textTheme.bodyMedium),
+            gap16,
+            FilledButton.icon(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
             ),
           ],
+        ),
+      );
+    }
+
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Current Trip section ---
+              Text('Viaje actual', style: textTheme.titleLarge),
+              gap8,
+              CurrentTripCard(trip: _currentTrip, onRefresh: _loadData),
+
+              gap24,
+
+              // --- Next Trip section ---
+              Text('Tu próximo viaje', style: textTheme.titleLarge),
+              gap8,
+              NextTripCard(trip: _nextTrip, onRefresh: _loadData),
+
+              gap24,
+
+              // --- Upcoming trips + calendar title ---
+              Text('Próximos viajes', style: textTheme.titleLarge),
+              gap8,
+
+              // TODO: calendar widget will go here later
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: colors.surfaceContainerHighest,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Calendario (por implementar)',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -72,14 +149,47 @@ class HomePageDriver extends StatelessWidget {
 
 /// Card: "Viaje actual"
 class CurrentTripCard extends StatelessWidget {
-  final dynamic trip;
+  final TripData? trip;
+  final Future<void> Function() onRefresh;
 
-  const CurrentTripCard({super.key, this.trip});
+  const CurrentTripCard({super.key, this.trip, required this.onRefresh});
+
+  String _getTimeElapsed(DateTime startDate) {
+    final now = DateTime.now();
+    final difference = now.difference(startDate);
+
+    if (difference.inDays > 0) {
+      return 'Viaje iniciado hace ${difference.inDays} día${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Viaje iniciado hace ${difference.inHours} hora${difference.inHours > 1 ? 's' : ''}';
+    } else if (difference.inMinutes > 0) {
+      return 'Viaje iniciado hace ${difference.inMinutes} minuto${difference.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'Viaje recién iniciado';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Si no hay viaje actual, mostrar mensaje
+    if (trip == null) {
+      return Card.outlined(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Text(
+              'No hay viaje en curso',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Card.outlined(
       clipBehavior: Clip.antiAlias,
@@ -89,10 +199,13 @@ class CurrentTripCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Text('Mattaldi → San Lorenzo', style: textTheme.titleMedium),
+            Text(
+              '${trip!.origin} → ${trip!.destination}',
+              style: textTheme.titleMedium,
+            ),
             gap4,
             Text(
-              'Viaje iniciado hace 3 horas',
+              _getTimeElapsed(trip!.startDate),
               style: textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
               ),
@@ -105,7 +218,9 @@ class CurrentTripCard extends StatelessWidget {
               children: [
                 OutlinedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(TripPage.route());
+                    Navigator.of(
+                      context,
+                    ).push(TripPage.route(trip: trip)).then((_) => onRefresh());
                   },
                   icon: Icon(
                     Icons.info_outline,
@@ -122,7 +237,9 @@ class CurrentTripCard extends StatelessWidget {
                 Expanded(
                   child: FilledButton.tonalIcon(
                     onPressed: () {
-                      Navigator.of(context).push(ExpensePage.route(trip: trip));
+                      Navigator.of(context)
+                          .push(ExpensePage.route(trip: trip!))
+                          .then((_) => onRefresh());
                     },
                     icon: const Icon(Symbols.garage_money),
                     label: const Text('Cargar gasto'),
@@ -139,7 +256,9 @@ class CurrentTripCard extends StatelessWidget {
                 minimumSize: const Size.fromHeight(48),
               ),
               onPressed: () {
-                Navigator.of(context).push(FinishTripPage.route(trip: trip));
+                Navigator.of(context)
+                    .push(FinishTripPage.route(trip: trip!))
+                    .then((_) => onRefresh());
               },
               icon: const Icon(Symbols.where_to_vote),
               label: const Text('Finalizar viaje'),
@@ -153,14 +272,47 @@ class CurrentTripCard extends StatelessWidget {
 
 /// Card: "Tu próximo viaje"
 class NextTripCard extends StatelessWidget {
-  final dynamic trip;
+  final TripData? trip;
+  final Future<void> Function() onRefresh;
 
-  const NextTripCard({super.key, required this.trip});
+  const NextTripCard({super.key, required this.trip, required this.onRefresh});
+
+  String _getTimeUntilStart(DateTime startDate) {
+    final now = DateTime.now();
+    final difference = startDate.difference(now);
+
+    if (difference.inDays > 0) {
+      return 'Faltan ${difference.inDays} día${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Faltan ${difference.inHours} hora${difference.inHours > 1 ? 's' : ''}';
+    } else if (difference.inMinutes > 0) {
+      return 'Faltan ${difference.inMinutes} minuto${difference.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'Listo para comenzar';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Si no hay próximo viaje, mostrar mensaje
+    if (trip == null) {
+      return Card.outlined(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Text(
+              'No hay próximos viajes programados',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Card.outlined(
       clipBehavior: Clip.antiAlias,
@@ -169,10 +321,13 @@ class NextTripCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mattaldi → San Lorenzo', style: textTheme.titleMedium),
+            Text(
+              '${trip!.origin} → ${trip!.destination}',
+              style: textTheme.titleMedium,
+            ),
             gap4,
             Text(
-              'Faltan 2 días',
+              _getTimeUntilStart(trip!.startDate),
               style: textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
               ),
@@ -183,11 +338,11 @@ class NextTripCard extends StatelessWidget {
                 minimumSize: const Size.fromHeight(48),
               ),
               onPressed: () {
-                Navigator.of(context).push(StartTripPage.route(trip: trip));
+                Navigator.of(context)
+                    .push(StartTripPage.route(trip: trip!))
+                    .then((_) => onRefresh());
               },
-              icon: const Icon(
-                Icons.add_road,
-              ), // poné el ícono que usaste en Figma
+              icon: const Icon(Icons.add_road),
               label: const Text('Comenzar viaje'),
             ),
           ],

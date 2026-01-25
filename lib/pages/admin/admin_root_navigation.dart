@@ -24,22 +24,34 @@ class AdminRootNavigation extends StatefulWidget {
 class _AdminRootNavigationState extends State<AdminRootNavigation> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
+  final ValueNotifier<int> _driversRefreshNotifier = ValueNotifier(0);
 
-  final List<Widget> _pages = const [
-    HomePageAdmin(),
-    TripsPageAdmin(),
-    DriversPageAdmin(),
-    AdministrationPageAdmin(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const HomePageAdmin(),
+      const TripsPageAdmin(),
+      ValueListenableBuilder<int>(
+        valueListenable: _driversRefreshNotifier,
+        builder: (context, value, child) =>
+            DriversPageAdmin(key: ValueKey(value)),
+      ),
+      const AdministrationPageAdmin(),
+    ];
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _driversRefreshNotifier.dispose();
     super.dispose();
   }
 
   // APPBAR según la pestaña seleccionada
-  PreferredSizeWidget? _buildAppBar() {   
+  PreferredSizeWidget? _buildAppBar() {
     switch (_selectedIndex) {
       case 0:
         return AppBar(
@@ -51,9 +63,7 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
             IconButton(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
                 );
               },
               icon: Badge.count(
@@ -79,8 +89,13 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
           actions: [
             IconButton(
               icon: const Icon(Symbols.person_add),
-              onPressed: () {
-                Navigator.of(context).push(CreateDriverPageAdmin.route());
+              onPressed: () async {
+                final result = await Navigator.of(
+                  context,
+                ).push(CreateDriverPageAdmin.route());
+                if (result == true) {
+                  _driversRefreshNotifier.value++;
+                }
               },
             ),
           ],

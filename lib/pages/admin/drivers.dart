@@ -13,7 +13,9 @@ import 'package:frontend_sgfcp/models/advance_payment_data.dart';
 import 'package:frontend_sgfcp/widgets/drivers_list.dart' as dl;
 
 class DriversPageAdmin extends StatefulWidget {
-  const DriversPageAdmin({super.key});
+  final VoidCallback? onRefreshNeeded;
+
+  const DriversPageAdmin({super.key, this.onRefreshNeeded});
 
   static const String routeName = '/admin/drivers';
 
@@ -35,6 +37,14 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
     super.initState();
     _driversFuture = DriverService.getDrivers();
     _advancesFuture = AdvancePaymentService.getAdvancePayments();
+  }
+
+  void refreshData() {
+    setState(() {
+      _driversFuture = DriverService.getDrivers();
+      _advancesFuture = AdvancePaymentService.getAdvancePayments();
+    });
+    widget.onRefreshNeeded?.call();
   }
 
   List<AdvancePaymentData> _filterAdvancesByDateRange(

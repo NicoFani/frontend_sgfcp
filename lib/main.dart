@@ -10,6 +10,7 @@ import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
 import 'package:frontend_sgfcp/pages/driver/home.dart';
 import 'package:frontend_sgfcp/pages/driver/profile.dart';
 import 'package:frontend_sgfcp/pages/shared/loading_page.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
 Future<void> main() async {
   // Inicializa datos de fechas para español
@@ -29,15 +30,15 @@ class MyApp extends StatelessWidget {
 
     TextTheme textTheme = createTextTheme(context, "Noto Sans", "Noto Sans");
     MaterialTheme theme = MaterialTheme(textTheme);
-    
+
     return MaterialApp(
       title: 'SGFCP',
-      theme: theme.light(),// brightness == Brightness.light ? theme.light() : theme.dark(),
+      theme: theme
+          .light(), // brightness == Brightness.light ? theme.light() : theme.dark(),
       home: const LoadingPage(),
     );
   }
 }
-
 
 /// Widget raíz con NavigationBar (Material 3) y las 3 pantallas principales.
 class RootNavigation extends StatefulWidget {
@@ -50,12 +51,26 @@ class RootNavigation extends StatefulWidget {
 class _RootNavigationState extends State<RootNavigation> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
+  String _userName = 'Conductor';
 
   final List<Widget> _pages = const [
     HomePageDriver(),
     MiTripsPage(),
     ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  void _loadUserName() {
+    final user = TokenStorage.user;
+    setState(() {
+      _userName = user?['name'] ?? 'Conductor';
+    });
+  }
 
   @override
   void dispose() {
@@ -69,7 +84,7 @@ class _RootNavigationState extends State<RootNavigation> {
       case 0:
         return AppBar(
           title: Text(
-            'Hola, Juan!',
+            'Hola, $_userName!',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           actions: [

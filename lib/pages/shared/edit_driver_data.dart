@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/models/driver_data.dart';
 
 class EditDriverDataPage extends StatefulWidget {
-  const EditDriverDataPage({
-    super.key,
-    required this.driverName,
-  });
+  const EditDriverDataPage({super.key, required this.driverId});
 
-  final String driverName;
+  final int driverId;
 
   static const String routeName = '/admin/edit-driver-data';
 
-  static Route route({required String driverName}) {
+  static Route route({required int driverId}) {
     return MaterialPageRoute<void>(
-      builder: (_) => EditDriverDataPage(driverName: driverName),
+      builder: (_) => EditDriverDataPage(driverId: driverId),
     );
   }
 
@@ -23,12 +22,46 @@ class EditDriverDataPage extends StatefulWidget {
 }
 
 class _EditDriverDataPageState extends State<EditDriverDataPage> {
-  // TODO: Obtener datos reales del backend basado en widget.driverName
-  final TextEditingController _nameController = TextEditingController(text: 'Juan Antonio');
-  final TextEditingController _lastNameController = TextEditingController(text: 'Rodriguez');
-  final TextEditingController _cuilController = TextEditingController(text: '27-28033514-8');
-  final TextEditingController _cvuController = TextEditingController(text: '0000031547612579452356');
-  final TextEditingController _phoneController = TextEditingController(text: '3462 37-8485');
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _cuilController = TextEditingController();
+  final TextEditingController _cvuController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDriverData();
+  }
+
+  Future<void> _loadDriverData() async {
+    try {
+      final driver = await DriverService.getDriverById(
+        driverId: widget.driverId,
+      );
+
+      setState(() {
+        _nameController.text = driver.firstName;
+        _lastNameController.text = driver.lastName;
+        _cuilController.text = driver.cuil ?? '';
+        _cvuController.text = driver.cbu ?? '';
+        _phoneController.text = driver.phoneNumber ?? '';
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar datos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -40,24 +73,57 @@ class _EditDriverDataPageState extends State<EditDriverDataPage> {
     super.dispose();
   }
 
-  void _saveChanges() {
-    // TODO: Guardar cambios en el backend
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Datos actualizados correctamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _saveChanges() async {
+    setState(() => _isSaving = true);
+
+    try {
+      await DriverService.updateDriverBasicData(
+        driverId: widget.driverId,
+        name: _nameController.text.trim(),
+        surname: _lastNameController.text.trim(),
+        cuil: _cuilController.text.trim().replaceAll('-', ''),
+        cvu: _cvuController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pop(true); // Return true to indicate data was updated
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Datos actualizados correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Editar datos personales')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editar datos personales'),
-      ),
+      appBar: AppBar(title: const Text('Editar datos personales')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -147,9 +213,15 @@ class _EditDriverDataPageState extends State<EditDriverDataPage> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
-                onPressed: _saveChanges,
-                icon: const Icon(Symbols.check),
-                label: const Text('Guardar cambios'),
+                onPressed: _isSaving ? null : _saveChanges,
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Symbols.check),
+                label: Text(_isSaving ? 'Guardando...' : 'Guardar cambios'),
               ),
             ],
           ),

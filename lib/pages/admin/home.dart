@@ -140,7 +140,11 @@ class _HomePageAdminState extends State<HomePageAdmin> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(CreateTripPageAdmin.route());
+                    Navigator.of(
+                      context,
+                    ).push(CreateTripPageAdmin.route()).then((_) {
+                      _loadDrivers();
+                    });
                   },
                   icon: const Icon(Symbols.add_road),
                   label: const Text('Crear viaje'),
