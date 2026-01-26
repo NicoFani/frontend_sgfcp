@@ -59,17 +59,15 @@ class _EditTripPageState extends State<EditTripPage> {
     _docNumberController.text = widget.trip.documentNumber;
     _startDate = widget.trip.startDate;
     _selectedDriver = widget.trip.driver;
-    _cargoType = 'Maíz'; // assuming, or add to model
+    _cargoType = widget.trip.loadType?.name ?? 'Maíz';
     _netWeightController.text = widget.trip.loadWeightOnLoad.toString();
     _kmsController.text = widget.trip.estimatedKms.toString();
     _rateController.text = widget.trip.rate.toString();
+    _advanceController.text = widget.trip.clientAdvancePayment.toString();
     _fuelLitersController.text = widget.trip.fuelLiters.toString();
 
-    final locale = Localizations.localeOf(context).toString();
-    _startDateController.text = DateFormat(
-      'dd/MM/yyyy',
-      locale,
-    ).format(_startDate!);
+    // Formato de fecha sin necesidad de context
+    _startDateController.text = DateFormat('dd/MM/yyyy').format(_startDate!);
   }
 
   DocumentType _mapStringToDocumentType(String type) {
@@ -277,7 +275,7 @@ class _EditTripPageState extends State<EditTripPage> {
                     child: TextField(
                       controller: _netWeightController,
                       decoration: const InputDecoration(
-                        labelText: 'Peso neto (kg)',
+                        labelText: 'Peso neto (Tn)',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
