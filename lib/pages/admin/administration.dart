@@ -6,15 +6,18 @@ import 'package:frontend_sgfcp/pages/admin/account.dart';
 import 'package:frontend_sgfcp/pages/admin/clients_providers.dart';
 import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
 import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
+import 'package:frontend_sgfcp/models/user.dart';
 
 class AdministrationPageAdmin extends StatelessWidget {
-  const AdministrationPageAdmin({super.key});
+  final User user;
+
+  const AdministrationPageAdmin({super.key, required this.user});
 
   static const String routeName = '/admin/administration';
 
-  static Route route() {
+  static Route route({required User user}) {
     return MaterialPageRoute<void>(
-      builder: (_) => const AdministrationPageAdmin(),
+      builder: (_) => AdministrationPageAdmin(user: user),
     );
   }
 
@@ -29,13 +32,13 @@ class AdministrationPageAdmin extends StatelessWidget {
         children: [
           gap24,
 
-          // Información del usuario (Omar)
+          // Información del usuario
           Column(
             children: [
-              Text('Omar', style: textTheme.titleLarge),
+              Text(user.fullName, style: textTheme.titleLarge),
               gap4,
               Text(
-                'omar@gmail.com',
+                user.email,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
