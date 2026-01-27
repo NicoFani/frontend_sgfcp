@@ -73,50 +73,33 @@
 - [x] getDriverTruckById()
 - [x] assignDriverToTruck()
 - [x] removeDriverFromTruck()
-- [ ] getTruckByDriver() *(requires backend implementation)*
+- [x] getTrucksByDriver()
 - [ ] getDriverByTruck() *(requires backend implementation)*
-
-### summary_service.dart (Monthly Summaries):
-- [ ] getMonthlySummaries()
-- [ ] getMonthlySummaryById()
-- [ ] generateMonthlySummary()
-- [ ] updateMonthlySummary() (Used also to approve/reject)
-- [ ] exportMonthlySummaryPdf()
-- [ ] exportMonthlySummaryExcel()
-
-### payroll_item_service.dart:
-- [ ] getPayrollItems()
-- [ ] getPayrollItemById()
-- [ ] createPayrollItem()
-- [ ] updatePayrollItem()
-- [ ] deletePayrollItem()
-
-### payroll_calculation_service.dart:
-- [ ] calculatePayroll()
-- [ ] getPayrollCalculation()
-- [ ] updatePayrollCalculation()
 
 ### payroll_export_service.dart:
 - [ ] exportPayrollPdf()
 - [ ] exportPayrollExcel()
 
+### payroll_other_item_service.dart:
+- [x] createOtherItem()
+- [x] getAllOtherItems()
+- [x] getOtherItemsByPeriodAndDriver()
+- [x] updateOtherItem()
+- [x] deleteOtherItem()
+
 ### payroll_period_service.dart:
-- [ ] getPayrollPeriods()
-- [ ] getPayrollPeriodById()
+- [x] getAllPeriods()
+- [x] getPeriodById()
 - [ ] createPayrollPeriod()
 - [ ] updatePayrollPeriod()
 - [ ] closePayrollPeriod()
 
-### payroll_settings_service.dart:
-- [ ] getPayrollSettings()
-- [ ] updatePayrollSettings()
-- [ ] getSummaryGenerationSettings()
-- [ ] updateSummaryGenerationSettings()
-
 ### payroll_summary_service.dart:
-- [ ] getPayrollSummaries()
-- [ ] getPayrollSummaryById()
-- [ ] generatePayrollSummary()
+- [x] generateSummary()
+- [x] getSummariesByPeriod()
+- [x] getAllSummaries()
+- [x] getSummaryById()
+- [x] recalculateSummary()
 - [ ] updatePayrollSummary()
 
 ### user_service.dart (App User Management):
@@ -163,7 +146,7 @@
 7. ~~Complete auth_service.dart - User management functions~~ ✅ COMPLETED
 8. Create user_service.dart - Admin user management
 9. Create summary_service.dart - Monthly summaries
-10. Create payroll_item_service.dart - Other payroll concepts
+10. ~~Complete payroll_other_item_service.dart - Other payroll concepts~~ ✅ COMPLETED
 
 ### Low Priority (Advanced Features):
 11. Create payroll_calculation_service.dart - Payroll calculations
