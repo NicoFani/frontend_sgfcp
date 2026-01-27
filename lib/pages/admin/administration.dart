@@ -7,18 +7,61 @@ import 'package:frontend_sgfcp/pages/admin/clients_providers.dart';
 import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
 import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
 import 'package:frontend_sgfcp/models/user.dart';
+import 'package:frontend_sgfcp/services/user_refresh_notifier.dart';
+import 'package:frontend_sgfcp/services/auth_service.dart';
 
-class AdministrationPageAdmin extends StatelessWidget {
+class AdministrationPageAdmin extends StatefulWidget {
   final User user;
+  final VoidCallback? onNeedRefresh;
 
-  const AdministrationPageAdmin({super.key, required this.user});
+  const AdministrationPageAdmin({
+    super.key,
+    required this.user,
+    this.onNeedRefresh,
+  });
 
   static const String routeName = '/admin/administration';
 
-  static Route route({required User user}) {
+  static Route route({required User user, VoidCallback? onNeedRefresh}) {
     return MaterialPageRoute<void>(
-      builder: (_) => AdministrationPageAdmin(user: user),
+      builder: (_) =>
+          AdministrationPageAdmin(user: user, onNeedRefresh: onNeedRefresh),
     );
+  }
+
+  @override
+  State<AdministrationPageAdmin> createState() =>
+      _AdministrationPageAdminState();
+}
+
+class _AdministrationPageAdminState extends State<AdministrationPageAdmin> {
+  late User _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = widget.user;
+    // Listen to global user refresh notifications
+    userRefreshNotifier.addListener(_onUserRefresh);
+  }
+
+  @override
+  void dispose() {
+    userRefreshNotifier.removeListener(_onUserRefresh);
+    super.dispose();
+  }
+
+  Future<void> _onUserRefresh() async {
+    // Fetch fresh user data when notified
+    final userData = await AuthService.getCurrentUser();
+    if (userData['success'] != false && userData['user'] != null) {
+      final freshUser = User.fromJson(userData['user'] as Map<String, dynamic>);
+      if (mounted) {
+        setState(() {
+          _currentUser = freshUser;
+        });
+      }
+    }
   }
 
   @override
@@ -35,10 +78,10 @@ class AdministrationPageAdmin extends StatelessWidget {
           // Información del usuario
           Column(
             children: [
-              Text(user.fullName, style: textTheme.titleLarge),
+              Text(_currentUser.fullName, style: textTheme.titleLarge),
               gap4,
               Text(
-                user.email,
+                _currentUser.email,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),

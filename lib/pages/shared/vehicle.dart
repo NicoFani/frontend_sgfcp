@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
 import 'package:frontend_sgfcp/pages/admin/edit_vehicle.dart';
+import 'package:frontend_sgfcp/pages/shared/documentation_update.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
 import 'package:frontend_sgfcp/models/truck_data.dart';
@@ -70,9 +71,7 @@ class _VehiclePageState extends State<VehiclePage> {
               if (mounted) {
                 final result = await Navigator.of(context).push(
                   EditVehiclePage.route(
-                    brand: truck.brand,
-                    model: truck.modelName,
-                    plate: truck.plate,
+                    truckId: widget.truckId,
                   ),
                 );
                 if (result == true) {
@@ -255,39 +254,51 @@ class _VehiclePageState extends State<VehiclePage> {
                           col1: 'VTV',
                           col2: dateFormat.format(truck.vtvDueDate),
                           dateToValidate: truck.vtvDueDate,
-                          onEdit: () {
-                            // TODO: Implementar actualización de VTV
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Funcionalidad en desarrollo'),
+                          onEdit: () async {
+                            final result = await Navigator.of(context).push(
+                              DocumentationUpdatePage.route(
+                                type: 'truck',
+                                entity: truck,
+                                documentType: 'vtv',
                               ),
                             );
+                            if (result == true) {
+                              _loadData();
+                            }
                           },
                         ),
                         SimpleTableRowData(
                           col1: 'Service',
                           col2: dateFormat.format(truck.serviceDueDate),
                           dateToValidate: truck.serviceDueDate,
-                          onEdit: () {
-                            // TODO: Implementar actualización de Service
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Funcionalidad en desarrollo'),
+                          onEdit: () async {
+                            final result = await Navigator.of(context).push(
+                              DocumentationUpdatePage.route(
+                                type: 'truck',
+                                entity: truck,
+                                documentType: 'service',
                               ),
                             );
+                            if (result == true) {
+                              _loadData();
+                            }
                           },
                         ),
                         SimpleTableRowData(
                           col1: 'Patente',
                           col2: dateFormat.format(truck.plateDueDate),
                           dateToValidate: truck.plateDueDate,
-                          onEdit: () {
-                            // TODO: Implementar actualización de Patente
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Funcionalidad en desarrollo'),
+                          onEdit: () async {
+                            final result = await Navigator.of(context).push(
+                              DocumentationUpdatePage.route(
+                                type: 'truck',
+                                entity: truck,
+                                documentType: 'plate',
                               ),
                             );
+                            if (result == true) {
+                              _loadData();
+                            }
                           },
                         ),
                       ],

@@ -1,31 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/services/truck_service.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/models/truck_data.dart';
+import 'package:frontend_sgfcp/models/driver_data.dart';
 
 class EditVehiclePage extends StatefulWidget {
-  final String brand;
-  final String model;
-  final String plate;
+  final int truckId;
 
   const EditVehiclePage({
     super.key,
-    required this.brand,
-    required this.model,
-    required this.plate,
+    required this.truckId,
   });
 
   static const String routeName = '/admin/edit-vehicle';
 
   static Route route({
-    required String brand,
-    required String model,
-    required String plate,
+    required int truckId,
   }) {
     return MaterialPageRoute<void>(
       builder: (_) => EditVehiclePage(
-        brand: brand,
-        model: model,
-        plate: plate,
+        truckId: truckId,
       ),
     );
   }
@@ -39,17 +35,19 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _plateController = TextEditingController();
-  String? _selectedDriver;
+  
+  int? _selectedDriverId;
+  bool _isLoading = false;
+  late Future<TruckData> _truckFuture;
+  late Future<List<DriverData>> _driversFuture;
+  late Future<Map<String, dynamic>?> _currentDriverFuture;
 
   @override
   void initState() {
     super.initState();
-    // TODO: Obtener datos reales del backend
-    _brandController.text = widget.brand;
-    _modelController.text = widget.model;
-    _yearController.text = '2021';
-    _plateController.text = widget.plate;
-    _selectedDriver = 'Alexander Albon';
+    _truckFuture = TruckService.getTruckById(truckId: widget.truckId);
+    _driversFuture = DriverService.getDrivers();
+    _currentDriverFuture = TruckService.getTruckCurrentDriver(truckId: widget.truckId);
   }
 
   @override
@@ -61,25 +59,49 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
     super.dispose();
   }
 
-  void _saveChanges() {
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vehículo actualizado correctamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  Future<void> _saveChanges() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await TruckService.updateTruck(
+        truckId: widget.truckId,
+        brand: _brandController.text,
+        modelName: _modelController.text,
+        fabricationYear: int.parse(_yearController.text),
+        plate: _plateController.text,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vehículo actualizado correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar vehículo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Obtener lista real de choferes del backend
-    final drivers = [
-      'Alexander Albon',
-      'Carlos Sainz',
-      'Fernando Alonso',
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar datos del vehículo'),
@@ -92,111 +114,191 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Marca
-              TextField(
-                controller: _brandController,
-                decoration: const InputDecoration(
-                  labelText: 'Marca',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-              ),
+      body: FutureBuilder<TruckData>(
+        future: _truckFuture,
+        builder: (context, truckSnapshot) {
+          if (truckSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              gap12,
+          if (truckSnapshot.hasError) {
+            return Center(child: Text('Error: ${truckSnapshot.error}'));
+          }
 
-              // Modelo
-              TextField(
-                controller: _modelController,
-                decoration: const InputDecoration(
-                  labelText: 'Modelo',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-              ),
+          if (!truckSnapshot.hasData) {
+            return const Center(child: Text('No se encontraron datos del vehículo'));
+          }
 
-              gap12,
+          final truck = truckSnapshot.data!;
+          
+          // Initialize controllers with truck data if not already set
+          if (_brandController.text.isEmpty) {
+            _brandController.text = truck.brand;
+            _modelController.text = truck.modelName;
+            _yearController.text = truck.fabricationYear.toString();
+            _plateController.text = truck.plate;
+          }
 
-              // Año
-              TextField(
-                controller: _yearController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Año',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-              ),
+          return FutureBuilder<List<DriverData>>(
+            future: _driversFuture,
+            builder: (context, driversSnapshot) {
+              if (driversSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-              gap12,
+              if (driversSnapshot.hasError) {
+                return Center(child: Text('Error: ${driversSnapshot.error}'));
+              }
 
-              // Patente
-              TextField(
-                controller: _plateController,
-                decoration: const InputDecoration(
-                  labelText: 'Patente',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-              ),
+              final drivers = driversSnapshot.data ?? [];
 
-              gap12,
+              return FutureBuilder<Map<String, dynamic>?>(
+                future: _currentDriverFuture,
+                builder: (context, currentDriverSnapshot) {
+                  // Set the selected driver from current assignment
+                  if (currentDriverSnapshot.hasData && _selectedDriverId == null) {
+                    final driverData = currentDriverSnapshot.data?['driver'];
+                    if (driverData != null) {
+                      _selectedDriverId = driverData['id'] as int;
+                    }
+                  }
 
-              // Chofer asignado
-              DropdownButtonFormField<String>(
-                value: _selectedDriver,
-                decoration: const InputDecoration(
-                  labelText: 'Chofer asignado',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-                items: drivers.map((driver) {
-                  return DropdownMenuItem(
-                    value: driver,
-                    child: Text(driver),
+                  return SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            // Marca
+                            TextField(
+                              controller: _brandController,
+                              decoration: const InputDecoration(
+                                labelText: 'Marca',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+
+                            gap12,
+
+                            // Modelo
+                            TextField(
+                              controller: _modelController,
+                              decoration: const InputDecoration(
+                                labelText: 'Modelo',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+
+                            gap12,
+
+                            // Año
+                            TextField(
+                              controller: _yearController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Año',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+
+                            gap12,
+
+                            // Patente
+                            TextField(
+                              controller: _plateController,
+                              decoration: const InputDecoration(
+                                labelText: 'Patente',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+
+                            gap12,
+
+                            // Chofer asignado
+                            FutureBuilder<List<DriverData>>(
+                              future: _driversFuture,
+                              builder: (context, driversSnapshot) {
+                                if (driversSnapshot.connectionState == ConnectionState.waiting) {
+                                  return const CircularProgressIndicator();
+                                }
+                                if (driversSnapshot.hasError) {
+                                  return Text('Error: ${driversSnapshot.error}');
+                                }
+                                final drivers = driversSnapshot.data ?? [];
+                                return LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return DropdownMenu<int?>(
+                                      width: constraints.maxWidth,
+                                      label: const Text('Chofer asignado'),
+                                      initialSelection: _selectedDriverId,
+                                      dropdownMenuEntries: [
+                                        const DropdownMenuEntry<int?>(
+                                          value: null,
+                                          label: 'Sin asignar',
+                                        ),
+                                        ...drivers
+                                            .map(
+                                              (driver) => DropdownMenuEntry<int?>(
+                                                value: driver.id,
+                                                label: driver.fullName,
+                                              ),
+                                            )
+                                            .toList(),
+                                      ],
+                                      onSelected: (value) {
+                                        setState(() {
+                                          _selectedDriverId = value;
+                                        });
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+
+                            gap16,
+
+                            // Botón Guardar cambios
+                            FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              onPressed: _isLoading ? null : _saveChanges,
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Symbols.check),
+                              label: Text(_isLoading ? 'Guardando...' : 'Guardar cambios'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDriver = value;
-                  });
                 },
-              ),
-              //TODO: Hacer que el dropdown aparezca siempre en el mismo lugar
-
-              gap16,
-
-              // Botón Guardar cambios
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                onPressed: _saveChanges,
-                icon: const Icon(Symbols.check),
-                label: const Text('Guardar cambios'),
-              ),
-            ],
-          ),
-        ),
+              );
+            },
+          );
+        },
       ),
     );
   }

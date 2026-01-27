@@ -222,15 +222,63 @@ class AuthService {
     }
   }
 
-  // TODO: These functions require backend implementation
-  // static Future<Map<String, dynamic>> updateProfile({
-  //   String? name,
-  //   String? surname,
-  //   String? email,
-  // }) async {
-  //   // This would require a new backend endpoint like /auth/profile
-  // }
+  static Future<Map<String, dynamic>> updateUser({
+    required int userId,
+    String? name,
+    String? surname,
+    String? email,
+    bool? isAdmin,
+  }) async {
+    final token = TokenStorage.accessToken;
 
+    if (token == null) {
+      return {
+        'success': false,
+        'error': 'No hay token de acceso disponible',
+      };
+    }
+
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (surname != null) body['surname'] = surname;
+    if (email != null) body['email'] = email;
+    if (isAdmin != null) body['is_admin'] = isAdmin;
+
+    try {
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/users/$userId'),
+            headers: ApiResponseHandler.createHeaders(token),
+            body: jsonEncode(body),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      final jsonData = ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+        response,
+        (data) => {
+          'success': true,
+          'message': 'Usuario actualizado exitosamente',
+          'user': data['user'],
+        },
+        operation: 'actualizar usuario',
+      );
+
+      return jsonData;
+    } catch (e) {
+      if (e is ApiException) {
+        return {
+          'success': false,
+          'error': e.message,
+        };
+      }
+      return {
+        'success': false,
+        'error': 'Error de conexión. Verifica tu conexión a internet.',
+      };
+    }
+  }
+
+  // TODO: These functions require backend implementation
   // static Future<Map<String, dynamic>> resetPassword({
   //   required String email,
   // }) async {

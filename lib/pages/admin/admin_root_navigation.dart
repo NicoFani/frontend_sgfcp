@@ -27,6 +27,7 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
   final ValueNotifier<int> _driversRefreshNotifier = ValueNotifier(0);
+  final ValueNotifier<int> _userRefreshNotifier = ValueNotifier(0);
   late Future<User> _userFuture;
 
   @override
@@ -52,7 +53,15 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
         builder: (context, value, child) =>
             DriversPageAdmin(key: ValueKey(value)),
       ),
-      AdministrationPageAdmin(user: user),
+      ValueListenableBuilder<int>(
+        valueListenable: _userRefreshNotifier,
+        builder: (context, value, child) =>
+            AdministrationPageAdmin(
+              user: user,
+              onNeedRefresh: refreshUserData,
+              key: ValueKey(value),
+            ),
+      ),
     ];
   }
 
@@ -131,6 +140,15 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
       _selectedIndex = index;
     });
     _pageController.jumpToPage(index);
+  }
+
+  void refreshUserData() {
+    // Update the user future directly without calling setState
+    // This allows the FutureBuilder to rebuild with fresh data
+    _userFuture = _fetchUser();
+    
+    // Increment notifier to trigger child widget refreshes
+    _userRefreshNotifier.value++;
   }
 
   @override

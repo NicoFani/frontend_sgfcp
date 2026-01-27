@@ -56,7 +56,7 @@
 - [x] refreshToken()
 - [x] getCurrentUser()
 - [x] logout()
-- [ ] updateProfile() *(requires backend implementation)*
+- [x] updateUser()
 - [ ] resetPassword() *(requires backend implementation)*
 
 ## Missing Services (Need Creation)
@@ -101,15 +101,6 @@
 - [x] getSummaryById()
 - [x] recalculateSummary()
 - [ ] updatePayrollSummary()
-
-### user_service.dart (App User Management):
-- [ ] getUsers()
-- [ ] getUserById()
-- [ ] createUser()
-- [ ] updateUser()
-- [ ] deleteUser()
-- [ ] changePassword()
-- [ ] resetUserPassword()
 
 ### commission_percentage_service.dart:
 - [ ] getCommissionPercentages()

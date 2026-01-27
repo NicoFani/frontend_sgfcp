@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/models/user.dart';
+import 'package:frontend_sgfcp/services/auth_service.dart';
 
 class EditAccountPageAdmin extends StatefulWidget {
-  const EditAccountPageAdmin({super.key});
+  final User user;
+
+  const EditAccountPageAdmin({super.key, required this.user});
 
   static const String routeName = '/admin/edit-account';
 
-  static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const EditAccountPageAdmin());
+  static Route route({required User user}) {
+    return MaterialPageRoute<void>(
+      builder: (_) => EditAccountPageAdmin(user: user),
+    );
   }
 
   @override
@@ -16,10 +22,18 @@ class EditAccountPageAdmin extends StatefulWidget {
 }
 
 class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
-  // TODO: Obtener datos reales del backend
-  final TextEditingController _nameController = TextEditingController(text: 'Omar');
-  final TextEditingController _lastNameController = TextEditingController(text: 'José');
-  final TextEditingController _emailController = TextEditingController(text: 'omar@gmail.com');
+  late TextEditingController _nameController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _emailController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.user.firstName);
+    _lastNameController = TextEditingController(text: widget.user.lastName);
+    _emailController = TextEditingController(text: widget.user.email);
+  }
 
   @override
   void dispose() {
@@ -29,15 +43,56 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
     super.dispose();
   }
 
-  void _saveChanges() {
-    // TODO: Validar y guardar cambios en el backend
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Datos actualizados correctamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  Future<void> _saveChanges() async {
+    if (_nameController.text.isEmpty ||
+        _lastNameController.text.isEmpty ||
+        _emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor completa todos los campos'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AuthService.updateUser(
+        userId: widget.user.id,
+        name: _nameController.text,
+        surname: _lastNameController.text,
+        email: _emailController.text,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Datos actualizados correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -103,9 +158,15 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
-                onPressed: _saveChanges,
-                icon: const Icon(Symbols.check),
-                label: const Text('Guardar cambios'),
+                onPressed: _isLoading ? null : _saveChanges,
+                icon: _isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Symbols.check),
+                label: Text(_isLoading ? 'Guardando...' : 'Guardar cambios'),
               ),
             ],
           ),

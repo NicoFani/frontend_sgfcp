@@ -57,7 +57,7 @@ class TruckService {
   }
 
   // POST - Crear un nuevo camión
-  static Future<TruckData> createTruck({
+  static Future<void> createTruck({
     required String plate,
     required bool operational,
     required String brand,
@@ -89,9 +89,9 @@ class TruckService {
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 
-      return ApiResponseHandler.handleResponse<TruckData>(
+      ApiResponseHandler.handleResponse<void>(
         response,
-        (jsonData) => TruckData.fromJson(jsonData),
+        (_) {},
         operation: 'crear camión',
       );
     } catch (e) {
@@ -100,7 +100,7 @@ class TruckService {
   }
 
   // PUT - Actualizar un camión
-  static Future<TruckData> updateTruck({
+  static Future<void> updateTruck({
     required int truckId,
     String? plate,
     bool? operational,
@@ -136,9 +136,9 @@ class TruckService {
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 
-      return ApiResponseHandler.handleResponse<TruckData>(
+      ApiResponseHandler.handleResponse<void>(
         response,
-        (jsonData) => TruckData.fromJson(jsonData),
+        (_) {},
         operation: 'actualizar camión',
       );
     } catch (e) {
