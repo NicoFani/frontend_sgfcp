@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/pages/shared/edit_driver_data.dart';
+import 'package:frontend_sgfcp/pages/shared/payroll_data.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
@@ -105,6 +106,31 @@ class _DriverDataPageState extends State<DriverDataPage> {
                       value: driver.phoneNumber ?? 'No registrado',
                     ),
                   ],
+                  labelColumnWidth: infoLabelWidth,
+                ),
+
+                gap4,
+
+                // Datos de la nómina
+                InfoCard.footerButton(
+                  title: 'Datos de la nómina',
+                  items: [
+                    InfoItem(
+                      label: 'Comisión',
+                      value: '18%',
+                    ),
+                    InfoItem(
+                      label: 'Mínimo garantizado',
+                      value: '1.000.000,00',
+                    ), //TODO: Cambiar por datos reales
+                  ],
+                  buttonIcon: Symbols.edit,
+                  buttonLabel: 'Editar datos de nómina',
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      PayrollDataPage.route(driver: driver),
+                    );
+                  },
                   labelColumnWidth: infoLabelWidth,
                 ),
 

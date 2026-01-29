@@ -102,26 +102,19 @@
 - [x] recalculateSummary()
 - [ ] updatePayrollSummary()
 
-### commission_percentage_service.dart:
-- [ ] getCommissionPercentages()
-- [ ] getCommissionPercentageById()
-- [ ] createCommissionPercentage()
-- [ ] updateCommissionPercentage()
-- [ ] deleteCommissionPercentage()
-
 ### driver_commission_service.dart:
-- [ ] getDriverCommissions()
-- [ ] getDriverCommissionById()
-- [ ] createDriverCommission()
-- [ ] updateDriverCommission()
-- [ ] deleteDriverCommission()
+- [x] getDriverCommissions()
+- [x] getDriverCommissionById()
+- [x] createDriverCommission()
+- [x] updateDriverCommission()
+- [x] deleteDriverCommission() *(backend no soporta eliminación)*
 
 ### driver_guaranteed_minimum_service.dart (guaranteed minimum is an entity with id, driverId, amount, startDate, endDate):
-- [ ] getDriverGuaranteedMinimums()
-- [ ] getDriverGuaranteedMinimumById()
-- [ ] createDriverGuaranteedMinimum()
-- [ ] updateDriverGuaranteedMinimum()
-- [ ] deleteDriverGuaranteedMinimum()
+- [x] getDriverGuaranteedMinimums()
+- [x] getDriverGuaranteedMinimumById()
+- [x] createDriverGuaranteedMinimum()
+- [x] updateDriverGuaranteedMinimum()
+- [x] deleteDriverGuaranteedMinimum()
 
 ## Implementation Priority
 
@@ -144,8 +137,9 @@
 12. Create payroll_export_service.dart - Export functionality
 13. Create payroll_period_service.dart - Period management
 14. Create payroll_settings_service.dart - Settings management
-16. Create commission_percentage_service.dart - Commission settings
-17. Create driver_commission_service.dart - Driver commissions
+15. ~~Create driver_commission_service.dart - Driver commissions~~ ✅ COMPLETED
+16. ~~Create driver_guaranteed_minimum_service.dart - Guaranteed minimum~~ ✅ COMPLETED
+17. Create commission_percentage_service.dart - Commission settings
 
 ## Notes:
 - All services should use the standardized ApiResponseHandler for consistent error handling
