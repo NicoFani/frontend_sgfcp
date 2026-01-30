@@ -8,6 +8,7 @@ import 'package:frontend_sgfcp/models/summary_data.dart';
 import 'package:frontend_sgfcp/models/summary_row_data.dart';
 import 'package:frontend_sgfcp/widgets/summary_list.dart';
 import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
+import 'package:frontend_sgfcp/widgets/month_picker.dart';
 import 'package:intl/intl.dart';
 
 class SummariesPageAdmin extends StatefulWidget {
@@ -389,16 +390,15 @@ class _SummariesPageAdminState extends State<SummariesPageAdmin> {
   Future<void> _pickMonth() async {
     final now = DateTime.now();
     final initial = _selectedMonth ?? DateTime(now.year, now.month);
-    final picked = await showDatePicker(
+    final picked = await showMonthPicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(now.year - 5),
       lastDate: DateTime(now.year + 5),
-      helpText: 'Elegir mes',
     );
     if (picked != null) {
       setState(() {
-        _selectedMonth = DateTime(picked.year, picked.month);
+        _selectedMonth = picked;
       });
     }
   }

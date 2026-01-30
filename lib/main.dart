@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'theme/util.dart';
 import 'theme/theme.dart';
@@ -14,7 +15,7 @@ import 'package:frontend_sgfcp/services/token_storage.dart';
 
 Future<void> main() async {
   // Inicializa datos de fechas para español
-  await initializeDateFormatting('es_ES', null);
+  await initializeDateFormatting('es_AR', null);
   await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
@@ -35,6 +36,16 @@ class MyApp extends StatelessWidget {
       title: 'SGFCP',
       theme: theme
           .light(), // brightness == Brightness.light ? theme.light() : theme.dark(),
+      locale: const Locale('es', 'AR'),
+      supportedLocales: const [
+        Locale('es', 'AR'),
+        Locale('es', 'ES'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const LoadingPage(),
     );
   }

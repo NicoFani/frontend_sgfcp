@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:frontend_sgfcp/widgets/month_picker.dart';
 
 class MonthSelectorHeader extends StatefulWidget {
   final DateTime initialMonth;
@@ -26,20 +27,18 @@ class _MonthSelectorHeaderState extends State<MonthSelectorHeader> {
 
   Future<void> _pickMonth() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showMonthPicker(
       context: context,
       initialDate: _selectedMonth,
       firstDate: DateTime(now.year - 5),
       lastDate: DateTime(now.year + 5),
-      helpText: 'Elegir mes',
     );
 
     if (picked != null) {
-      final normalized = DateTime(picked.year, picked.month);
       setState(() {
-        _selectedMonth = normalized;
+        _selectedMonth = picked;
       });
-      widget.onMonthChanged?.call(normalized);
+      widget.onMonthChanged?.call(picked);
     }
   }
 

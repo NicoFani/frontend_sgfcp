@@ -6,6 +6,8 @@ import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/services/payroll_period_service.dart';
 import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
 import 'package:frontend_sgfcp/pages/admin/summary_detail.dart';
+import 'package:frontend_sgfcp/widgets/month_picker.dart';
+import 'package:intl/intl.dart';
 
 class GenerateSummary extends StatefulWidget {
   const GenerateSummary({super.key});
@@ -24,6 +26,7 @@ class _GenerateSummaryState extends State<GenerateSummary> {
   int? _selectedPeriodId;
   int? _selectedDriverId;
   bool _isLoading = false;
+  final TextEditingController _periodController = TextEditingController();
 
   Future<void> _generateSummary() async {
     // Validaciones
@@ -70,6 +73,12 @@ class _GenerateSummaryState extends State<GenerateSummary> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _periodController.dispose();
+    super.dispose();
   }
 
   @override
@@ -121,28 +130,38 @@ class _GenerateSummaryState extends State<GenerateSummary> {
                     );
                   }
 
-                  return DropdownButtonFormField<int>(
-                    value: _selectedPeriodId,
+                  final sortedPeriods = [...periods]
+                    ..sort((a, b) => a.startDate.compareTo(b.startDate));
+                  final firstDate = DateTime(
+                    sortedPeriods.first.startDate.year,
+                    sortedPeriods.first.startDate.month,
+                  );
+                  final lastDate = DateTime(
+                    sortedPeriods.last.startDate.year,
+                    sortedPeriods.last.startDate.month,
+                  );
+
+                  _initializePeriodController(sortedPeriods);
+
+                  return TextFormField(
+                    controller: _periodController,
+                    readOnly: true,
                     decoration: const InputDecoration(
                       labelText: 'Seleccionar período',
                       border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today_outlined),
                     ),
-                    items: periods.map((period) {
-                      return DropdownMenuItem<int>(
-                        value: period.id,
-                        child: Text(period.periodLabel),
-                      );
-                    }).toList(),
-                    onChanged: _isLoading
+                    onTap: _isLoading
                         ? null
-                        : (value) {
-                            setState(() {
-                              _selectedPeriodId = value;
-                            });
-                          },
+                        : () => _pickPeriodMonth(
+                              sortedPeriods,
+                              firstDate,
+                              lastDate,
+                            ),
                   );
                 },
               ),
+              
               gap16,
 
               // Dropdown de Choferes
@@ -230,5 +249,88 @@ class _GenerateSummaryState extends State<GenerateSummary> {
         ),
       ),
     );
+  }
+
+  void _initializePeriodController(List<PayrollPeriodData> sortedPeriods) {
+    if (_selectedPeriodId != null && _periodController.text.isEmpty) {
+      final selected =
+          sortedPeriods.firstWhere((p) => p.id == _selectedPeriodId);
+      final locale = Localizations.localeOf(context).toLanguageTag();
+      final label = DateFormat.yMMMM(locale).format(
+        DateTime(selected.startDate.year, selected.startDate.month),
+      );
+      _periodController.text = label[0].toUpperCase() + label.substring(1);
+    }
+  }
+
+  Future<void> _pickPeriodMonth(
+    List<PayrollPeriodData> sortedPeriods,
+    DateTime firstDate,
+    DateTime lastDate,
+  ) async {
+    final now = DateTime.now();
+    PayrollPeriodData? selectedPeriod;
+    if (_selectedPeriodId != null) {
+      for (final p in sortedPeriods) {
+        if (p.id == _selectedPeriodId) {
+          selectedPeriod = p;
+          break;
+        }
+      }
+    }
+
+    var initial = selectedPeriod == null
+        ? DateTime(now.year, now.month)
+        : DateTime(
+            selectedPeriod.startDate.year,
+            selectedPeriod.startDate.month,
+          );
+
+    if (initial.isBefore(firstDate)) {
+      initial = firstDate;
+    } else if (initial.isAfter(lastDate)) {
+      initial = lastDate;
+    }
+
+    final picked = await showMonthPicker(
+      context: context,
+      initialDate: initial,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+
+    if (picked == null) return;
+
+    PayrollPeriodData? match;
+    for (final p in sortedPeriods) {
+      if (p.startDate.year == picked.year &&
+          p.startDate.month == picked.month) {
+        match = p;
+        break;
+      }
+    }
+
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final label = DateFormat.yMMMM(locale).format(picked);
+
+    if (match == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay un período para ese mes'),
+          ),
+        );
+      }
+      setState(() {
+        _selectedPeriodId = null;
+        _periodController.clear();
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedPeriodId = match?.id;
+      _periodController.text = label[0].toUpperCase() + label.substring(1);
+    });
   }
 }
