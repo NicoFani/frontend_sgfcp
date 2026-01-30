@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
@@ -100,6 +101,67 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
     }
   }
 
+  Future<void> _showDeleteDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dar de baja vehículo?'),
+        content: const Text(
+          'El vehículo será dado de baja. Esta acción es irreversible, y el vehículo no podrá ser utilizado ni editado posteriormente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      await _deleteTruck();
+    }
+  }
+
+  Future<void> _deleteTruck() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await TruckService.deleteTruck(truckId: widget.truckId);
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(VehiclesPageAdmin.route());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vehículo dado de baja correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al dar de baja el vehículo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,9 +170,7 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
         actions: [
           IconButton(
             icon: const Icon(Symbols.delete),
-            onPressed: () {
-              // TODO: Implementar dialog de eliminar vehículo
-            },
+            onPressed: _showDeleteDialog,
           ),
         ],
       ),
@@ -149,8 +209,6 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
               if (driversSnapshot.hasError) {
                 return Center(child: Text('Error: ${driversSnapshot.error}'));
               }
-
-              final drivers = driversSnapshot.data ?? [];
 
               return FutureBuilder<Map<String, dynamic>?>(
                 future: _currentDriverFuture,

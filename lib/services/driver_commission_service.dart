@@ -70,6 +70,7 @@ class DriverCommissionService {
     final token = TokenStorage.accessToken;
 
     final body = <String, dynamic>{
+      'driver_id': driverId,
       'commission_percentage': commissionPercentage,
     };
 
