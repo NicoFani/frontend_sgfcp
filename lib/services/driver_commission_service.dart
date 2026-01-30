@@ -95,21 +95,41 @@ class DriverCommissionService {
       ApiResponseHandler.handleNetworkError(e);
     }
   }
-
+  // TODO: CREAR FUNCIONALIDAD DE ACTUALIZAR COMISIÓN UNA VEZ QUE EL BACKEND LO SOPORTE
   /// Actualizar una comisión existente (nota: el backend cierra la anterior)
-  static Future<Map<String, dynamic>> updateDriverCommission({
-    required int driverId,
-    required double commissionPercentage,
-    DateTime? effectiveFrom,
-  }) async {
-    // En el sistema actual, actualizar es equivalente a crear una nueva comisión
-    // que cierra la anterior automáticamente
-    return createDriverCommission(
-      driverId: driverId,
-      commissionPercentage: commissionPercentage,
-      effectiveFrom: effectiveFrom,
-    );
-  }
+  // static Future<Map<String, dynamic>> updateDriverCommission({
+  //   required int driverId,
+  //   required double commissionPercentage,
+  //   DateTime? effectiveFrom,
+  // }) async {
+  //   final token = TokenStorage.accessToken;
+
+  //   final body = <String, dynamic>{
+  //     'commission_percentage': commissionPercentage,
+  //   };
+
+  //   // if (effectiveFrom != null) {
+  //   //   body['effective_from'] = effectiveFrom.toIso8601String();
+  //   // }
+
+  //   try {
+  //     final response = await http
+  //         .post(
+  //           Uri.parse('$baseUrl/api/drivers/$driverId/commission'),
+  //           headers: ApiResponseHandler.createHeaders(token),
+  //           body: jsonEncode(body),
+  //         )
+  //         .timeout(ApiResponseHandler.defaultTimeout);
+
+  //     return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+  //       response,
+  //       (jsonData) => jsonData['data'] as Map<String, dynamic>,
+  //       operation: 'actualizar comisión del chofer',
+  //     );
+  //   } catch (e) {
+  //     ApiResponseHandler.handleNetworkError(e);
+  //   }
+  // }
 
   /// Eliminar una comisión (nota: el backend no tiene endpoint de eliminar)
   /// Esta función no está implementada porque el backend no lo soporta

@@ -6,7 +6,6 @@ import 'package:frontend_sgfcp/services/driver_commission_service.dart';
 import 'package:frontend_sgfcp/services/driver_guaranteed_minimum_service.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/widgets/driver_payroll_data_card.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class PayrollDataPage extends StatefulWidget {
   final DriverData driver;
@@ -30,8 +29,6 @@ class _PayrollDataPageState extends State<PayrollDataPage> {
   bool _isLoading = false;
   List<DriverCommissionHistory> commissionHistory = [];
   List<MinimumGuaranteedHistory> minimumGuaranteedHistory = [];
-  int _commissionIndex = 0;
-  int _minimumIndex = 0;
 
   @override
   void initState() {
@@ -74,13 +71,6 @@ class _PayrollDataPageState extends State<PayrollDataPage> {
     }
   }
 
-  Future<void> _saveChanges() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,61 +87,30 @@ class _PayrollDataPageState extends State<PayrollDataPage> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     // Commission History Card
-                    if (commissionHistory.isNotEmpty)
-                      DriverPayrollDataCard(
-                        title: 'Comisión por viajes',
-                        valueLabel: 'Comisión',
-                        valueText:
-                            '${commissionHistory[_commissionIndex].commissionPercentage}',
-                        startDateLabel: 'Fecha de inicio',
-                        startDate:
-                            commissionHistory[_commissionIndex].effectiveFrom,
-                        endDateLabel: 'Fecha de fin',
-                        endDate: commissionHistory[_commissionIndex]
-                            .effectiveUntil,
-                        canNavigatePrevious: _commissionIndex > 0,
-                        canNavigateNext:
-                            _commissionIndex < commissionHistory.length - 1,
-                        onPreviousPressed: () {
-                          setState(() => _commissionIndex--);
-                        },
-                        onNextPressed: () {
-                          setState(() => _commissionIndex++);
-                        },
-                        driverId: driver.id,
-                        payrollType: PayrollType.commission,
-                        onDataSaved: _loadPayrollData,
-                      ),
+                    DriverPayrollDataCard(
+                      title: 'Comisión por viajes',
+                      valueLabel: 'Comisión',
+                      startDateLabel: 'Fecha de inicio',
+                      endDateLabel: 'Fecha de fin',
+                      driverId: driver.id,
+                      payrollType: PayrollType.commission,
+                      commissionHistory: commissionHistory,
+                      onDataSaved: _loadPayrollData,
+                    ),
 
                     gap4,
 
                     // Minimum Guaranteed History Card
-                    if (minimumGuaranteedHistory.isNotEmpty)
-                      DriverPayrollDataCard(
-                        title: 'Salario mínimo garantizado',
-                        valueLabel: 'Importe',
-                        valueText:
-                            '\$ ${minimumGuaranteedHistory[_minimumIndex].minimumGuaranteed.toStringAsFixed(2).replaceAll('.', ',')}',
-                        startDateLabel: 'Fecha de inicio',
-                        startDate: minimumGuaranteedHistory[_minimumIndex]
-                            .effectiveFrom,
-                        endDateLabel: 'Fecha de fin',
-                        endDate:
-                            minimumGuaranteedHistory[_minimumIndex]
-                                .effectiveUntil,
-                        canNavigatePrevious: _minimumIndex > 0,
-                        canNavigateNext:
-                            _minimumIndex < minimumGuaranteedHistory.length - 1,
-                        onPreviousPressed: () {
-                          setState(() => _minimumIndex--);
-                        },
-                        onNextPressed: () {
-                          setState(() => _minimumIndex++);
-                        },
-                        driverId: driver.id,
-                        payrollType: PayrollType.minimumGuaranteed,
-                        onDataSaved: _loadPayrollData,
-                      ),
+                    DriverPayrollDataCard(
+                      title: 'Salario mínimo garantizado',
+                      valueLabel: 'Importe',
+                      startDateLabel: 'Fecha de inicio',
+                      endDateLabel: 'Fecha de fin',
+                      driverId: driver.id,
+                      payrollType: PayrollType.minimumGuaranteed,
+                      minimumGuaranteedHistory: minimumGuaranteedHistory,
+                      onDataSaved: _loadPayrollData,
+                    ),
                   ],
                 ),
     );

@@ -8,6 +8,9 @@ import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/driver_commission_service.dart';
+import 'package:frontend_sgfcp/services/driver_guaranteed_minimum_service.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class DriverDataPage extends StatefulWidget {
   final DriverData initialDriver;
@@ -29,11 +32,15 @@ class DriverDataPage extends StatefulWidget {
 class _DriverDataPageState extends State<DriverDataPage> {
   late DriverData driver;
   bool _isLoading = false;
+  bool _isLoadingPayroll = true;
+  double? _currentCommission;
+  double? _currentMinimumGuaranteed;
 
   @override
   void initState() {
     super.initState();
     driver = widget.initialDriver;
+    _loadPayrollData();
   }
 
   Future<void> _loadDriverData() async {
@@ -55,6 +62,35 @@ class _DriverDataPageState extends State<DriverDataPage> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _loadPayrollData() async {
+    setState(() => _isLoadingPayroll = true);
+    try {
+      final commission = await DriverCommissionService.getDriverCommissionById(
+        driverId: driver.id,
+      );
+      final minimum = await DriverGuaranteedMinimumService.getCurrentMinimumGuaranteed(
+        driverId: driver.id,
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentCommission = commission['commission_percentage'] is String
+              ? double.parse(commission['commission_percentage'])
+              : commission['commission_percentage'] as double?;
+          _currentMinimumGuaranteed = minimum['minimum_guaranteed'] is String
+              ? double.parse(minimum['minimum_guaranteed'])
+              : minimum['minimum_guaranteed'] as double?;
+          _isLoadingPayroll = false;
+        });
+      }
+    } catch (e) {
+      // Silently handle error - payroll data is optional
+      if (mounted) {
+        setState(() => _isLoadingPayroll = false);
       }
     }
   }
@@ -117,12 +153,20 @@ class _DriverDataPageState extends State<DriverDataPage> {
                   items: [
                     InfoItem(
                       label: 'Comisión',
-                      value: '18%',
+                      value: _isLoadingPayroll
+                          ? 'Cargando...'
+                          : _currentCommission != null
+                              ? '${_currentCommission!.toStringAsFixed(2)}%'
+                              : 'No registrado',
                     ),
                     InfoItem(
                       label: 'Mínimo garantizado',
-                      value: '1.000.000,00',
-                    ), //TODO: Cambiar por datos reales
+                      value: _isLoadingPayroll
+                          ? 'Cargando...'
+                          : _currentMinimumGuaranteed != null
+                              ? formatCurrency(_currentMinimumGuaranteed!)
+                              : 'No registrado',
+                    ),
                   ],
                   buttonIcon: Symbols.edit,
                   buttonLabel: 'Editar datos de nómina',
@@ -130,6 +174,7 @@ class _DriverDataPageState extends State<DriverDataPage> {
                     await Navigator.of(context).push(
                       PayrollDataPage.route(driver: driver),
                     );
+                    _loadPayrollData();
                   },
                   labelColumnWidth: infoLabelWidth,
                 ),

@@ -115,16 +115,16 @@ class DriverGuaranteedMinimumService {
   static Future<Map<String, dynamic>> updateDriverGuaranteedMinimum({
     required int minimumId,
     double? amount,
-    DateTime? startDate,
-    DateTime? endDate,
+    // DateTime? startDate,
+    // DateTime? endDate,
   }) async {
     final token = TokenStorage.accessToken;
 
     final body = <String, dynamic>{};
 
     if (amount != null) body['minimum_guaranteed'] = amount;
-    if (startDate != null) body['effective_from'] = startDate.toIso8601String();
-    if (endDate != null) body['effective_until'] = endDate.toIso8601String();
+    // if (startDate != null) body['effective_from'] = startDate.toIso8601String();
+    // if (endDate != null) body['effective_until'] = endDate.toIso8601String();
 
     try {
       final response = await http
