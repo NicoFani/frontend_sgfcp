@@ -40,6 +40,7 @@ class _DriverDataPageState extends State<DriverDataPage> {
   void initState() {
     super.initState();
     driver = widget.initialDriver;
+    _loadDriverData();
     _loadPayrollData();
   }
 
@@ -72,9 +73,10 @@ class _DriverDataPageState extends State<DriverDataPage> {
       final commission = await DriverCommissionService.getDriverCommissionById(
         driverId: driver.id,
       );
-      final minimum = await DriverGuaranteedMinimumService.getCurrentMinimumGuaranteed(
-        driverId: driver.id,
-      );
+      final minimum =
+          await DriverGuaranteedMinimumService.getCurrentMinimumGuaranteed(
+            driverId: driver.id,
+          );
 
       if (mounted) {
         setState(() {
@@ -156,24 +158,24 @@ class _DriverDataPageState extends State<DriverDataPage> {
                       value: _isLoadingPayroll
                           ? 'Cargando...'
                           : _currentCommission != null
-                              ? '${_currentCommission!.toStringAsFixed(2)}%'
-                              : 'No registrado',
+                          ? '${_currentCommission!.toStringAsFixed(2)}%'
+                          : 'No registrado',
                     ),
                     InfoItem(
                       label: 'Mínimo garantizado',
                       value: _isLoadingPayroll
                           ? 'Cargando...'
                           : _currentMinimumGuaranteed != null
-                              ? formatCurrency(_currentMinimumGuaranteed!)
-                              : 'No registrado',
+                          ? formatCurrency(_currentMinimumGuaranteed!)
+                          : 'No registrado',
                     ),
                   ],
                   buttonIcon: Symbols.edit,
                   buttonLabel: 'Editar datos de nómina',
                   onPressed: () async {
-                    await Navigator.of(context).push(
-                      PayrollDataPage.route(driver: driver),
-                    );
+                    await Navigator.of(
+                      context,
+                    ).push(PayrollDataPage.route(driver: driver));
                     _loadPayrollData();
                   },
                   labelColumnWidth: infoLabelWidth,
