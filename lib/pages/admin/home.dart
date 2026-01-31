@@ -1,12 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/widgets/drivers_list.dart';
+import 'package:frontend_sgfcp/widgets/trips_calendar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/create_trip.dart';
 import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
+
+// Mock trips data for calendar visualization
+final List<TripData> _mockTrips = [
+  TripData(
+    id: 1,
+    origin: 'Buenos Aires',
+    destination: 'Córdoba',
+    startDate: DateTime(2026, 1, 31),
+    endDate: DateTime(2026, 2, 1),
+    state: 'in_progress',
+    documentType: 'DNI',
+    documentNumber: '12345678',
+    estimatedKms: 750,
+    loadWeightOnLoad: 5000,
+    loadWeightOnUnload: 4800,
+    calculatedPerKm: true,
+    rate: 50.0,
+    fuelOnClient: false,
+    fuelLiters: 120,
+    driverId: 1,
+    clientAdvancePayment: 1000,
+  ),
+  TripData(
+    id: 2,
+    origin: 'Rosario',
+    destination: 'Santa Fe',
+    startDate: DateTime(2026, 2, 5),
+    endDate: DateTime(2026, 2, 5),
+    state: 'completed',
+    documentType: 'DNI',
+    documentNumber: '87654321',
+    estimatedKms: 300,
+    loadWeightOnLoad: 3000,
+    loadWeightOnUnload: 2900,
+    calculatedPerKm: true,
+    rate: 45.0,
+    fuelOnClient: true,
+    fuelLiters: 50,
+    driverId: 2,
+    clientAdvancePayment: 500,
+  ),
+  TripData(
+    id: 3,
+    origin: 'Mendoza',
+    destination: 'San Juan',
+    startDate: DateTime(2026, 2, 10),
+    endDate: DateTime(2026, 2, 12),
+    state: 'pending',
+    documentType: 'DNI',
+    documentNumber: '11223344',
+    estimatedKms: 200,
+    loadWeightOnLoad: 2000,
+    loadWeightOnUnload: 1800,
+    calculatedPerKm: false,
+    rate: 2000.0,
+    fuelOnClient: false,
+    fuelLiters: 40,
+    driverId: 3,
+    clientAdvancePayment: 800,
+  ),
+  TripData(
+    id: 4,
+    origin: 'La Plata',
+    destination: 'Mar del Plata',
+    startDate: DateTime(2026, 2, 15),
+    endDate: DateTime(2026, 2, 16),
+    state: 'in_progress',
+    documentType: 'DNI',
+    documentNumber: '55667788',
+    estimatedKms: 400,
+    loadWeightOnLoad: 4000,
+    loadWeightOnUnload: 3800,
+    calculatedPerKm: true,
+    rate: 55.0,
+    fuelOnClient: false,
+    fuelLiters: 80,
+    driverId: 1,
+    clientAdvancePayment: 1200,
+  ),
+  TripData(
+    id: 5,
+    origin: 'Salta',
+    destination: 'Jujuy',
+    startDate: DateTime(2026, 2, 20),
+    state: 'pending',
+    documentType: 'DNI',
+    documentNumber: '99887766',
+    estimatedKms: 150,
+    loadWeightOnLoad: 1500,
+    loadWeightOnUnload: 1400,
+    calculatedPerKm: true,
+    rate: 40.0,
+    fuelOnClient: true,
+    fuelLiters: 30,
+    driverId: 2,
+    clientAdvancePayment: 400,
+  ),
+];
 
 class HomePageAdmin extends StatefulWidget {
   const HomePageAdmin({super.key});
@@ -169,21 +269,11 @@ class _HomePageAdminState extends State<HomePageAdmin> {
               gap8,
 
               // Calendario
-              // const CalendarWidget(),
-              // TODO: calendar widget will go here later
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: colors.surfaceContainerHighest,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Calendario (por implementar)',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
+              TripsCalendar(
+                trips: _mockTrips,
+                onDaySelected: (selectedDay) {
+                  print('Selected: $selectedDay');
+                },
               ),
             ],
           ),

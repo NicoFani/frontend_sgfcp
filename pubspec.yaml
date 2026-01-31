@@ -42,6 +42,7 @@ dependencies:
   http: ^1.2.1
   flutter_dotenv: ^5.1.0
   month_picker_dialog: ^6.7.1
+  table_calendar: ^3.2.0
 
 dev_dependencies:
   flutter_test:
