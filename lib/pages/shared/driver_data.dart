@@ -158,7 +158,7 @@ class _DriverDataPageState extends State<DriverDataPage> {
                       value: _isLoadingPayroll
                           ? 'Cargando...'
                           : _currentCommission != null
-                          ? '${_currentCommission!.toStringAsFixed(2)}%'
+                          ? '${(_currentCommission! * 100).toStringAsFixed(2)}%'
                           : 'No registrado',
                     ),
                     InfoItem(

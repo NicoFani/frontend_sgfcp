@@ -63,7 +63,9 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
   String get _currentValue {
     if (_currentRecord == null) return '';
     if (widget.payrollType == PayrollType.commission) {
-      return '${(_currentRecord as DriverCommissionHistory).commissionPercentage.toStringAsFixed(2)}%';
+      // Convertir de decimal (0.18) a porcentaje (18) para mostrar
+      final percentage = (_currentRecord as DriverCommissionHistory).commissionPercentage * 100;
+      return '${percentage.toStringAsFixed(2)}%';
     } else {
       final value = (_currentRecord as MinimumGuaranteedHistory).minimumGuaranteed;
       return formatCurrency(value);
@@ -239,12 +241,12 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
 
   Future<void> _updateEntry(double value) async {
     if (widget.payrollType == PayrollType.commission) {
-      // TODO: Implementar actualización de comisión cuando el backend lo soporte
-      // final commissionId = (_currentRecord as DriverCommissionHistory).id;
-      // await DriverCommissionService.updateDriverCommission(
-      //   driverId: widget.driverId,
-      //   commissionPercentage: value,
-      // );
+      final commissionId = (_currentRecord as DriverCommissionHistory).id;
+      await DriverCommissionService.updateDriverCommission(
+        driverId: widget.driverId,
+        commissionId: commissionId,
+        commissionPercentage: value,
+      );
     } else {
       final minimumId = (_currentRecord as MinimumGuaranteedHistory).id;
       await DriverGuaranteedMinimumService.updateDriverGuaranteedMinimum(
@@ -278,7 +280,9 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
       if (widget.payrollType == PayrollType.commission) {
         // Parse commission percentage (remove '%' if present)
         final percentageText = valueText.replaceAll('%', '').replaceAll(',', '.');
-        value = double.parse(percentageText);
+        final percentageValue = double.parse(percentageText);
+        // Convertir de porcentaje (18) a decimal (0.18) para enviar al backend
+        value = percentageValue / 100;
       } else {
         // Parse minimum guaranteed amount
         value = parseCurrency(valueText);
@@ -444,8 +448,8 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
               Expanded(
                 child: TextField(
                   controller: _startDateController,
-                  readOnly: !_isEditMode,
-                  onTap: _canNavigateNext ? null : _handleStartDateTap,
+                  readOnly: true,
+                  onTap: _isCreating ? _handleStartDateTap : null,  // Solo permitir selector al crear
                   decoration: InputDecoration(
                     labelText: widget.startDateLabel,
                     border: const OutlineInputBorder(),
