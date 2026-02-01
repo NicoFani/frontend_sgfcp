@@ -23,8 +23,9 @@ class DriverGuaranteedMinimumService {
     try {
       final response = await http
           .get(
-            Uri.parse('$baseUrl/minimum-guaranteed')
-                .replace(queryParameters: queryParams),
+            Uri.parse(
+              '$baseUrl/minimum-guaranteed',
+            ).replace(queryParameters: queryParams),
             headers: ApiResponseHandler.createHeaders(token),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
@@ -75,7 +76,7 @@ class DriverGuaranteedMinimumService {
   static Future<Map<String, dynamic>> createDriverGuaranteedMinimum({
     required int driverId,
     required double amount,
-    required DateTime startDate,
+    DateTime? startDate, // Ahora es opcional
     DateTime? endDate,
   }) async {
     final token = TokenStorage.accessToken;
@@ -83,8 +84,11 @@ class DriverGuaranteedMinimumService {
     final body = <String, dynamic>{
       'driver_id': driverId,
       'minimum_guaranteed': amount,
-      'effective_from': startDate.toIso8601String(),
     };
+
+    if (startDate != null) {
+      body['effective_from'] = startDate.toIso8601String();
+    }
 
     if (endDate != null) {
       body['effective_until'] = endDate.toIso8601String();

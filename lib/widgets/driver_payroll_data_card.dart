@@ -64,10 +64,13 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
     if (_currentRecord == null) return '';
     if (widget.payrollType == PayrollType.commission) {
       // Convertir de decimal (0.18) a porcentaje (18) para mostrar
-      final percentage = (_currentRecord as DriverCommissionHistory).commissionPercentage * 100;
+      final percentage =
+          (_currentRecord as DriverCommissionHistory).commissionPercentage *
+          100;
       return '${percentage.toStringAsFixed(2)}%';
     } else {
-      final value = (_currentRecord as MinimumGuaranteedHistory).minimumGuaranteed;
+      final value =
+          (_currentRecord as MinimumGuaranteedHistory).minimumGuaranteed;
       return formatCurrency(value);
     }
   }
@@ -97,11 +100,15 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
   void initState() {
     super.initState();
     _valueController = TextEditingController(text: _currentValue);
-    _startDateController = TextEditingController(text: formatDate(_currentStartDate));
-    _endDateController = TextEditingController(text: formatDate(_currentEndDate));
+    _startDateController = TextEditingController(
+      text: formatDate(_currentStartDate),
+    );
+    _endDateController = TextEditingController(
+      text: formatDate(_currentEndDate),
+    );
     _endDateStatesController = WidgetStatesController();
     _updateEndDateState();
-    
+
     // Listen to value changes to update button state
     _valueController.addListener(() {
       setState(() {});
@@ -117,7 +124,7 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
     } else if (_currentIndex >= _historyList.length) {
       _currentIndex = _historyList.length - 1;
     }
-    
+
     _valueController.text = _currentValue;
     _startDateController.text = formatDate(_currentStartDate);
     _endDateController.text = formatDate(_currentEndDate);
@@ -176,6 +183,27 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
   void _enterEditMode() {
     setState(() {
       _isEditMode = true;
+      // Al editar, mantenemos _isCreating = false para actualizar el registro existente
+      _isCreating = false;
+      // Mantener el valor actual en el campo para que el usuario lo vea
+      _valueController.text = _currentValue;
+      // Las fechas permanecen bloqueadas y muestran los valores actuales
+      _startDateController.text = formatDate(_currentStartDate);
+      _endDateController.text = formatDate(_currentEndDate);
+    });
+  }
+
+  void _enterCreateMode() {
+    setState(() {
+      _isEditMode = true;
+      // Al crear, establecemos _isCreating = true
+      _isCreating = true;
+      // Limpiar el campo de valor
+      _valueController.clear();
+      // Para ambos tipos, la fecha se calculará automáticamente
+      _startDateController.text = '(se calculará automáticamente)';
+      _endDateController.text = '-';
+      _newStartDate = null;
     });
   }
 
@@ -193,7 +221,8 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
     if (!_isEditMode) return;
 
     final now = DateTime.now();
-    final firstAvailableDate = _currentStartDate?.add(const Duration(days: 1)) ?? now;
+    final firstAvailableDate =
+        _currentStartDate?.add(const Duration(days: 1)) ?? now;
 
     final picked = await showDatePicker(
       context: context,
@@ -207,34 +236,25 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
       setState(() {
         _newStartDate = picked;
         _startDateController.text = formatDate(picked);
-        _isCreating = true;
-        _valueController.clear();
       });
     }
   }
 
   Future<void> _createEntry(double value) async {
     if (widget.payrollType == PayrollType.commission) {
-      final effectiveFrom = _newStartDate;
-      if (effectiveFrom == null) {
-        throw Exception('Fecha de inicio requerida');
-      }
-
+      // Para comisiones, el backend calculará automáticamente effective_from
+      // basándose en la comisión anterior del chofer
       await DriverCommissionService.createDriverCommission(
         driverId: widget.driverId,
         commissionPercentage: value,
-        effectiveFrom: effectiveFrom,
+        effectiveFrom: _newStartDate, // Puede ser null, el backend lo manejará
       );
     } else {
-      final startDate = _newStartDate;
-      if (startDate == null) {
-        throw Exception('Fecha de inicio requerida');
-      }
-
+      // Para mínimo garantizado, también el backend calcula automáticamente
       await DriverGuaranteedMinimumService.createDriverGuaranteedMinimum(
         driverId: widget.driverId,
         amount: value,
-        startDate: startDate,
+        startDate: _newStartDate, // Puede ser null, el backend lo manejará
       );
     }
   }
@@ -279,7 +299,9 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
 
       if (widget.payrollType == PayrollType.commission) {
         // Parse commission percentage (remove '%' if present)
-        final percentageText = valueText.replaceAll('%', '').replaceAll(',', '.');
+        final percentageText = valueText
+            .replaceAll('%', '')
+            .replaceAll(',', '.');
         final percentageValue = double.parse(percentageText);
         // Convertir de porcentaje (18) a decimal (0.18) para enviar al backend
         value = percentageValue / 100;
@@ -301,10 +323,7 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
             : 'Salario mínimo $actionText exitosamente';
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.green,
-          ),
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
         );
       }
 
@@ -345,17 +364,12 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.title,
-                style: textTheme.titleMedium,
-              ),
+              Text(widget.title, style: textTheme.titleMedium),
               gap12,
               Center(
                 child: Text(
                   'No hay historial disponible',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colors.outline,
-                  ),
+                  style: textTheme.bodyMedium?.copyWith(color: colors.outline),
                 ),
               ),
             ],
@@ -375,17 +389,22 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  widget.title,
-                  style: textTheme.titleMedium,
-                ),
+                Text(widget.title, style: textTheme.titleMedium),
                 Row(
                   children: [
+                    // Add button - only show when NOT in edit mode and showing current record
+                    if (!_isEditMode && _currentIndex == 0)
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: _enterCreateMode,
+                        tooltip: 'Crear nuevo registro',
+                      ),
                     // Edit button - only show when NOT in edit mode
                     if (!_isEditMode)
                       IconButton(
                         icon: const Icon(Icons.edit_outlined),
                         onPressed: _enterEditMode,
+                        tooltip: 'Editar registro actual',
                       ),
                     // Cancel button - only show when in edit mode
                     if (_isEditMode)
@@ -401,11 +420,16 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
                             ? const SizedBox(
                                 height: 24,
                                 width: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.check),
                         color: colors.primary,
-                        onPressed: (_isSaving || _valueController.text.trim().isEmpty) ? null : _handleSave,
+                        onPressed:
+                            (_isSaving || _valueController.text.trim().isEmpty)
+                            ? null
+                            : _handleSave,
                       ),
                   ],
                 ),
@@ -414,69 +438,72 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
             gap12,
             // Value row with navigation buttons
             Row(
-            children: [
-              // Previous button
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: _canNavigatePrevious ? _navigatePrevious : null,
-                color: _canNavigatePrevious ? colors.secondary : colors.outline,
-              ),
-              // Value field
-              Expanded(
-                child: TextField(
-                  controller: _valueController,
-                  readOnly: !_isEditMode,
-                  decoration: InputDecoration(
-                    labelText: widget.valueLabel,
-                    border: const OutlineInputBorder(),
+              children: [
+                // Previous button
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: _canNavigatePrevious ? _navigatePrevious : null,
+                  color: _canNavigatePrevious
+                      ? colors.secondary
+                      : colors.outline,
+                ),
+                // Value field
+                Expanded(
+                  child: TextField(
+                    controller: _valueController,
+                    readOnly: !_isEditMode,
+                    decoration: InputDecoration(
+                      labelText: widget.valueLabel,
+                      border: const OutlineInputBorder(),
+                    ),
                   ),
                 ),
-              ),
-              // Next button
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: _canNavigateNext ? _navigateNext : null,
-                color: _canNavigateNext ? colors.secondary : colors.outline,
-              ),
-            ],
-          ),
+                // Next button
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _canNavigateNext ? _navigateNext : null,
+                  color: _canNavigateNext ? colors.secondary : colors.outline,
+                ),
+              ],
+            ),
             gap12,
             // Date fields row
             Row(
-            children: [
-              // Start date field
-              Expanded(
-                child: TextField(
-                  controller: _startDateController,
-                  readOnly: true,
-                  onTap: _isCreating ? _handleStartDateTap : null,  // Solo permitir selector al crear
-                  decoration: InputDecoration(
-                    labelText: widget.startDateLabel,
-                    border: const OutlineInputBorder(),
-                    suffixIcon: const Icon(Icons.calendar_today)
+              children: [
+                // Start date field
+                Expanded(
+                  child: TextField(
+                    controller: _startDateController,
+                    readOnly: true,
+                    enabled:
+                        !_isEditMode, // Deshabilitar en modo edición para que se vea claramente que no es editable
+                    decoration: InputDecoration(
+                      labelText: widget.startDateLabel,
+                      border: const OutlineInputBorder(),
+                      suffixIcon: const Icon(Icons.calendar_today),
+                    ),
                   ),
                 ),
-              ),
-              gapW12,
-              // End date field
-              Expanded(
-                child: TextField(
-                  controller: _endDateController,
-                  readOnly: true,
-                  enabled: _canNavigateNext,
-                  statesController: _endDateStatesController,
-                  decoration: InputDecoration(
-                    labelText: widget.endDateLabel,
-                    border: const OutlineInputBorder(),
-                    suffixIcon: const Icon(Icons.calendar_today)
+                gapW12,
+                // End date field
+                Expanded(
+                  child: TextField(
+                    controller: _endDateController,
+                    readOnly: true,
+                    enabled: _canNavigateNext,
+                    statesController: _endDateStatesController,
+                    decoration: InputDecoration(
+                      labelText: widget.endDateLabel,
+                      border: const OutlineInputBorder(),
+                      suffixIcon: const Icon(Icons.calendar_today),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }

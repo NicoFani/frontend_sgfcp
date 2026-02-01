@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/models/load_type_data.dart';
 import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/widgets/document_type_selector.dart';
@@ -7,6 +8,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/load_type_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class EditTripPage extends StatefulWidget {
@@ -30,16 +32,13 @@ class _EditTripPageState extends State<EditTripPage> {
   late Future<List<DriverData>> _driversFuture;
 
   DocumentType _docType = DocumentType.ctg;
-  String? _cargoType;
+  LoadTypeData? _selectedLoadType;
   DateTime? _startDate;
   DriverData? _selectedDriver;
 
   // Controllers
   final TextEditingController _docNumberController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
-  final TextEditingController _transportCodeController =
-      TextEditingController();
-  final TextEditingController _loadOwnerController = TextEditingController();
   final TextEditingController _netWeightController = TextEditingController();
   final TextEditingController _kmsController = TextEditingController();
   final TextEditingController _rateController = TextEditingController();
@@ -59,7 +58,7 @@ class _EditTripPageState extends State<EditTripPage> {
     _docNumberController.text = widget.trip.documentNumber;
     _startDate = widget.trip.startDate;
     _selectedDriver = widget.trip.driver;
-    _cargoType = widget.trip.loadType?.name ?? 'Maíz';
+    _selectedLoadType = widget.trip.loadType;
     _netWeightController.text = widget.trip.loadWeightOnLoad.toString();
     _kmsController.text = widget.trip.estimatedKms.toString();
     _rateController.text = widget.trip.rate.toString();
@@ -109,8 +108,6 @@ class _EditTripPageState extends State<EditTripPage> {
   void dispose() {
     _docNumberController.dispose();
     _startDateController.dispose();
-    _transportCodeController.dispose();
-    _loadOwnerController.dispose();
     _netWeightController.dispose();
     _kmsController.dispose();
     _rateController.dispose();
@@ -192,12 +189,22 @@ class _EditTripPageState extends State<EditTripPage> {
                       return Text('Error loading drivers');
                     }
                     final drivers = snapshot.data ?? [];
+
+                    // Encontrar el chofer seleccionado en la lista de choferes
+                    DriverData? selectedDriver = _selectedDriver;
+                    if (_selectedDriver != null) {
+                      selectedDriver = drivers.firstWhere(
+                        (d) => d.id == _selectedDriver!.id,
+                        orElse: () => _selectedDriver!,
+                      );
+                    }
+
                     return LayoutBuilder(
                       builder: (context, constraints) {
                         return DropdownMenu<DriverData>(
                           width: constraints.maxWidth,
                           label: const Text('Chofer asignado'),
-                          initialSelection: _selectedDriver,
+                          initialSelection: selectedDriver,
                           dropdownMenuEntries: drivers
                               .map(
                                 (driver) => DropdownMenuEntry(
@@ -220,50 +227,58 @@ class _EditTripPageState extends State<EditTripPage> {
                 gap12,
               ],
 
-              // Código del transporte
-              TextField(
-                controller: _transportCodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Código del transporte',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              gap12,
-
-              // Dador de carga
-              TextField(
-                controller: _loadOwnerController,
-                decoration: const InputDecoration(
-                  labelText: 'Dador de carga',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              gap12,
-
               // Tipo de carga + Peso neto
               Row(
                 children: [
                   Expanded(
                     flex: 3,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return DropdownMenu<String>(
-                          width: constraints
-                              .maxWidth, // mismo ancho que tendría un TextField
-                          label: const Text('Tipo de carga'),
-                          initialSelection: _cargoType,
-                          // TODO: obtener tipos de carga desde backend
-                          dropdownMenuEntries: const [
-                            DropdownMenuEntry(value: 'Maíz', label: 'Maíz'),
-                            DropdownMenuEntry(value: 'Soja', label: 'Soja'),
-                            DropdownMenuEntry(value: 'Trigo', label: 'Trigo'),
-                          ],
-                          onSelected: (value) {
-                            setState(() {
-                              _cargoType = value;
-                            });
+                    child: FutureBuilder<List<LoadTypeData>>(
+                      future: LoadTypeService.getLoadTypes(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return const Text('Error cargando tipos de carga');
+                        }
+
+                        final loadTypes = snapshot.data ?? [];
+
+                        // Buscar el tipo de carga seleccionado por ID
+                        LoadTypeData? selectedLoadType;
+                        if (widget.trip.loadType != null) {
+                          try {
+                            selectedLoadType = loadTypes.firstWhere(
+                              (lt) => lt.id == widget.trip.loadType!.id,
+                            );
+                          } catch (e) {
+                            // Si no se encuentra, dejar null
+                          }
+                        }
+
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            return DropdownMenu<LoadTypeData>(
+                              width: constraints.maxWidth,
+                              label: const Text('Tipo de carga'),
+                              initialSelection: selectedLoadType,
+                              dropdownMenuEntries: loadTypes
+                                  .map(
+                                    (loadType) => DropdownMenuEntry(
+                                      value: loadType,
+                                      label: loadType.name,
+                                    ),
+                                  )
+                                  .toList(),
+                              onSelected: (value) {
+                                setState(() {
+                                  _selectedLoadType = value;
+                                });
+                              },
+                            );
                           },
                         );
                       },
@@ -388,6 +403,8 @@ class _EditTripPageState extends State<EditTripPage> {
                         _selectedDriver?.id ??
                         widget.trip.driver?.id ??
                         widget.trip.driverId,
+                    'load_type_id':
+                        _selectedLoadType?.id ?? widget.trip.loadType?.id,
                     'origin': widget.trip.origin, // assuming not changing
                     'destination': widget.trip.destination,
                     'start_date': _startDate!.toIso8601String().split('T')[0],
@@ -395,11 +412,11 @@ class _EditTripPageState extends State<EditTripPage> {
                         double.tryParse(_kmsController.text) ?? 0.0,
                     'load_weight_on_load':
                         double.tryParse(_netWeightController.text) ?? 0.0,
-                    'rate_per_ton':
-                        double.tryParse(_rateController.text) ?? 0.0,
+                    'rate': double.tryParse(_rateController.text) ?? 0.0,
                     'fuel_liters':
                         double.tryParse(_fuelLitersController.text) ?? 0.0,
-                    // add other fields if needed
+                    'client_advance_payment':
+                        double.tryParse(_advanceController.text) ?? 0.0,
                   };
 
                   final currentContext = context;
