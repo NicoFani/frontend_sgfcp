@@ -33,6 +33,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
   PayrollSummaryData? _summary;
   bool _isLoading = true;
   String? _errorMessage;
+  bool _wasApproved = false;
 
   @override
   void initState() {
@@ -94,216 +95,263 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
 
     final summary = _summary!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Resumen'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'pdf', child: Text('Descargar PDF')),
-              const PopupMenuItem(
-                value: 'excel',
-                child: Text('Descargar Excel'),
-              ),
-            ],
-            onSelected: (value) {
-              if (value == 'pdf') {
-                // TODO: Implementar descarga de PDF
-              } else if (value == 'excel') {
-                // TODO: Implementar descarga de Excel
-              }
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop && _wasApproved) {
+          // Notificar que el resumen fue aprobado
+          // Esto se hace automáticamente porque el callback ya recibió el resultado
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Resumen'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop(_wasApproved);
             },
           ),
-        ],
-      ),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'pdf', child: Text('Descargar PDF')),
+                const PopupMenuItem(
+                  value: 'excel',
+                  child: Text('Descargar Excel'),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'pdf') {
+                  // TODO: Implementar descarga de PDF
+                } else if (value == 'excel') {
+                  // TODO: Implementar descarga de Excel
+                }
+              },
+            ),
+          ],
+        ),
 
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Datos del resumen
-          SummaryDataCard(
-            numberValue: summary.id.toString().padLeft(4, '0'),
-            date: summary.createdAt ?? DateTime.now(),
-            driverValue: summary.driverName ?? 'N/A',
-            periodValue: _formatPeriod(summary.periodYear, summary.periodMonth),
-            status: _getStatusFromString(summary.status),
-            leftColumnWidth: 160,
-          ),
-
-          gap4,
-
-          // Comisión por viajes
-          SummaryItemGroupCard(
-            title: 'Comisión por viajes',
-            items: [
-              SummaryItemEntry(
-                label: 'Total comisiones',
-                amount: summary.commissionFromTrips,
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Datos del resumen
+            SummaryDataCard(
+              numberValue: summary.id.toString().padLeft(4, '0'),
+              date: summary.createdAt ?? DateTime.now(),
+              driverValue: summary.driverName ?? 'N/A',
+              periodValue: _formatPeriod(
+                summary.periodYear,
+                summary.periodMonth,
               ),
-            ],
-          ),
+              status: _getStatusFromString(summary.status),
+              leftColumnWidth: 160,
+            ),
 
-          gap4,
+            gap4,
 
-          // Gastos
-          SummaryItemGroupCard(
-            title: 'Gastos',
-            items: [
-              if (summary.expensesToReimburse > 0)
-                SummaryItemEntry(
-                  label: 'Gastos a reintegrar',
-                  amount: summary.expensesToReimburse,
-                ),
-              if (summary.expensesToDeduct > 0)
-                SummaryItemEntry(
-                  label: 'Gastos a descontar',
-                  amount: -summary.expensesToDeduct,
-                ),
-            ],
-          ),
-
-          gap4,
-
-          // Adelantos
-          if (summary.advancesDeducted > 0) ...[
+            // Comisión por viajes
             SummaryItemGroupCard(
-              title: 'Adelantos',
+              title: 'Comisión por viajes',
               items: [
                 SummaryItemEntry(
-                  label: 'Adelantos descontados',
-                  amount: -summary.advancesDeducted,
+                  label: 'Total comisiones',
+                  amount: summary.commissionFromTrips,
                 ),
               ],
             ),
+
             gap4,
-          ],
 
-          // Otros conceptos
-          SummaryItemGroupCard(
-            title: 'Otros conceptos',
-            items: [
-              if (summary.guaranteedMinimumApplied > 0)
-                SummaryItemEntry(
-                  label: 'Mínimo garantizado aplicado',
-                  amount: summary.guaranteedMinimumApplied,
-                ),
-              if (summary.otherItemsTotal != 0)
-                SummaryItemEntry(
-                  label: 'Otros ajustes',
-                  amount: summary.otherItemsTotal,
-                ),
-            ],
-          ),
-
-          gap4,
-
-          // Totales
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Total', style: Theme.of(context).textTheme.titleMedium),
-                  gap16,
-                  _buildTotalRow(
-                    'Saldo a favor',
-                    summary.totalAmount > 0 ? summary.totalAmount : 0,
+            // Gastos
+            SummaryItemGroupCard(
+              title: 'Gastos',
+              items: [
+                if (summary.expensesToReimburse > 0)
+                  SummaryItemEntry(
+                    label: 'Gastos a reintegrar',
+                    amount: summary.expensesToReimburse,
                   ),
-                  gap8,
-                  _buildTotalRow(
-                    'Saldo en contra',
-                    summary.totalAmount < 0 ? summary.totalAmount : 0,
+                if (summary.expensesToDeduct > 0)
+                  SummaryItemEntry(
+                    label: 'Gastos a descontar',
+                    amount: -summary.expensesToDeduct,
                   ),
-                  const Divider(height: 24),
-                  _buildTotalRow('Total', summary.totalAmount, isBold: true),
+              ],
+            ),
+
+            gap4,
+
+            // Adelantos
+            if (summary.advancesDeducted > 0) ...[
+              SummaryItemGroupCard(
+                title: 'Adelantos',
+                items: [
+                  SummaryItemEntry(
+                    label: 'Adelantos descontados',
+                    amount: -summary.advancesDeducted,
+                  ),
                 ],
               ),
+              gap4,
+            ],
+
+            // Otros conceptos
+            SummaryItemGroupCard(
+              title: 'Otros conceptos',
+              items: [
+                if (summary.guaranteedMinimumApplied > 0)
+                  SummaryItemEntry(
+                    label: 'Mínimo garantizado aplicado',
+                    amount: summary.guaranteedMinimumApplied,
+                  ),
+                if (summary.otherItemsTotal != 0)
+                  SummaryItemEntry(
+                    label: 'Otros ajustes',
+                    amount: summary.otherItemsTotal,
+                  ),
+              ],
             ),
-          ),
 
-          gap16,
+            gap4,
 
-          // Mensaje de error si existe
-          if (summary.errorMessage != null) ...[
+            // Totales
             Card(
-              color: Colors.red.shade50,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade700),
-                        gap8,
-                        Text(
-                          'Error',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: Colors.red.shade700),
-                        ),
-                      ],
+                    Text(
+                      'Total',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    gap16,
+                    _buildTotalRow(
+                      'Saldo a favor',
+                      summary.totalAmount > 0 ? summary.totalAmount : 0,
                     ),
                     gap8,
-                    Text(
-                      summary.errorMessage!,
-                      style: TextStyle(color: Colors.red.shade700),
+                    _buildTotalRow(
+                      'Saldo en contra',
+                      summary.totalAmount < 0 ? summary.totalAmount : 0,
                     ),
+                    const Divider(height: 24),
+                    _buildTotalRow('Total', summary.totalAmount, isBold: true),
                   ],
                 ),
               ),
             ),
-            gap16,
-          ],
 
-          // Botón recalcular
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-            onPressed: _recalculateSummary,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Recalcular resumen'),
-          ),
-        ],
-      ),
-      floatingActionButton: summary.status != 'approved'
-          ? FloatingActionButton(
-              child: const Icon(Icons.check),
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Aprobar resumen'),
-                    content: const Text(
-                      '¿Estás seguro de que querés aprobar este resumen?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancelar'),
+            gap16,
+
+            // Mensaje de error si existe
+            if (summary.errorMessage != null) ...[
+              Card(
+                color: Colors.red.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          gap8,
+                          Text(
+                            'Error',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.red.shade700),
+                          ),
+                        ],
                       ),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        child: const Text('Aprobar'),
+                      gap8,
+                      Text(
+                        summary.errorMessage!,
+                        style: TextStyle(color: Colors.red.shade700),
                       ),
                     ],
                   ),
-                );
-                if (confirmed ?? false) {
-                  // TODO: Implementar aprobación del resumen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funcionalidad en desarrollo'),
+                ),
+              ),
+              gap16,
+            ],
+
+            // Botón recalcular
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: _recalculateSummary,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Recalcular resumen'),
+            ),
+          ],
+        ),
+        floatingActionButton: summary.status != 'approved'
+            ? FloatingActionButton(
+                child: const Icon(Icons.check),
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Aprobar resumen'),
+                      content: const Text(
+                        '¿Estás seguro de que querés aprobar este resumen?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                          },
+                          child: const Text('Aprobar'),
+                        ),
+                      ],
                     ),
                   );
-                }
-              },
-            )
-          : null,
+                  if (confirmed ?? false) {
+                    try {
+                      // Aprobar el resumen
+                      await PayrollSummaryService.approveSummary(
+                        summaryId: widget.summaryId,
+                      );
+
+                      if (!mounted) return;
+
+                      // Marcar que se aprobó
+                      _wasApproved = true;
+
+                      // Mostrar mensaje de éxito
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Resumen aprobado exitosamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      // Recargar el resumen para actualizar la vista
+                      await _loadSummary();
+                    } catch (e) {
+                      if (!mounted) return;
+
+                      // Mostrar error
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error al aprobar resumen: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              )
+            : null,
+      ),
     );
   }
 

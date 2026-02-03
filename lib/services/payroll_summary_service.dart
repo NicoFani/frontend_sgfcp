@@ -155,4 +155,32 @@ class PayrollSummaryService {
       ApiResponseHandler.handleNetworkError(e);
     }
   }
+
+  /// Aprobar un resumen de liquidación
+  ///
+  /// Solo se pueden aprobar resúmenes en estado 'pending_approval'.
+  /// La aprobación es irreversible.
+  static Future<PayrollSummaryData> approveSummary({
+    required int summaryId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/api/payroll/summaries/$summaryId/approve'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<PayrollSummaryData>(response, (
+        jsonData,
+      ) {
+        final data = jsonData['data'];
+        return PayrollSummaryData.fromJson(data);
+      }, operation: 'aprobar resumen de nómina');
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
 }

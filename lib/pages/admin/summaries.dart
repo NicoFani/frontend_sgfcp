@@ -229,7 +229,10 @@ class _SummariesPageAdminState extends State<SummariesPageAdmin> {
                 gap12,
 
                 // Summary list (header + rows)
-                SummaryList(rows: filteredRows),
+                SummaryList(
+                  rows: filteredRows,
+                  onSummaryChanged: _loadSummaries,
+                ),
               ],
             ),
     );

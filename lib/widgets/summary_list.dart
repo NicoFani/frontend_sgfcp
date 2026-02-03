@@ -5,8 +5,9 @@ import 'package:frontend_sgfcp/pages/admin/summary_detail.dart';
 
 class SummaryList extends StatelessWidget {
   final List<SummaryRowData> rows;
+  final VoidCallback? onSummaryChanged;
 
-  const SummaryList({super.key, required this.rows});
+  const SummaryList({super.key, required this.rows, this.onSummaryChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +74,15 @@ class SummaryList extends StatelessWidget {
                   width: sizedBoxWidth,
                   child: Icon(row.status.icon, color: row.status.color(colors)),
                 ),
-                onTap: () => Navigator.of(
-                  context,
-                ).push(SummaryDetailPage.route(summaryId: row.summaryId)),
+                onTap: () async {
+                  final result = await Navigator.of(
+                    context,
+                  ).push(SummaryDetailPage.route(summaryId: row.summaryId));
+                  // result será true si se aprobó el resumen
+                  if (result == true && onSummaryChanged != null) {
+                    onSummaryChanged!();
+                  }
+                },
               ),
               if (!isLast) const Divider(height: 1),
             ],
