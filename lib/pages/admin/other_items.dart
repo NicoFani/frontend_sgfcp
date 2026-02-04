@@ -29,6 +29,7 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
   OtherItemsType _otherItemsType = OtherItemsType.ajuste;
   DriverData? _selectedDriver;
   PayrollPeriodData? _selectedPeriod;
+  bool _isAdjustmentPositive = true;
 
   // Controllers
   final TextEditingController _descriptionController = TextEditingController();
@@ -171,6 +172,7 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
                       if (value == null) return;
                       setState(() {
                         _otherItemsType = value;
+                        _isAdjustmentPositive = true;
                       });
                     },
                   );
@@ -178,6 +180,24 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
               ),
 
               gap12,
+
+              if (_otherItemsType == OtherItemsType.ajuste) ...[
+                const Text('Tipo de ajuste'),
+                gap8,
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: true, label: Text('Suma')),
+                    ButtonSegment(value: false, label: Text('Resta')),
+                  ],
+                  selected: {_isAdjustmentPositive},
+                  onSelectionChanged: (value) {
+                    setState(() {
+                      _isAdjustmentPositive = value.first;
+                    });
+                  },
+                ),
+                gap12,
+              ],
 
               // Importe
               TextField(
@@ -260,7 +280,17 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
 
     try {
       final itemType = _otherItemsType.toBackendString();
-      final amount = double.parse(_amountController.text);
+      final rawAmount = double.parse(_amountController.text);
+      double amount;
+
+      if (_otherItemsType == OtherItemsType.ajuste) {
+        amount = _isAdjustmentPositive ? rawAmount.abs() : -rawAmount.abs();
+      } else if (_otherItemsType == OtherItemsType.bonificacionExtra) {
+        amount = rawAmount.abs();
+      } else {
+        // Multa y cargo extra siempre restan
+        amount = -rawAmount.abs();
+      }
 
       await PayrollOtherItemService.createOtherItem(
         driverId: _selectedDriver!.id,
@@ -290,6 +320,7 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
           _selectedDriver = null;
           _selectedPeriod = null;
           _otherItemsType = OtherItemsType.ajuste;
+          _isAdjustmentPositive = true;
         });
       }
     } catch (e) {
