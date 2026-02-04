@@ -63,6 +63,8 @@ class _SummariesPageAdminState extends State<SummariesPageAdmin> {
             driver: summary.driverName ?? 'N/A',
             period: period,
             date: summary.createdAt ?? DateTime.now(),
+            periodMonth: summary.periodMonth,
+            periodYear: summary.periodYear,
             status: _getStatusFromString(summary.status),
           );
         }).toList();
@@ -249,8 +251,10 @@ class _SummariesPageAdminState extends State<SummariesPageAdmin> {
         return false;
       }
       if (_selectedMonth != null) {
-        if (!(_selectedMonth!.year == row.date.year &&
-            _selectedMonth!.month == row.date.month)) {
+        final rowYear = row.periodYear ?? row.date.year;
+        final rowMonth = row.periodMonth ?? row.date.month;
+        if (!(_selectedMonth!.year == rowYear &&
+            _selectedMonth!.month == rowMonth)) {
           return false;
         }
       }
