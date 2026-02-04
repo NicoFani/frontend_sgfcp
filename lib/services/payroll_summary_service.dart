@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:html' as html;
 import 'package:frontend_sgfcp/models/payroll_summary_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/api_response_handler.dart';
@@ -179,6 +180,61 @@ class PayrollSummaryService {
         final data = jsonData['data'];
         return PayrollSummaryData.fromJson(data);
       }, operation: 'aprobar resumen de nómina');
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
+  /// Exportar resumen a Excel o PDF
+  ///
+  /// Solo PDF para resúmenes aprobados.
+  /// Excel para todos los estados.
+  static Future<void> exportSummary({
+    required int summaryId,
+    required String format, // 'excel' o 'pdf'
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/payroll/summaries/$summaryId/export'),
+            headers: ApiResponseHandler.createHeaders(token),
+            body: jsonEncode({'format': format}),
+          )
+          .timeout(const Duration(seconds: 30)); // Más tiempo para exportación
+
+      final data =
+          await ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+            response,
+            (jsonData) {
+              return jsonData['data'] as Map<String, dynamic>;
+            },
+            operation: 'exportar resumen',
+          );
+
+      // Ahora descargar el archivo
+      final filepath = data['filepath'] as String;
+      final downloadUrl = '$baseUrl/api/payroll/summaries/$summaryId/download';
+
+      final downloadResponse = await http.get(
+        Uri.parse(downloadUrl),
+        headers: ApiResponseHandler.createHeaders(token),
+      );
+
+      if (downloadResponse.statusCode == 200) {
+        // Trigger download in browser
+        final bytes = downloadResponse.bodyBytes;
+        final filename = filepath.split('/').last;
+
+        // Use dart:html for web download
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', filename)
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      }
     } catch (e) {
       ApiResponseHandler.handleNetworkError(e);
     }
