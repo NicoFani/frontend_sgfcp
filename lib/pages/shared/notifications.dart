@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
+import 'package:frontend_sgfcp/models/notification_data.dart';
+import 'package:frontend_sgfcp/services/notification_service.dart';
 
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
 
   static const String routeName = '/admin/notifications';
@@ -12,32 +15,65 @@ class NotificationsPage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: Obtener notificaciones reales del backend
-    final notifications = [
-      _NotificationData(
-        title: 'Psicofísico vencido',
-        subtitle: 'Se venció el examen psicofísico de Fernando Alonso.',
-        time: '10:36',
-        icon: Symbols.medical_information,
-        isRead: false,
-      ),
-      _NotificationData(
-        title: 'Viaje iniciado',
-        subtitle: 'Alexander Albon inició un viaje de Arias a Rosario.',
-        time: 'Ayer',
-        icon: Symbols.route,
-        isRead: false,
-      ),
-      _NotificationData(
-        title: 'Viaje finalizado',
-        subtitle: 'Carlos Sainz finalizó el viaje de Arias a Rosario.',
-        time: '15/09/2025',
-        icon: Symbols.location_on,
-        isRead: false,
-      ),
-    ];
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
 
+class _NotificationsPageState extends State<NotificationsPage> {
+  late Future<List<NotificationData>> _notificationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  void _loadNotifications() {
+    setState(() {
+      _notificationsFuture = NotificationService.getNotifications();
+    });
+  }
+
+  Future<void> _refresh() async {
+    _loadNotifications();
+    await _notificationsFuture;
+  }
+
+  IconData _iconForType(String type) {
+    switch (type) {
+      case 'trip_started':
+        return Symbols.route;
+      case 'trip_finished':
+        return Symbols.location_on;
+      case 'trip_assigned':
+        return Symbols.add_road;
+      case 'advance_payment':
+        return Symbols.payments;
+      case 'document_expired':
+        return Symbols.event_busy;
+      case 'document_expiring':
+      default:
+        return Symbols.event_upcoming;
+    }
+  }
+
+  String _formatTime(DateTime createdAt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(createdAt.year, createdAt.month, createdAt.day);
+
+    if (date == today) {
+      return DateFormat('HH:mm').format(createdAt);
+    }
+
+    if (date == today.subtract(const Duration(days: 1))) {
+      return 'Ayer';
+    }
+
+    return DateFormat('dd/MM/yyyy').format(createdAt);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notificaciones'),
@@ -57,18 +93,49 @@ class NotificationsPage extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: notifications.isEmpty
-            ? _buildEmptyState(context)
-            : ListView.separated(
-                itemCount: notifications.length,
-                separatorBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Divider(height: 1),
+          child: FutureBuilder<List<NotificationData>>(
+            future: _notificationsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return _buildErrorState(context);
+              }
+
+              final notifications = snapshot.data ?? [];
+
+              if (notifications.isEmpty) {
+                return _buildEmptyState(context);
+              }
+
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView.separated(
+                  itemCount: notifications.length,
+                  separatorBuilder: (context, index) => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Divider(height: 1),
+                  ),
+                  itemBuilder: (context, index) {
+                    final notification = notifications[index];
+                    return _NotificationListItem(
+                      notification: notification,
+                      timeLabel: _formatTime(notification.createdAt),
+                      icon: _iconForType(notification.type),
+                      onTap: () async {
+                        if (!notification.isRead) {
+                          await NotificationService.markAsRead(notification.id);
+                          await _refresh();
+                        }
+                      },
+                    );
+                  },
                 ),
-                itemBuilder: (context, index) {
-                  return _NotificationListItem(notification: notifications[index]);
-                },
-              ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -98,13 +165,46 @@ class NotificationsPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildErrorState(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: colors.error),
+          gap16,
+          Text(
+            'No se pudieron cargar las notificaciones',
+            style: textTheme.bodyMedium,
+          ),
+          gap16,
+          FilledButton.icon(
+            onPressed: _loadNotifications,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Item de notificación
 class _NotificationListItem extends StatelessWidget {
-  final _NotificationData notification;
+  final NotificationData notification;
+  final String timeLabel;
+  final IconData icon;
+  final VoidCallback onTap;
 
-  const _NotificationListItem({required this.notification});
+  const _NotificationListItem({
+    required this.notification,
+    required this.timeLabel,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +213,7 @@ class _NotificationListItem extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Icon(
-        notification.icon,
-        size: 20,
-        color: colors.onSurfaceVariant,
-      ),
+      leading: Icon(icon, size: 20, color: colors.onSurfaceVariant),
       title: Text(
         notification.title,
         style: textTheme.titleSmall?.copyWith(
@@ -129,7 +225,7 @@ class _NotificationListItem extends StatelessWidget {
         children: [
           gap4,
           Text(
-            notification.subtitle,
+            notification.message,
             style: textTheme.bodySmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -137,14 +233,10 @@ class _NotificationListItem extends StatelessWidget {
         ],
       ),
       trailing: Text(
-        notification.time,
-        style: textTheme.labelSmall?.copyWith(
-          color: colors.onSurfaceVariant,
-        ),
+        timeLabel,
+        style: textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
       ),
-      onTap: () {
-        // TODO: Marcar como leída y navegar a detalles
-      },
+      onTap: onTap,
     );
   }
 }
@@ -166,8 +258,7 @@ class NotificationSettingsPage extends StatefulWidget {
       _NotificationSettingsPageState();
 }
 
-class _NotificationSettingsPageState
-    extends State<NotificationSettingsPage> {
+class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   // Estado de los switches
   bool _tripStarted = true;
   bool _tripFinished = true;
@@ -176,9 +267,7 @@ class _NotificationSettingsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
-      ),
+      appBar: AppBar(title: const Text('Configuración')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -254,36 +343,11 @@ class _NotificationSettingItem extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Icon(
-        icon,
-        size: 20,
-        color: colors.onSurfaceVariant,
-      ),
-      title: Text(
-        title,
-        style: textTheme.bodyLarge,
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-      ),
+      leading: Icon(icon, size: 20, color: colors.onSurfaceVariant),
+      title: Text(title, style: textTheme.bodyLarge),
+      trailing: Switch(value: value, onChanged: onChanged),
     );
   }
 }
 
 // Modelo de datos
-class _NotificationData {
-  final String title;
-  final String subtitle;
-  final String time;
-  final IconData icon;
-  final bool isRead;
-
-  _NotificationData({
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.icon,
-    this.isRead = false,
-  });
-}

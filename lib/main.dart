@@ -11,7 +11,9 @@ import 'package:frontend_sgfcp/pages/driver/my_trips.dart';
 import 'package:frontend_sgfcp/pages/driver/home.dart';
 import 'package:frontend_sgfcp/pages/driver/profile.dart';
 import 'package:frontend_sgfcp/pages/shared/loading_page.dart';
+import 'package:frontend_sgfcp/pages/shared/notifications.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/services/notification_service.dart';
 
 Future<void> main() async {
   // Inicializa datos de fechas para español
@@ -37,10 +39,7 @@ class MyApp extends StatelessWidget {
       theme: theme
           .light(), // brightness == Brightness.light ? theme.light() : theme.dark(),
       locale: const Locale('es', 'AR'),
-      supportedLocales: const [
-        Locale('es', 'AR'),
-        Locale('es', 'ES'),
-      ],
+      supportedLocales: const [Locale('es', 'AR'), Locale('es', 'ES')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -63,6 +62,7 @@ class _RootNavigationState extends State<RootNavigation> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
   String _userName = 'Conductor';
+  int _unreadCount = 0;
 
   final List<Widget> _pages = const [
     HomePageDriver(),
@@ -74,6 +74,20 @@ class _RootNavigationState extends State<RootNavigation> {
   void initState() {
     super.initState();
     _loadUserName();
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await NotificationService.getUnreadCount();
+      setState(() {
+        _unreadCount = count;
+      });
+    } catch (_) {
+      setState(() {
+        _unreadCount = 0;
+      });
+    }
   }
 
   void _loadUserName() {
@@ -101,12 +115,16 @@ class _RootNavigationState extends State<RootNavigation> {
           actions: [
             IconButton(
               onPressed: () {
-                // TODO: abrir notificaciones
+                Navigator.of(context)
+                    .push(NotificationsPage.route())
+                    .then((_) => _loadUnreadCount());
               },
-              icon: Badge.count(
-                count: 1,
-                child: const Icon(Icons.notifications_outlined),
-              ),
+              icon: _unreadCount > 0
+                  ? Badge.count(
+                      count: _unreadCount,
+                      child: const Icon(Icons.notifications_outlined),
+                    )
+                  : const Icon(Icons.notifications_outlined),
             ),
           ],
         );

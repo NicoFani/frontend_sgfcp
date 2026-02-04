@@ -8,6 +8,7 @@ import 'package:frontend_sgfcp/pages/admin/create_driver.dart';
 import 'package:frontend_sgfcp/pages/admin/administration.dart';
 import 'package:frontend_sgfcp/services/auth_service.dart';
 import 'package:frontend_sgfcp/models/user.dart';
+import 'package:frontend_sgfcp/services/notification_service.dart';
 
 /// Widget raíz de navegación para el administrador
 class AdminRootNavigation extends StatefulWidget {
@@ -29,11 +30,26 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
   final ValueNotifier<int> _driversRefreshNotifier = ValueNotifier(0);
   final ValueNotifier<int> _userRefreshNotifier = ValueNotifier(0);
   late Future<User> _userFuture;
+  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
     _userFuture = _fetchUser();
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await NotificationService.getUnreadCount();
+      setState(() {
+        _unreadCount = count;
+      });
+    } catch (_) {
+      setState(() {
+        _unreadCount = 0;
+      });
+    }
   }
 
   Future<User> _fetchUser() async {
@@ -55,12 +71,11 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
       ),
       ValueListenableBuilder<int>(
         valueListenable: _userRefreshNotifier,
-        builder: (context, value, child) =>
-            AdministrationPageAdmin(
-              user: user,
-              onNeedRefresh: refreshUserData,
-              key: ValueKey(value),
-            ),
+        builder: (context, value, child) => AdministrationPageAdmin(
+          user: user,
+          onNeedRefresh: refreshUserData,
+          key: ValueKey(value),
+        ),
       ),
     ];
   }
@@ -85,14 +100,20 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
           actions: [
             IconButton(
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                );
+                Navigator.of(context)
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsPage(),
+                      ),
+                    )
+                    .then((_) => _loadUnreadCount());
               },
-              icon: Badge.count(
-                count: 3,
-                child: const Icon(Icons.notifications_outlined),
-              ),
+              icon: _unreadCount > 0
+                  ? Badge.count(
+                      count: _unreadCount,
+                      child: const Icon(Icons.notifications_outlined),
+                    )
+                  : const Icon(Icons.notifications_outlined),
             ),
           ],
         );
@@ -146,7 +167,7 @@ class _AdminRootNavigationState extends State<AdminRootNavigation> {
     // Update the user future directly without calling setState
     // This allows the FutureBuilder to rebuild with fresh data
     _userFuture = _fetchUser();
-    
+
     // Increment notifier to trigger child widget refreshes
     _userRefreshNotifier.value++;
   }
