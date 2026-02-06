@@ -5,6 +5,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/widgets/trips_calendar.dart';
 
 import 'package:frontend_sgfcp/pages/shared/expense.dart';
 import 'package:frontend_sgfcp/pages/shared/finish_trip.dart';
@@ -31,7 +32,8 @@ class _HomePageDriverState extends State<HomePageDriver> {
   String? _error;
   TripData? _currentTrip;
   TripData? _nextTrip;
-  String _driverName = '';
+  List<TripData> _trips = [];
+  String driverName = '';
 
   @override
   void initState() {
@@ -48,17 +50,26 @@ class _HomePageDriverState extends State<HomePageDriver> {
     try {
       // Obtener nombre del conductor
       final user = TokenStorage.user;
-      _driverName = user?['username'] ?? 'Conductor';
+      driverName = user?['username'] ?? 'Conductor';
+      final driverId = user?['id'] as int?;
 
       // Cargar viajes en paralelo
+      final currentTripFuture = TripService.getCurrentTrip();
+      final nextTripFuture = TripService.getNextTrip();
+      final tripsFuture = driverId != null
+          ? TripService.getTripsByDriver(driverId: driverId)
+          : Future.value(<TripData>[]);
+
       final results = await Future.wait([
-        TripService.getCurrentTrip(),
-        TripService.getNextTrip(),
+        currentTripFuture,
+        nextTripFuture,
+        tripsFuture,
       ]);
 
       setState(() {
-        _currentTrip = results[0];
-        _nextTrip = results[1];
+        _currentTrip = results[0] as TripData?;
+        _nextTrip = results[1] as TripData?;
+        _trips = results[2] as List<TripData>;
         _isLoading = false;
       });
     } catch (e) {
@@ -124,21 +135,7 @@ class _HomePageDriverState extends State<HomePageDriver> {
               Text('Próximos viajes', style: textTheme.titleLarge),
               gap8,
 
-              // TODO: calendar widget will go here later
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: colors.surfaceContainerHighest,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Calendario (por implementar)',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              TripsCalendar(trips: _trips),
             ],
           ),
         ),

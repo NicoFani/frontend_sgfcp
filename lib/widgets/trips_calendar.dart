@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
+import 'package:intl/intl.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 
 class TripsCalendar extends StatefulWidget {
   final List<TripData> trips;
@@ -66,6 +69,81 @@ class _TripsCalendarState extends State<TripsCalendar> {
     return _eventsMap[normalized] ?? [];
   }
 
+  Color _getDayColor(
+    ColorScheme colors,
+    List<TripData> trips,
+    String type,
+  ) {
+    final states = trips.map((t) => t.state).toSet();
+
+    if (type == 'label') {
+      if (states.length != 1) {
+        return colors.onPrimary;
+      }
+
+      switch (states.first) {
+        case 'Finalizado':
+          return colors.onPrimary;
+        case 'En curso':
+        case 'Pendiente':
+          return colors.onSurface;
+        default:
+          return colors.onPrimary;
+      }
+    }
+
+    if (states.length != 1) {
+      return colors.onPrimaryContainer.withValues(alpha: 0.7);
+    }
+
+    switch (states.first) {
+      case 'Finalizado':
+        return colors.primary.withValues(alpha: 0.7);
+      case 'En curso':
+        return colors.secondary.withValues(alpha: 0.7);
+      case 'Pendiente':
+        return colors.tertiary.withValues(alpha: 0.7);
+      default:
+        return colors.onPrimaryContainer.withValues(alpha: 0.7);
+    }
+  }
+
+  Color _getTripStateColor(ColorScheme colors, TripData trip) {
+    switch (trip.state) {
+      case 'Finalizado':
+        return colors.primary;
+      case 'En curso':
+        return colors.secondary;
+      case 'Pendiente':
+        return colors.tertiary;
+      default:
+        return colors.onPrimaryContainer;
+    }
+  }
+
+  Future<void> _showTripsForDay(DateTime day) async {
+    final events = _getEventsForDay(day);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final title = DateFormat.yMMMMEEEEd(locale).format(day);
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return TripsDayDialog(
+          title: title,
+          trips: events,
+          stateColorBuilder: _getTripStateColor,
+          onTripTap: (trip) {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              TripPage.route(tripId: trip.id, trip: trip),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -82,11 +160,14 @@ class _TripsCalendarState extends State<TripsCalendar> {
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
             calendarFormat: _calendarFormat,
             eventLoader: _getEventsForDay,
-            onDaySelected: (selectedDay, focusedDay) { //TODO: Dialog con detalles de viajes del día
+            onDaySelected: (selectedDay, focusedDay) {
               setState(() {
                 _selectedDay = selectedDay;
                 _focusedDay = focusedDay;
               });
+              if (_getEventsForDay(selectedDay).isNotEmpty) {
+                _showTripsForDay(selectedDay);
+              }
               widget.onDaySelected?.call(selectedDay);
             },
             onFormatChanged: (format) {
@@ -103,14 +184,14 @@ class _TripsCalendarState extends State<TripsCalendar> {
                 if (events.isNotEmpty) {
                   return Container(
                     decoration: BoxDecoration(
-                      color: colors.secondary.withValues(alpha: 0.7), // TODO: Color condicional según estado del viaje
+                      color: _getDayColor(colors, events, 'decoration'),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         '${day.day}',
                         style: textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurface,
+                          color: _getDayColor(colors, events, 'label'),
                         ),
                       ),
                     ),
@@ -171,5 +252,59 @@ class _TripsCalendarState extends State<TripsCalendar> {
         )
       ),
     ); 
+  }
+}
+
+class TripsDayDialog extends StatelessWidget {
+  final String title;
+  final List<TripData> trips;
+  final Color Function(ColorScheme, TripData) stateColorBuilder;
+  final ValueChanged<TripData> onTripTap;
+
+  const TripsDayDialog({
+    super.key,
+    required this.title,
+    required this.trips,
+    required this.stateColorBuilder,
+    required this.onTripTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final bool isAdmin =
+      (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
+
+    return AlertDialog(
+      title: Text(title),
+      content: SizedBox(
+        width: 360,
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: trips.length,
+          separatorBuilder: (context, index) => const Divider(),
+          itemBuilder: (context, index) {
+            final trip = trips[index];
+            final driverName = trip.driver?.fullName ?? 'Sin chofer';
+            return ListTile(
+              title: Text(trip.route),
+              subtitle: isAdmin ? Text(driverName) : null,
+              leading: Icon(
+                Icons.circle,
+                size: 12,
+                color: stateColorBuilder(colors, trip),
+              ),
+              onTap: () => onTripTap(trip),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cerrar'),
+        ),
+      ],
+    );
   }
 }
