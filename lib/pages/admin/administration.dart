@@ -4,7 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/account.dart';
 import 'package:frontend_sgfcp/pages/admin/clients_providers.dart';
-import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
+import 'package:frontend_sgfcp/pages/admin/trucks.dart';
 import 'package:frontend_sgfcp/pages/admin/add_advance_payment.dart';
 import 'package:frontend_sgfcp/models/user.dart';
 import 'package:frontend_sgfcp/services/user_refresh_notifier.dart';
@@ -125,7 +125,7 @@ class _AdministrationPageAdminState extends State<AdministrationPageAdmin> {
             icon: Symbols.local_shipping,
             label: 'Vehículos',
             onTap: () {
-              Navigator.of(context).push(VehiclesPageAdmin.route());
+              Navigator.of(context).push(TrucksPageAdmin.route());
             },
           ),
 

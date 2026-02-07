@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 String formatCurrency(

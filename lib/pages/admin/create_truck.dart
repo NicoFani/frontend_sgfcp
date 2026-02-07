@@ -6,20 +6,20 @@ import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:intl/intl.dart';
 
-class CreateVehiclePageAdmin extends StatefulWidget {
-  const CreateVehiclePageAdmin({super.key});
+class CreateTruckPageAdmin extends StatefulWidget {
+  const CreateTruckPageAdmin({super.key});
 
-  static const String routeName = '/admin/create-vehicle';
+  static const String routeName = '/admin/create-truck';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const CreateVehiclePageAdmin());
+    return MaterialPageRoute<void>(builder: (_) => const CreateTruckPageAdmin());
   }
 
   @override
-  State<CreateVehiclePageAdmin> createState() => _CreateVehiclePageAdminState();
+  State<CreateTruckPageAdmin> createState() => _CreateTruckPageAdminState();
 }
 
-class _CreateVehiclePageAdminState extends State<CreateVehiclePageAdmin> {
+class _CreateTruckPageAdminState extends State<CreateTruckPageAdmin> {
   final TextEditingController _brandController = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
@@ -91,7 +91,7 @@ class _CreateVehiclePageAdminState extends State<CreateVehiclePageAdmin> {
     }
   }
 
-  Future<void> _createVehicle() async {
+  Future<void> _createTruck() async {
     if (_brandController.text.isEmpty ||
         _modelController.text.isEmpty ||
         _yearController.text.isEmpty ||
@@ -312,7 +312,7 @@ class _CreateVehiclePageAdminState extends State<CreateVehiclePageAdmin> {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                   ),
-                  onPressed: _isLoading ? null : _createVehicle,
+                  onPressed: _isLoading ? null : _createTruck,
                   icon: _isLoading
                       ? const SizedBox(
                           height: 24,

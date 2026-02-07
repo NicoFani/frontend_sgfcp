@@ -83,10 +83,9 @@ class _TripsCalendarState extends State<TripsCalendar> {
 
       switch (states.first) {
         case 'Finalizado':
-          return colors.onPrimary;
-        case 'En curso':
-        case 'Pendiente':
           return colors.onSurface;
+        case 'Pendiente':
+          return colors.onTertiary;
         default:
           return colors.onPrimary;
       }
@@ -98,9 +97,9 @@ class _TripsCalendarState extends State<TripsCalendar> {
 
     switch (states.first) {
       case 'Finalizado':
-        return colors.primary.withValues(alpha: 0.7);
-      case 'En curso':
         return colors.secondary.withValues(alpha: 0.7);
+      case 'En curso':
+        return colors.primary.withValues(alpha: 0.7);
       case 'Pendiente':
         return colors.tertiary.withValues(alpha: 0.7);
       default:
@@ -111,9 +110,9 @@ class _TripsCalendarState extends State<TripsCalendar> {
   Color _getTripStateColor(ColorScheme colors, TripData trip) {
     switch (trip.state) {
       case 'Finalizado':
-        return colors.primary;
-      case 'En curso':
         return colors.secondary;
+      case 'En curso':
+        return colors.primary;
       case 'Pendiente':
         return colors.tertiary;
       default:

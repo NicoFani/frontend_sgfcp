@@ -66,6 +66,7 @@ class _HomePageDriverState extends State<HomePageDriver> {
         tripsFuture,
       ]);
 
+      if (!mounted) return;
       setState(() {
         _currentTrip = results[0] as TripData?;
         _nextTrip = results[1] as TripData?;
@@ -73,6 +74,7 @@ class _HomePageDriverState extends State<HomePageDriver> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Error al cargar datos: ${e.toString()}';
         _isLoading = false;

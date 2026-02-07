@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/truck_data.dart';
 import 'package:frontend_sgfcp/services/driver_truck_service.dart';
-import 'package:frontend_sgfcp/pages/shared/vehicle.dart';
+import 'package:frontend_sgfcp/pages/shared/truck.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-class DriverVehiclesPage extends StatefulWidget {
+class DriverTrucksPage extends StatefulWidget {
   final int driverId;
 
-  const DriverVehiclesPage({super.key, required this.driverId});
+  const DriverTrucksPage({super.key, required this.driverId});
 
-  static const String routeName = '/driver/vehicles';
+  static const String routeName = '/driver/trucks';
 
   static Route route({required int driverId}) {
     return MaterialPageRoute<void>(
-      builder: (_) => DriverVehiclesPage(driverId: driverId),
+      builder: (_) => DriverTrucksPage(driverId: driverId),
     );
   }
 
   @override
-  State<DriverVehiclesPage> createState() => _DriverVehiclesPageState();
+  State<DriverTrucksPage> createState() => _DriverTrucksPageState();
 }
 
-class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
+class _DriverTrucksPageState extends State<DriverTrucksPage> {
   late Future<TruckData?> _currentTruckFuture;
 
   @override
@@ -177,7 +177,7 @@ class _DriverVehiclesPageState extends State<DriverVehiclesPage> {
                         onPressed: () {
                           Navigator.of(
                             context,
-                          ).push(VehiclePage.route(truckId: truck.id));
+                          ).push(TruckPage.route(truckId: truck.id));
                         },
                         icon: const Icon(Symbols.info),
                         label: const Text('Ver detalles completos'),

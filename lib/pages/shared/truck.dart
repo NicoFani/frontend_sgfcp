@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/admin/driver_detail.dart';
-import 'package:frontend_sgfcp/pages/admin/edit_vehicle.dart';
+import 'package:frontend_sgfcp/pages/admin/edit_truck.dart';
 import 'package:frontend_sgfcp/pages/shared/documentation_update.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
@@ -16,26 +16,26 @@ import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_table.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-class VehiclePage extends StatefulWidget {
+class TruckPage extends StatefulWidget {
   final int truckId;
 
-  const VehiclePage({super.key, required this.truckId});
+  const TruckPage({super.key, required this.truckId});
 
   /// Route name you can use with Navigator.pushNamed
-  static const String routeName = '/vehicle';
+  static const String routeName = '/truck';
 
   /// Helper to create a route to this page
   static Route route({required int truckId}) {
     return MaterialPageRoute<void>(
-      builder: (_) => VehiclePage(truckId: truckId),
+      builder: (_) => TruckPage(truckId: truckId),
     );
   }
 
   @override
-  State<VehiclePage> createState() => _VehiclePageState();
+  State<TruckPage> createState() => _TruckPageState();
 }
 
-class _VehiclePageState extends State<VehiclePage> {
+class _TruckPageState extends State<TruckPage> {
   late Future<TruckData> _truckFuture;
   late Future<Map<String, dynamic>?> _driverFuture;
 
@@ -63,14 +63,13 @@ class _VehiclePageState extends State<VehiclePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vehículo'),
-        actions: [
+        actions: [ if (isAdmin)
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             onPressed: () async {
-              final truck = await _truckFuture;
               if (mounted) {
                 final result = await Navigator.of(context).push(
-                  EditVehiclePage.route(
+                  EditTruckPage.route(
                     truckId: widget.truckId,
                   ),
                 );

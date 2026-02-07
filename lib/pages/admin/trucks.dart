@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/pages/shared/vehicle.dart';
+import 'package:frontend_sgfcp/pages/shared/truck.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:frontend_sgfcp/pages/admin/create_vehicle.dart';
+import 'package:frontend_sgfcp/pages/admin/create_truck.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
 import 'package:frontend_sgfcp/models/truck_data.dart';
 
-class VehiclesPageAdmin extends StatefulWidget {
-  const VehiclesPageAdmin({super.key});
+class TrucksPageAdmin extends StatefulWidget {
+  const TrucksPageAdmin({super.key});
 
-  static const String routeName = '/admin/vehicles';
+  static const String routeName = '/admin/trucks';
 
   static Route route() {
-    return MaterialPageRoute<void>(builder: (_) => const VehiclesPageAdmin());
+    return MaterialPageRoute<void>(builder: (_) => const TrucksPageAdmin());
   }
 
   @override
-  State<VehiclesPageAdmin> createState() => _VehiclesPageAdminState();
+  State<TrucksPageAdmin> createState() => _TrucksPageAdminState();
 }
 
-class _VehiclesPageAdminState extends State<VehiclesPageAdmin> {
-  late Future<List<TruckData>> _vehiclesFuture;
+class _TrucksPageAdminState extends State<TrucksPageAdmin> {
+  late Future<List<TruckData>> _trucksFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadVehicles();
+    _loadTrucks();
   }
 
-  void _loadVehicles() {
+  void _loadTrucks() {
     setState(() {
-      _vehiclesFuture = TruckService.getTrucks();
+      _trucksFuture = TruckService.getTrucks();
     });
   }
 
@@ -44,10 +44,10 @@ class _VehiclesPageAdminState extends State<VehiclesPageAdmin> {
             onPressed: () async {
               final result = await Navigator.of(
                 context,
-              ).push(CreateVehiclePageAdmin.route());
+              ).push(CreateTruckPageAdmin.route());
               // Recargar la lista si se creó un vehículo
               if (result == true) {
-                _loadVehicles();
+                _loadTrucks();
               }
             },
           ),
@@ -55,7 +55,7 @@ class _VehiclesPageAdminState extends State<VehiclesPageAdmin> {
       ),
       body: SafeArea(
         child: FutureBuilder<List<TruckData>>(
-          future: _vehiclesFuture,
+          future: _trucksFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -84,7 +84,7 @@ class _VehiclesPageAdminState extends State<VehiclesPageAdmin> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
-                      onPressed: _loadVehicles,
+                      onPressed: _loadTrucks,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Reintentar'),
                     ),
@@ -93,9 +93,9 @@ class _VehiclesPageAdminState extends State<VehiclesPageAdmin> {
               );
             }
 
-            final vehicles = snapshot.data ?? [];
+            final trucks = snapshot.data ?? [];
 
-            if (vehicles.isEmpty) {
+            if (trucks.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -122,30 +122,30 @@ class _VehiclesPageAdminState extends State<VehiclesPageAdmin> {
 
             return RefreshIndicator(
               onRefresh: () async {
-                _loadVehicles();
-                await _vehiclesFuture;
+                _loadTrucks();
+                await _trucksFuture;
               },
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: vehicles.length,
+                itemCount: trucks.length,
                 separatorBuilder: (context, index) => const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   child: Divider(height: 1),
                 ),
                 itemBuilder: (context, index) {
-                  final vehicle = vehicles[index];
+                  final truck = trucks[index];
                   return ListTile(
-                    title: Text('${vehicle.brand} ${vehicle.modelName}'),
-                    subtitle: Text(vehicle.plate),
+                    title: Text('${truck.brand} ${truck.modelName}'),
+                    subtitle: Text(truck.plate),
                     leading: Icon(
                       Symbols.local_shipping,
-                      color: vehicle.operational ? Colors.green : Colors.grey,
+                      color: truck.operational ? Colors.green : Colors.grey,
                     ),
                     trailing: const Icon(Icons.arrow_right),
                     onTap: () {
                       Navigator.of(
                         context,
-                      ).push(VehiclePage.route(truckId: vehicle.id));
+                      ).push(TruckPage.route(truckId: truck.id));
                     },
                   );
                 },

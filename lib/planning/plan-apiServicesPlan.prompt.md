@@ -123,8 +123,8 @@
 2. ~~Complete client_service.dart - Full CRUD operations~~ ✅ COMPLETED
 3. ~~Complete driver_service.dart - Full CRUD operations~~ ✅ COMPLETED
 4. ~~Complete load_owner_service.dart - Full CRUD operations~~ ✅ COMPLETED
-5. ~~Create truck_service.dart - Vehicle management~~ ✅ COMPLETED
-6. ~~Create driver_truck_service.dart - Driver-vehicle assignments~~ ✅ COMPLETED
+5. ~~Create truck_service.dart - Truck management~~ ✅ COMPLETED
+6. ~~Create driver_truck_service.dart - Driver-truck assignments~~ ✅ COMPLETED
 
 ### Medium Priority (Admin Features):
 7. ~~Complete auth_service.dart - User management functions~~ ✅ COMPLETED

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend_sgfcp/pages/admin/vehicles.dart';
+import 'package:frontend_sgfcp/pages/admin/trucks.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
@@ -7,31 +7,31 @@ import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/models/truck_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 
-class EditVehiclePage extends StatefulWidget {
+class EditTruckPage extends StatefulWidget {
   final int truckId;
 
-  const EditVehiclePage({
+  const EditTruckPage({
     super.key,
     required this.truckId,
   });
 
-  static const String routeName = '/admin/edit-vehicle';
+  static const String routeName = '/admin/edit-truck';
 
   static Route route({
     required int truckId,
   }) {
     return MaterialPageRoute<void>(
-      builder: (_) => EditVehiclePage(
+      builder: (_) => EditTruckPage(
         truckId: truckId,
       ),
     );
   }
 
   @override
-  State<EditVehiclePage> createState() => _EditVehiclePageState();
+  State<EditTruckPage> createState() => _EditTruckPageState();
 }
 
-class _EditVehiclePageState extends State<EditVehiclePage> {
+class _EditTruckPageState extends State<EditTruckPage> {
   final TextEditingController _brandController = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
@@ -136,7 +136,7 @@ class _EditVehiclePageState extends State<EditVehiclePage> {
       await TruckService.deleteTruck(truckId: widget.truckId);
 
       if (mounted) {
-        Navigator.of(context).pushReplacement(VehiclesPageAdmin.route());
+        Navigator.of(context).pushReplacement(TrucksPageAdmin.route());
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Vehículo dado de baja correctamente'),

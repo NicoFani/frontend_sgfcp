@@ -5,7 +5,9 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 
 import 'package:frontend_sgfcp/pages/shared/driver_documentation.dart';
-import 'package:frontend_sgfcp/pages/driver/driver_vehicles.dart';
+import 'package:frontend_sgfcp/pages/shared/truck.dart';
+import 'package:frontend_sgfcp/services/driver_truck_service.dart';
+import 'package:frontend_sgfcp/models/truck_data.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
@@ -27,6 +29,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late Future<DriverData> _driverFuture;
+  late Future<TruckData?> _currentTruckFuture;
 
   @override
   void initState() {
@@ -38,6 +41,9 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = TokenStorage.user;
     if (user != null && user['id'] != null) {
       _driverFuture = DriverService.getDriverById(driverId: user['id'] as int);
+      _currentTruckFuture = DriverTruckService.getCurrentTruckByDriver(
+        user['id'] as int,
+      );
     }
   }
 
@@ -96,7 +102,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   );
                 }
 
-                return _ProfileOptionsList(driver: snapshot.data!);
+                return _ProfileOptionsList(
+                  driver: snapshot.data!,
+                  currentTruckFuture: _currentTruckFuture,
+                );
               },
             ),
           ],
@@ -109,8 +118,12 @@ class _ProfilePageState extends State<ProfilePage> {
 /// Lista de opciones del perfil
 class _ProfileOptionsList extends StatelessWidget {
   final DriverData driver;
+  final Future<TruckData?> currentTruckFuture;
 
-  const _ProfileOptionsList({required this.driver});
+  const _ProfileOptionsList({
+    required this.driver,
+    required this.currentTruckFuture,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -136,10 +149,21 @@ class _ProfileOptionsList extends StatelessWidget {
             leading: Icon(Symbols.local_shipping),
             title: Text('Vehículo'),
             trailing: const Icon(Icons.arrow_right),
-            onTap: () {
-              Navigator.of(
-                context,
-              ).push(DriverVehiclesPage.route(driverId: driver.id));
+            onTap: () async {
+              final truck = await currentTruckFuture;
+              if (truck == null) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No hay vehículo asignado'),
+                  ),
+                );
+                return;
+              }
+              if (!context.mounted) return;
+              Navigator.of(context).push(
+                TruckPage.route(truckId: truck.id),
+              );
             },
           ),
           Padding(

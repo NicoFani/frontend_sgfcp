@@ -150,36 +150,61 @@ class _DriverDataPageState extends State<DriverDataPage> {
                 gap4,
 
                 // Datos de la nómina
-                InfoCard.footerButton(
-                  title: 'Datos de la nómina',
-                  items: [
-                    InfoItem(
-                      label: 'Comisión',
-                      value: _isLoadingPayroll
-                          ? 'Cargando...'
-                          : _currentCommission != null
-                          ? '${(_currentCommission! * 100).toStringAsFixed(2)}%'
-                          : 'No registrado',
-                    ),
-                    InfoItem(
-                      label: 'Mínimo garantizado',
-                      value: _isLoadingPayroll
-                          ? 'Cargando...'
-                          : _currentMinimumGuaranteed != null
-                          ? formatCurrency(_currentMinimumGuaranteed!)
-                          : 'No registrado',
-                    ),
-                  ],
-                  buttonIcon: Symbols.edit,
-                  buttonLabel: 'Editar datos de nómina',
-                  onPressed: () async {
-                    await Navigator.of(
-                      context,
-                    ).push(PayrollDataPage.route(driver: driver));
-                    _loadPayrollData();
-                  },
-                  labelColumnWidth: infoLabelWidth,
-                ),
+                if (isAdmin)...[
+                  InfoCard.footerButton(
+                    title: 'Datos de la nómina',
+                    items: [
+                      InfoItem(
+                        label: 'Comisión',
+                        value: _isLoadingPayroll
+                            ? 'Cargando...'
+                            : _currentCommission != null
+                            ? '${(_currentCommission! * 100).toStringAsFixed(2)}%'
+                            : 'No registrado',
+                      ),
+                      InfoItem(
+                        label: 'Mínimo garantizado',
+                        value: _isLoadingPayroll
+                            ? 'Cargando...'
+                            : _currentMinimumGuaranteed != null
+                            ? formatCurrency(_currentMinimumGuaranteed!)
+                            : 'No registrado',
+                      ),
+                    ],
+                    buttonIcon: Symbols.edit,
+                    buttonLabel: 'Editar datos de nómina',
+                    onPressed: () async {
+                      await Navigator.of(
+                        context,
+                      ).push(PayrollDataPage.route(driver: driver));
+                      _loadPayrollData();
+                    },
+                    labelColumnWidth: infoLabelWidth,
+                  )
+                ] else ...[
+                  InfoCard(
+                    title: 'Datos de la nómina',
+                    items: [
+                      InfoItem(
+                        label: 'Comisión',
+                        value: _isLoadingPayroll
+                            ? 'Cargando...'
+                            : _currentCommission != null
+                            ? '${(_currentCommission! * 100).toStringAsFixed(2)}%'
+                            : 'No registrado',
+                      ),
+                      InfoItem(
+                        label: 'Mínimo garantizado',
+                        value: _isLoadingPayroll
+                            ? 'Cargando...'
+                            : _currentMinimumGuaranteed != null
+                            ? formatCurrency(_currentMinimumGuaranteed!)
+                            : 'No registrado',
+                      ),
+                    ],
+                  ),
+                ],
+
 
                 gap4,
 

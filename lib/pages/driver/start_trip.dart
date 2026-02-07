@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 
 import 'package:frontend_sgfcp/widgets/document_type_selector.dart';
+import 'package:frontend_sgfcp/widgets/checkbox_text_field.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/load_owner_data.dart';
 import 'package:frontend_sgfcp/models/load_type_data.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 import 'package:frontend_sgfcp/services/load_owner_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
@@ -31,12 +34,15 @@ class StartTripPage extends StatefulWidget {
 
 class _StartTripPageState extends State<StartTripPage> {
   DocumentType _docType = DocumentType.ctg;
-  DateTime? _startDate;
   bool _isLoading = false;
+  bool _showValidationErrors = false;
   bool _fuelDelivered = false; // Checkbox para vale de combustible
+  bool _clientAdvancePayment = false; // Checkbox para adelanto del cliente
   LoadOwnerData? _selectedLoadOwner; // Dador de carga seleccionado
   int? _selectedLoadTypeId; // Tipo de carga seleccionado
   bool _calculatedPerKm = false; // Tipo de cálculo
+  late final Future<List<LoadOwnerData>> _loadOwnersFuture;
+  late final Future<List<LoadTypeData>> _loadTypesFuture;
 
   // Controllers para el selector de tipo de documento y datepicker
   final TextEditingController _docNumberController = TextEditingController();
@@ -47,7 +53,26 @@ class _StartTripPageState extends State<StartTripPage> {
   final TextEditingController _kmController = TextEditingController();
   final TextEditingController _tariffController = TextEditingController();
   final TextEditingController _advanceController = TextEditingController();
+  final TextEditingController _clientAdvancePaymentController =
+      TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
+
+    final WidgetStatesController _docNumberStatesController =
+      WidgetStatesController();
+    final WidgetStatesController _weightStatesController =
+      WidgetStatesController();
+    final WidgetStatesController _kmStatesController = WidgetStatesController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnersFuture = LoadOwnerService.getLoadOwners();
+    _loadTypesFuture = LoadTypeService.getLoadTypes();
+
+    _docNumberController.addListener(_updateValidationStates);
+    _weightController.addListener(_updateValidationStates);
+    _kmController.addListener(_updateValidationStates);
+  }
 
   @override
   void dispose() {
@@ -59,33 +84,50 @@ class _StartTripPageState extends State<StartTripPage> {
     _tariffController.dispose();
     _advanceController.dispose();
     _fuelController.dispose();
+    _clientAdvancePaymentController.dispose();
+    _docNumberStatesController.dispose();
+    _weightStatesController.dispose();
+    _kmStatesController.dispose();
     super.dispose();
   }
 
-  // Datepicker para seleccionar fecha de inicio
-  Future<void> _pickStartDate() async {
-    final now = DateTime.now();
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _startDate ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+    _docNumberStatesController.update(
+      WidgetState.error,
+      _docNumberController.text.trim().isEmpty,
     );
-
-    if (picked != null) {
-      setState(() {
-        _startDate = picked;
-        final locale = Localizations.localeOf(context).toString();
-        _startDateController.text = DateFormat(
-          'dd/MM/yyyy',
-          locale,
-        ).format(picked);
-      });
-    }
+    _weightStatesController.update(
+      WidgetState.error,
+      _weightController.text.trim().isEmpty,
+    );
+    _kmStatesController.update(
+      WidgetState.error,
+      _kmController.text.trim().isEmpty,
+    );
   }
 
+  bool _validateRequiredFields() {
+    final hasDocNumber = _docNumberController.text.trim().isNotEmpty;
+    final hasWeight = _weightController.text.trim().isNotEmpty;
+    final hasKm = _kmController.text.trim().isNotEmpty;
+    final hasLoadOwner = _selectedLoadOwner != null;
+    final hasLoadType = _selectedLoadTypeId != null;
+
+    setState(() {
+      _showValidationErrors = true;
+      _docNumberStatesController.update(WidgetState.error, !hasDocNumber);
+      _weightStatesController.update(WidgetState.error, !hasWeight);
+      _kmStatesController.update(WidgetState.error, !hasKm);
+    });
+
+    return hasDocNumber && hasWeight && hasKm && hasLoadOwner && hasLoadType;
+  }
   void _startTrip() async {
+    if (!_validateRequiredFields()) {
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -105,11 +147,15 @@ class _StartTripPageState extends State<StartTripPage> {
         if (_selectedLoadTypeId != null) 'load_type_id': _selectedLoadTypeId,
         'calculated_per_km': _calculatedPerKm,
         if (_tariffController.text.isNotEmpty)
-          'rate': double.tryParse(_tariffController.text),
+          'rate': parseCurrency(_tariffController.text),
         // Incluir combustible solo si fue entregado
         if (_fuelDelivered && _fuelController.text.isNotEmpty)
           'fuel_liters': double.tryParse(_fuelController.text),
         'fuel_on_client': _fuelDelivered,
+        if (_clientAdvancePayment &&
+            _clientAdvancePaymentController.text.isNotEmpty)
+          'client_advance_payment':
+              parseCurrency(_clientAdvancePaymentController.text),
       };
 
       await TripService.updateTrip(tripId: widget.trip.id, data: data);
@@ -185,16 +231,41 @@ class _StartTripPageState extends State<StartTripPage> {
                   Expanded(
                     flex: 1,
                     child: TextField(
+                      enabled: !_isLoading,
                       controller: _docNumberController,
+                      statesController: _docNumberStatesController,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       maxLength: _docType == DocumentType.ctg ? 11 : 13,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: "Nro. de documento",
                         border: OutlineInputBorder(),
                         counterText: "", // oculta contador si querés
+                        errorText: _showValidationErrors &&
+                                _docNumberController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
                     ),
                   ),
+                ],
+              ),
+
+              gap12,
+
+              // Codigo de transporte
+              TextField(
+                enabled: !_isLoading,
+                controller: _transportCodeController,
+                decoration: const InputDecoration(
+                  labelText: 'Código de transporte',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
                 ],
               ),
 
@@ -208,13 +279,27 @@ class _StartTripPageState extends State<StartTripPage> {
                     child: TextField(
                       enabled: !_isLoading,
                       controller: _weightController,
-                      decoration: const InputDecoration(
-                        labelText: 'Peso de Carga (Tn)',
+                      statesController: _weightStatesController,
+                      decoration: InputDecoration(
+                        labelText: 'Peso de Carga',
                         border: OutlineInputBorder(),
+                        suffixText: ' t',
+                        errorText: _showValidationErrors &&
+                                _weightController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: [
+                        CurrencyTextInputFormatter.currency(
+                          locale: 'es_AR',
+                          symbol: '',
+                          decimalDigits: 2,
+                          enableNegative: false
+                        ),
+                      ],
                     ),
                   ),
                   gapW12,
@@ -223,13 +308,27 @@ class _StartTripPageState extends State<StartTripPage> {
                     child: TextField(
                       enabled: !_isLoading,
                       controller: _kmController,
-                      decoration: const InputDecoration(
+                      statesController: _kmStatesController,
+                      decoration: InputDecoration(
                         labelText: 'Kilómetros a Recorrer',
                         border: OutlineInputBorder(),
+                        suffixText: ' km',
+                        errorText: _showValidationErrors &&
+                                _kmController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: [
+                        CurrencyTextInputFormatter.currency(
+                          locale: 'es_AR',
+                          symbol: '',
+                          decimalDigits: 2,
+                          enableNegative: false
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -237,41 +336,64 @@ class _StartTripPageState extends State<StartTripPage> {
 
               gap12,
 
-              // Tipo de Carga
-              FutureBuilder<List<LoadTypeData>>(
-                future: LoadTypeService.getLoadTypes(),
+              // Dador de carga
+              FutureBuilder<List<LoadOwnerData>>(
+                future: _loadOwnersFuture,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return DropdownButtonFormField<int>(
-                      value: null,
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de Carga',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                      items: const [],
-                      onChanged: null,
-                    );
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (snapshot.hasError) {
-                    return DropdownButtonFormField<int>(
-                      value: null,
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de Carga',
-                        border: OutlineInputBorder(),
-                        errorText: 'Error al cargar tipos',
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                      ),
-                      items: const [],
-                      onChanged: null,
-                    );
+                    return const Text('Error al cargar dadores');
+                  }
+
+                  final loadOwners = snapshot.data ?? [];
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return DropdownMenu<LoadOwnerData>(
+                        width: constraints.maxWidth,
+                        label: const Text('Dador de Carga'),
+                        errorText: _showValidationErrors &&
+                                _selectedLoadOwner == null
+                            ? 'Campo requerido'
+                            : null,
+                        initialSelection: _selectedLoadOwner,
+                        dropdownMenuEntries: loadOwners
+                            .map(
+                              (owner) => DropdownMenuEntry(
+                                value: owner,
+                                label: owner.name,
+                              ),
+                            )
+                            .toList(),
+                        onSelected: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _selectedLoadOwner = value;
+                                  _updateValidationStates();
+                                });
+                              },
+                      );
+                    },
+                  );
+                },
+              ),
+
+              gap12,
+
+              // Tipo de Carga
+              FutureBuilder<List<LoadTypeData>>(
+                future: _loadTypesFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Text('Error al cargar tipos');
                   }
 
                   final loadTypes = snapshot.data ?? [];
@@ -279,44 +401,51 @@ class _StartTripPageState extends State<StartTripPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<int>(
-                        value: _selectedLoadTypeId,
-                        decoration: const InputDecoration(
-                          labelText: 'Tipo de Carga',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                        ),
-                        items: loadTypes
-                            .map(
-                              (loadType) => DropdownMenuItem(
-                                value: loadType.id,
-                                child: Text(loadType.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: _isLoading
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  _selectedLoadTypeId = value;
-                                  // Establecer el calculatedPerKm por defecto según el tipo
-                                  final selectedType = loadTypes.firstWhere(
-                                    (lt) => lt.id == value,
-                                  );
-                                  _calculatedPerKm =
-                                      selectedType.defaultCalculatedPerKm;
-                                });
-                              },
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return DropdownMenu<LoadTypeData>(
+                            width: constraints.maxWidth,
+                            label: const Text('Tipo de Carga'),
+                            errorText: _showValidationErrors &&
+                                    _selectedLoadTypeId == null
+                                ? 'Campo requerido'
+                                : null,
+                            initialSelection: _selectedLoadTypeId == null
+                                ? null
+                                : loadTypes.firstWhere(
+                                    (lt) => lt.id == _selectedLoadTypeId,
+                                    orElse: () => loadTypes.first,
+                                  ),
+                            dropdownMenuEntries: loadTypes
+                                .map(
+                                  (loadType) => DropdownMenuEntry(
+                                    value: loadType,
+                                    label: loadType.name,
+                                  ),
+                                )
+                                .toList(),
+                            onSelected: _isLoading
+                                ? null
+                                : (value) {
+                                    if (value == null) return;
+                                    setState(() {
+                                      _selectedLoadTypeId = value.id;
+                                      _calculatedPerKm =
+                                          value.defaultCalculatedPerKm;
+                                      _updateValidationStates();
+                                    });
+                                  },
+                          );
+                        },
                       ),
-                      gap12,
+
+                      gap4,
+
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Tipo de cálculo'),
                         subtitle: Text(
-                          _calculatedPerKm ? 'Por Kilómetro' : 'Por Tonelada',
+                          _calculatedPerKm ? 'Por kilómetro' : 'Por tonelada',
                         ),
                         value: _calculatedPerKm,
                         onChanged: _isLoading
@@ -330,128 +459,77 @@ class _StartTripPageState extends State<StartTripPage> {
                 },
               ),
 
-              gap12,
+              gap4,
 
               // Dador de Carga + Tarifa por Tonelada
-              Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: FutureBuilder<List<LoadOwnerData>>(
-                      future: LoadOwnerService.getLoadOwners(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return DropdownButtonFormField<LoadOwnerData>(
-                            value: null,
-                            decoration: const InputDecoration(
-                              labelText: 'Dador de Carga',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: const [],
-                            onChanged: null,
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return DropdownButtonFormField<LoadOwnerData>(
-                            value: null,
-                            decoration: const InputDecoration(
-                              labelText: 'Dador de Carga',
-                              border: OutlineInputBorder(),
-                              errorText: 'Error al cargar dadores',
-                            ),
-                            items: const [],
-                            onChanged: null,
-                          );
-                        }
-
-                        final loadOwners = snapshot.data ?? [];
-                        return DropdownButtonFormField<LoadOwnerData>(
-                          value: _selectedLoadOwner,
-                          decoration: const InputDecoration(
-                            labelText: 'Dador de Carga',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                          ),
-                          items: loadOwners
-                              .map(
-                                (owner) => DropdownMenuItem(
-                                  value: owner,
-                                  child: Text(owner.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: !_isLoading
-                              ? (value) {
-                                  setState(() {
-                                    _selectedLoadOwner = value;
-                                  });
-                                }
-                              : null,
-                        );
-                      },
-                    ),
-                  ),
-                  gapW12,
-                  Expanded(
-                    flex: 1,
-                    child: TextField(
-                      enabled: !_isLoading,
-                      controller: _tariffController,
-                      decoration: InputDecoration(
-                        labelText: _calculatedPerKm
-                            ? 'Tarifa por Kilómetro'
-                            : 'Tarifa por Tonelada',
-                        border: const OutlineInputBorder(),
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                    ),
+              TextField(
+                enabled: !_isLoading,
+                controller: _tariffController,
+                decoration: InputDecoration(
+                  labelText: _calculatedPerKm
+                      ? 'Tarifa por Kilómetro'
+                      : 'Tarifa por Tonelada',
+                  border: const OutlineInputBorder(),
+                  prefixText: r'$ ',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  CurrencyTextInputFormatter.currency(
+                    locale: 'es_AR',
+                    symbol: '',
+                    decimalDigits: 2,
+                    enableNegative: false
                   ),
                 ],
               ),
 
               gap12,
 
-              // Checkbox: Vale de Combustible entregado por el cliente
-              Row(
-                children: [
-                  Checkbox(
-                    value: _fuelDelivered,
-                    onChanged: !_isLoading
-                        ? (value) {
-                            setState(() {
-                              _fuelDelivered = value ?? false;
-                            });
-                          }
-                        : null,
-                  ),
-                  const Expanded(
-                    child: Text('Vale de Combustible entregado por el cliente'),
-                  ),
+              // Vale de compustible
+              CheckboxTextField(
+                enabled: !_isLoading,
+                value: _fuelDelivered,
+                onChanged: !_isLoading
+                    ? (value) {
+                        setState(() {
+                          _fuelDelivered = value ?? false;
+                        });
+                      }
+                    : null,
+                controller: _fuelController,
+                checkboxLabel: 'Vale de Combustible entregado por el cliente',
+                textFieldLabel: 'Litros del Vale',
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
                 ],
               ),
 
-              // Litros del Vale (solo se muestra si _fuelDelivered es true)
-              if (_fuelDelivered) ...[
-                gap8,
-                TextField(
-                  enabled: !_isLoading,
-                  controller: _fuelController,
-                  decoration: const InputDecoration(
-                    labelText: 'Litros del Vale',
-                    border: OutlineInputBorder(),
+              // Adelanto del cliente
+              CheckboxTextField(
+                enabled: !_isLoading,
+                value: _clientAdvancePayment,
+                onChanged: !_isLoading
+                    ? (value) {
+                        setState(() {
+                          _clientAdvancePayment = value ?? false;
+                        });
+                      }
+                    : null,
+                controller: _clientAdvancePaymentController,
+                checkboxLabel: 'Adelanto del cliente recibido',
+                textFieldLabel: 'Importe del Adelanto',
+                prefixText: r'$ ',
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  CurrencyTextInputFormatter.currency(
+                    locale: 'es_AR',
+                    symbol: '',
+                    decimalDigits: 2,
+                    enableNegative: false
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                ),
-              ],
+                ],
+              ),
 
               gap16,
 
