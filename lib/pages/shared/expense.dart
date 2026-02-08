@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/widgets/expense_subtype_dropdown.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -7,7 +9,10 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/expense_service.dart';
+import 'package:frontend_sgfcp/services/receipt_storage_service.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 
@@ -32,9 +37,11 @@ class _ExpensePageState extends State<ExpensePage> {
   DateTime? _startDate;
   bool _accountingPaid = false;
   bool _isLoading = false;
+  bool _isUploadingReceipt = false;
 
   ExpenseType _expenseType = ExpenseType.reparaciones;
   String? _subtype;
+  XFile? _receiptFile;
 
   // Controllers
   final TextEditingController _startDateController = TextEditingController();
@@ -134,6 +141,22 @@ class _ExpensePageState extends State<ExpensePage> {
       }
       final driverId = user['id'] as int;
 
+      String? receiptPath;
+      if (_receiptFile != null) {
+        setState(() => _isUploadingReceipt = true);
+        try {
+          receiptPath = await ReceiptStorageService.uploadReceipt(
+            file: _receiptFile!,
+            driverId: driverId,
+            tripId: widget.trip.id,
+          );
+        } finally {
+          if (mounted) {
+            setState(() => _isUploadingReceipt = false);
+          }
+        }
+      }
+
       // Mapear el tipo de gasto al formato que espera el backend
       String expenseTypeForBackend;
       switch (_expenseType) {
@@ -160,6 +183,7 @@ class _ExpensePageState extends State<ExpensePage> {
         expenseType: expenseTypeForBackend,
         date: _startDate!,
         amount: amount,
+        receiptUrl: receiptPath,
         fuelLiters: _expenseType == ExpenseType.combustible
             ? double.tryParse(_litersController.text)
             : null,
@@ -193,6 +217,57 @@ class _ExpensePageState extends State<ExpensePage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _showReceiptPicker() async {
+    if (_isLoading || _isUploadingReceipt) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Cámara'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _pickReceipt(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Galería'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _pickReceipt(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickReceipt(ImageSource source) async {
+    final picker = ImagePicker();
+    final effectiveSource = kIsWeb && source == ImageSource.camera
+        ? ImageSource.gallery
+        : source;
+
+    final picked = await picker.pickImage(
+      source: effectiveSource,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _receiptFile = picked;
+      });
     }
   }
 
@@ -237,11 +312,9 @@ class _ExpensePageState extends State<ExpensePage> {
               gap20,
 
               FilledButton.tonalIcon(
-                onPressed: () {
-                  // TODO: AI tool to take photo of receipt
-                },
+                onPressed: _showReceiptPicker,
                 icon: const Icon(Symbols.add_a_photo),
-                label: const Text('Tomar foto del comprobante'),
+                label: const Text('Adjuntar foto del comprobante'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
@@ -251,6 +324,43 @@ class _ExpensePageState extends State<ExpensePage> {
               ),
 
               gap20,
+
+              if (_receiptFile != null) ...[
+                Text(
+                  'Comprobante adjunto: ${_receiptFile!.name}',
+                  style: textTheme.bodyMedium,
+                ),
+                gap12,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: FutureBuilder<Uint8List>(
+                    future: _receiptFile!.readAsBytes(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const SizedBox(
+                          height: 140,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return Image.memory(
+                        snapshot.data!,
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
+                ),
+                gap12,
+                TextButton.icon(
+                  onPressed: _isLoading || _isUploadingReceipt
+                      ? null
+                      : () => setState(() => _receiptFile = null),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Quitar comprobante'),
+                ),
+                gap12,
+              ],
 
               // Tipo de gasto
               LayoutBuilder(
@@ -388,7 +498,7 @@ class _ExpensePageState extends State<ExpensePage> {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: _isLoading ? null : _saveExpense,
-                icon: _isLoading
+                icon: _isLoading || _isUploadingReceipt
                     ? const SizedBox(
                         height: 20,
                         width: 20,
@@ -400,7 +510,11 @@ class _ExpensePageState extends State<ExpensePage> {
                         ),
                       )
                     : const Icon(Symbols.garage_money),
-                label: Text(_isLoading ? 'Cargando...' : 'Cargar gasto'),
+                label: Text(
+                  _isLoading || _isUploadingReceipt
+                      ? 'Cargando...'
+                      : 'Cargar gasto',
+                ),
               ),
             ],
           ),

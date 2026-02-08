@@ -38,7 +38,8 @@ class _LoadingPageState extends State<LoadingPage> {
       final isAdmin = user['is_admin'] as bool? ?? false;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => isAdmin ? const AdminRootNavigation() : const RootNavigation(),
+          builder: (_) =>
+              isAdmin ? const AdminRootNavigation() : const RootNavigation(),
         ),
       );
       return;
@@ -47,8 +48,7 @@ class _LoadingPageState extends State<LoadingPage> {
     // Auto-login solo en modo debug para desarrollo
     if (kDebugMode) {
       final result = await AuthService.login(
-        email: 'juan.perez@sgfcp.com',
-        // email: 'admin@sgfcp.com',
+        email: 'admin@sgfcp.com',
         password: '123456',
       );
 
@@ -64,7 +64,9 @@ class _LoadingPageState extends State<LoadingPage> {
           final isAdmin = user['is_admin'] as bool? ?? false;
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => isAdmin ? const AdminRootNavigation() : const RootNavigation(),
+              builder: (_) => isAdmin
+                  ? const AdminRootNavigation()
+                  : const RootNavigation(),
             ),
           );
         }
@@ -74,9 +76,9 @@ class _LoadingPageState extends State<LoadingPage> {
     }
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
     }
   }
 

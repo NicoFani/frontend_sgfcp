@@ -41,6 +41,8 @@ dependencies:
   intl: ^0.20.2
   http: ^1.2.1
   flutter_dotenv: ^5.1.0
+  supabase_flutter: ^2.8.2
+  image_picker: ^1.1.2
   month_picker_dialog: ^6.7.1
   table_calendar: ^3.2.0
   currency_text_input_formatter: ^2.3.0
