@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:frontend_sgfcp/widgets/expense_subtype_dropdown.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
@@ -11,8 +12,10 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/receipt_storage_service.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 
@@ -38,8 +41,9 @@ class _ExpensePageState extends State<ExpensePage> {
   bool _accountingPaid = false;
   bool _isLoading = false;
   bool _isUploadingReceipt = false;
+  bool _showValidationErrors = false;
 
-  ExpenseType _expenseType = ExpenseType.reparaciones;
+  ExpenseType _expenseType = ExpenseType.peaje;
   String? _subtype;
   XFile? _receiptFile;
 
@@ -49,12 +53,30 @@ class _ExpensePageState extends State<ExpensePage> {
   final TextEditingController _litersController = TextEditingController();
   final TextEditingController _municipalityController = TextEditingController();
 
+  final WidgetStatesController _amountStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _litersStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _municipalityStatesController =
+      WidgetStatesController();
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController.addListener(_updateValidationStates);
+    _litersController.addListener(_updateValidationStates);
+    _municipalityController.addListener(_updateValidationStates);
+  }
+
   @override
   void dispose() {
     _startDateController.dispose();
     _amountController.dispose();
     _litersController.dispose();
     _municipalityController.dispose();
+    _amountStatesController.dispose();
+    _litersStatesController.dispose();
+    _municipalityStatesController.dispose();
     super.dispose();
   }
 
@@ -78,59 +100,56 @@ class _ExpensePageState extends State<ExpensePage> {
           'dd/MM/yyyy',
           locale,
         ).format(picked);
+        _updateValidationStates();
       });
     }
   }
 
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+    _amountStatesController.update(
+      WidgetState.error,
+      _amountController.text.trim().isEmpty,
+    );
+    _litersStatesController.update(
+      WidgetState.error,
+      _expenseType == ExpenseType.combustible &&
+          _litersController.text.trim().isEmpty,
+    );
+    _municipalityStatesController.update(
+      WidgetState.error,
+      _expenseType == ExpenseType.multa &&
+          _municipalityController.text.trim().isEmpty,
+    );
+  }
+
+  bool _validateRequiredFields() {
+    final hasDate = _startDate != null;
+    final hasAmount = _amountController.text.trim().isNotEmpty;
+    final hasLiters = _expenseType != ExpenseType.combustible ||
+        _litersController.text.trim().isNotEmpty;
+    final hasMunicipality = _expenseType != ExpenseType.multa ||
+        _municipalityController.text.trim().isNotEmpty;
+    final hasSubtype = (_expenseType != ExpenseType.peaje &&
+            _expenseType != ExpenseType.reparaciones) ||
+        _subtype != null;
+
+    setState(() {
+      _showValidationErrors = true;
+      _amountStatesController.update(WidgetState.error, !hasAmount);
+      _litersStatesController.update(WidgetState.error, !hasLiters);
+      _municipalityStatesController.update(WidgetState.error, !hasMunicipality);
+    });
+
+    return hasDate && hasAmount && hasLiters && hasMunicipality && hasSubtype;
+  }
+
   Future<void> _saveExpense() async {
-    // Validaciones
-    if (_startDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona una fecha')),
-      );
+    if (!_validateRequiredFields()) {
       return;
     }
 
-    if (_amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa el importe')),
-      );
-      return;
-    }
-
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El importe debe ser un número válido')),
-      );
-      return;
-    }
-
-    // Validaciones específicas por tipo
-    if (_expenseType == ExpenseType.combustible &&
-        _litersController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa los litros cargados')),
-      );
-      return;
-    }
-
-    if (_expenseType == ExpenseType.multa &&
-        _municipalityController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa el municipio')),
-      );
-      return;
-    }
-
-    if ((_expenseType == ExpenseType.peaje ||
-            _expenseType == ExpenseType.reparaciones) &&
-        _subtype == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona el subtipo')),
-      );
-      return;
-    }
+    final amount = parseCurrency(_amountController.text);
 
     setState(() => _isLoading = true);
 
@@ -396,6 +415,7 @@ class _ExpensePageState extends State<ExpensePage> {
                       setState(() {
                         _expenseType = value;
                         _subtype = null; // resetear subtipo al cambiar tipo
+                        _updateValidationStates();
                       });
                     },
                   );
@@ -412,10 +432,13 @@ class _ExpensePageState extends State<ExpensePage> {
                     child: TextField(
                       controller: _startDateController,
                       readOnly: true,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Fecha',
                         border: OutlineInputBorder(),
                         suffixIcon: Icon(Icons.calendar_today_outlined),
+                        errorText: _showValidationErrors && _startDate == null
+                            ? 'Campo requerido'
+                            : null,
                       ),
                       onTap: _pickStartDate,
                     ),
@@ -426,13 +449,27 @@ class _ExpensePageState extends State<ExpensePage> {
                     child: TextField(
                       controller: _amountController,
                       enabled: !_isLoading,
-                      decoration: const InputDecoration(
+                      statesController: _amountStatesController,
+                      decoration: InputDecoration(
                         labelText: 'Importe',
                         border: OutlineInputBorder(),
+                        prefixText: r'$ ',
+                        errorText: _showValidationErrors &&
+                                _amountController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: [
+                        CurrencyTextInputFormatter.currency(
+                          locale: 'es_AR',
+                          symbol: '',
+                          decimalDigits: 2,
+                          enableNegative: false,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -445,13 +482,20 @@ class _ExpensePageState extends State<ExpensePage> {
                 TextField(
                   controller: _litersController,
                   enabled: !_isLoading,
-                  decoration: const InputDecoration(
+                  statesController: _litersStatesController,
+                  decoration: InputDecoration(
                     labelText: 'Litros cargados',
                     border: OutlineInputBorder(),
+                    errorText: _showValidationErrors &&
+                            _expenseType == ExpenseType.combustible &&
+                            _litersController.text.trim().isEmpty
+                        ? 'Campo requerido'
+                        : null,
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                 ),
                 gap12,
               ],
@@ -461,9 +505,15 @@ class _ExpensePageState extends State<ExpensePage> {
                 TextField(
                   controller: _municipalityController,
                   enabled: !_isLoading,
-                  decoration: const InputDecoration(
+                  statesController: _municipalityStatesController,
+                  decoration: InputDecoration(
                     labelText: 'Municipio',
                     border: OutlineInputBorder(),
+                    errorText: _showValidationErrors &&
+                            _expenseType == ExpenseType.multa &&
+                            _municipalityController.text.trim().isEmpty
+                        ? 'Campo requerido'
+                        : null,
                   ),
                 ),
                 gap12,
@@ -477,7 +527,18 @@ class _ExpensePageState extends State<ExpensePage> {
                     label: label,
                     options: subtypeOptions,
                     value: _subtype,
-                    onChanged: (v) => setState(() => _subtype = v),
+                    errorText: _showValidationErrors &&
+                            (_expenseType == ExpenseType.peaje ||
+                                _expenseType == ExpenseType.reparaciones) &&
+                            _subtype == null
+                        ? 'Campo requerido'
+                        : null,
+                    onChanged: (v) {
+                      setState(() {
+                        _subtype = v;
+                        _updateValidationStates();
+                      });
+                    },
                   ),
                 ),
                 gap12,

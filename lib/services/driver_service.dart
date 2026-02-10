@@ -189,7 +189,7 @@ class DriverService {
   }
 
   // PUT - Actualizar un chofer
-  static Future<DriverData> updateDriver({
+  static Future<Map<String, dynamic>> updateDriver({
     required int driverId,
     int? dni,
     String? cuil,
@@ -234,9 +234,14 @@ class DriverService {
           )
           .timeout(ApiResponseHandler.defaultTimeout);
 
-      return ApiResponseHandler.handleResponse<DriverData>(
+      return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
         response,
-        (jsonData) => DriverData.fromJson(jsonData),
+        (jsonData) => {
+          'success': true,
+          'message': 'Usuario actualizado exitosamente',
+          'user': jsonData['user'],
+
+        },
         operation: 'actualizar chofer',
       );
     } catch (e) {

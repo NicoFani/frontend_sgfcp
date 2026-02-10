@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 import 'package:frontend_sgfcp/services/trip_service.dart';
 
@@ -27,36 +29,53 @@ class FinishTripPage extends StatefulWidget {
 class _FinishTripPageState extends State<FinishTripPage> {
   DateTime? _endDate;
   bool _isLoading = false;
+  bool _showValidationErrors = false;
+  bool _didInitDateText = false;
 
   final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  final FocusNode _dateFocusNode = FocusNode();
+  final WidgetStatesController _dateStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _weightStatesController =
+      WidgetStatesController();
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _endDate = widget.trip.startDate.isAfter(now)
+        ? widget.trip.startDate
+        : now;
+    _weightController.addListener(_updateValidationStates);
+  }
 
   @override
   void dispose() {
     _endDateController.dispose();
     _weightController.dispose();
-    _dateFocusNode.dispose();
+    _dateStatesController.dispose();
+    _weightStatesController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitDateText || _endDate == null) return;
+    final locale = Localizations.localeOf(context).toString();
+    _endDateController.text = DateFormat(
+      'dd/MM/yyyy',
+      locale,
+    ).format(_endDate!);
+    _didInitDateText = true;
   }
 
   Future<void> _pickEndDate() async {
     final now = DateTime.now();
 
-    // Si la fecha de inicio del viaje es posterior a hoy, usar esa como inicial
-    // De lo contrario, usar hoy o la fecha ya seleccionada
-    DateTime initialDate;
-    if (_endDate != null) {
-      initialDate = _endDate!;
-    } else if (widget.trip.startDate.isAfter(now)) {
-      initialDate = widget.trip.startDate;
-    } else {
-      initialDate = now;
-    }
-
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
+      initialDate: _endDate,
       firstDate: widget.trip.startDate,
       lastDate: DateTime(now.year + 5),
     );
@@ -69,29 +88,40 @@ class _FinishTripPageState extends State<FinishTripPage> {
           'dd/MM/yyyy',
           locale,
         ).format(picked);
+        _updateValidationStates();
       });
     }
   }
 
-  void _finishTrip() async {
-    if (_endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona la fecha de fin')),
-      );
-      return;
-    }
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+    _dateStatesController.update(WidgetState.error, _endDate == null);
+    _weightStatesController.update(
+      WidgetState.error,
+      _weightController.text.trim().isEmpty,
+    );
+  }
 
-    if (_weightController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa el peso neto de descarga'),
-        ),
-      );
+  bool _validateRequiredFields() {
+    final hasDate = _endDate != null;
+    final hasWeight = _weightController.text.trim().isNotEmpty;
+
+    setState(() {
+      _showValidationErrors = true;
+      _dateStatesController.update(WidgetState.error, !hasDate);
+      _weightStatesController.update(WidgetState.error, !hasWeight);
+    });
+
+    return hasDate && hasWeight;
+  }
+
+  void _finishTrip() async {
+    if (!_validateRequiredFields()) {
       return;
     }
 
     // Validar que el peso de descarga no sea mayor al peso de carga
-    final weightInTons = double.tryParse(_weightController.text) ?? 0;
+    final weightInTons = parseCurrency(_weightController.text);
     final loadWeightInTons = widget.trip.loadWeightOnLoad;
 
     if (weightInTons > loadWeightInTons) {
@@ -109,7 +139,7 @@ class _FinishTripPageState extends State<FinishTripPage> {
     setState(() => _isLoading = true);
 
     try {
-      final weightInTons = double.tryParse(_weightController.text) ?? 0;
+      final weightInTons = parseCurrency(_weightController.text);
 
       await TripService.updateTrip(
         tripId: widget.trip.id,
@@ -167,22 +197,22 @@ class _FinishTripPageState extends State<FinishTripPage> {
                 children: [
                   Expanded(
                     flex: 1,
-                    child: InkWell(
-                      onTap: _isLoading ? null : _pickEndDate,
-                      borderRadius: BorderRadius.circular(4),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Fecha de fin',
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today_outlined),
+                    child: TextField(
+                      enabled: !_isLoading,
+                      controller: _endDateController,
+                      statesController: _dateStatesController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: 'Fecha de fin',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: const Icon(
+                          Icons.calendar_today_outlined,
                         ),
-                        child: Text(
-                          _endDateController.text.isEmpty
-                              ? ''
-                              : _endDateController.text,
-                          style: const TextStyle(fontSize: 16),
-                        ),
+                        errorText: _showValidationErrors && _endDate == null
+                            ? 'Campo requerido'
+                            : null,
                       ),
+                      onTap: _isLoading ? null : _pickEndDate,
                     ),
                   ),
                   gapW12,
@@ -191,13 +221,27 @@ class _FinishTripPageState extends State<FinishTripPage> {
                     child: TextField(
                       enabled: !_isLoading,
                       controller: _weightController,
-                      decoration: const InputDecoration(
-                        labelText: 'Peso neto descarga (Tn)',
+                      statesController: _weightStatesController,
+                      decoration: InputDecoration(
+                        labelText: 'Peso neto descarga',
+                        suffixText: ' t',
                         border: OutlineInputBorder(),
+                        errorText: _showValidationErrors &&
+                                _weightController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: [
+                        CurrencyTextInputFormatter.currency(
+                          locale: 'es_AR',
+                          symbol: '',
+                          decimalDigits: 2,
+                          enableNegative: false,
+                        ),
+                      ],
                     ),
                   ),
                 ],

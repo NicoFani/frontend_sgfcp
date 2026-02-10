@@ -4,6 +4,7 @@ class ExpenseSubtypeDropdown extends StatelessWidget {
   final String label;
   final List<String> options;
   final String? value;
+  final String? errorText;
   final ValueChanged<String?> onChanged;
 
   const ExpenseSubtypeDropdown({
@@ -11,6 +12,7 @@ class ExpenseSubtypeDropdown extends StatelessWidget {
     required this.label,
     required this.options,
     required this.value,
+    this.errorText,
     required this.onChanged,
   });
 
@@ -21,6 +23,7 @@ class ExpenseSubtypeDropdown extends StatelessWidget {
         return DropdownMenu<String>(
           width: constraints.maxWidth,
           label: Text(label),
+          errorText: errorText,
           initialSelection: value,
           dropdownMenuEntries: [
             for (final opt in options)

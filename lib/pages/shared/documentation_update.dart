@@ -90,7 +90,7 @@ class _DocumentationUpdatePageState extends State<DocumentationUpdatePage> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _expirationDate ?? now,
-      firstDate: DateTime(now.year - 1),
+      firstDate: _expirationDate ?? now,
       lastDate: DateTime(now.year + 10),
     );
 

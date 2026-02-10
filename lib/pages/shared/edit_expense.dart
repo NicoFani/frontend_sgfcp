@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:frontend_sgfcp/widgets/expense_subtype_dropdown.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
@@ -11,6 +13,7 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class EditExpensePage extends StatefulWidget {
   final ExpenseData expense;
@@ -36,6 +39,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
   DateTime? _startDate;
   bool _accountingPaid = false;
+  bool _didInitDateText = false;
+  bool _showValidationErrors = false;
 
   ExpenseType _expenseType = ExpenseType.reparaciones;
   String? _subtype;
@@ -46,6 +51,13 @@ class _EditExpensePageState extends State<EditExpensePage> {
   final TextEditingController _municipalityController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
+
+    final WidgetStatesController _amountStatesController =
+      WidgetStatesController();
+    final WidgetStatesController _litersStatesController =
+      WidgetStatesController();
+    final WidgetStatesController _municipalityStatesController =
+      WidgetStatesController();
 
   @override
   void initState() {
@@ -62,7 +74,19 @@ class _EditExpensePageState extends State<EditExpensePage> {
     _expenseType = _mapTypeToExpenseType(widget.expense.type);
     _subtype = _getSubtype(widget.expense);
 
-    _amountController.text = widget.expense.amount.toString();
+    _amountController.addListener(_updateValidationStates);
+    _litersController.addListener(_updateValidationStates);
+    _municipalityController.addListener(_updateValidationStates);
+
+    final currencyFormatter = CurrencyTextInputFormatter.currency(
+      locale: 'es_AR',
+      symbol: '',
+      decimalDigits: 2,
+      enableNegative: false,
+    );
+    _amountController.text = currencyFormatter.formatDouble(
+      widget.expense.amount,
+    );
     if (widget.expense.fuelLiters != null) {
       _litersController.text = widget.expense.fuelLiters!.toString();
     }
@@ -73,11 +97,18 @@ class _EditExpensePageState extends State<EditExpensePage> {
       _descriptionController.text = widget.expense.description!;
     }
 
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitDateText || _startDate == null) return;
     final locale = Localizations.localeOf(context).toString();
     _startDateController.text = DateFormat(
       'dd/MM/yyyy',
       locale,
     ).format(_startDate!);
+    _didInitDateText = true;
   }
 
   ExpenseType _mapTypeToExpenseType(String type) {
@@ -110,6 +141,9 @@ class _EditExpensePageState extends State<EditExpensePage> {
     _municipalityController.dispose();
     _descriptionController.dispose();
     _startDateController.dispose();
+    _amountStatesController.dispose();
+    _litersStatesController.dispose();
+    _municipalityStatesController.dispose();
     super.dispose();
   }
 
@@ -133,8 +167,48 @@ class _EditExpensePageState extends State<EditExpensePage> {
           'dd/MM/yyyy',
           locale,
         ).format(picked);
+        _updateValidationStates();
       });
     }
+  }
+
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+    _amountStatesController.update(
+      WidgetState.error,
+      _amountController.text.trim().isEmpty,
+    );
+    _litersStatesController.update(
+      WidgetState.error,
+      _expenseType == ExpenseType.combustible &&
+          _litersController.text.trim().isEmpty,
+    );
+    _municipalityStatesController.update(
+      WidgetState.error,
+      _expenseType == ExpenseType.multa &&
+          _municipalityController.text.trim().isEmpty,
+    );
+  }
+
+  bool _validateRequiredFields() {
+    final hasDate = _startDate != null;
+    final hasAmount = _amountController.text.trim().isNotEmpty;
+    final hasLiters = _expenseType != ExpenseType.combustible ||
+        _litersController.text.trim().isNotEmpty;
+    final hasMunicipality = _expenseType != ExpenseType.multa ||
+        _municipalityController.text.trim().isNotEmpty;
+    final hasSubtype = (_expenseType != ExpenseType.peaje &&
+            _expenseType != ExpenseType.reparaciones) ||
+        _subtype != null;
+
+    setState(() {
+      _showValidationErrors = true;
+      _amountStatesController.update(WidgetState.error, !hasAmount);
+      _litersStatesController.update(WidgetState.error, !hasLiters);
+      _municipalityStatesController.update(WidgetState.error, !hasMunicipality);
+    });
+
+    return hasDate && hasAmount && hasLiters && hasMunicipality && hasSubtype;
   }
 
   @override
@@ -250,7 +324,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
                   FilledButton.tonalIcon(
                     onPressed: () {
-                      // TODO: AI tool to take photo of receipt
+                      // TODO: receipt image handler, show current receipt if exists and option to change it
                     },
                     icon: const Icon(Symbols.add_a_photo),
                     label: const Text('Tomar nueva foto del comprobante'),
@@ -299,6 +373,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
                           setState(() {
                             _expenseType = value;
                             _subtype = null; // resetear subtipo al cambiar tipo
+                            _updateValidationStates();
                           });
                         },
                       );
@@ -315,10 +390,14 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         child: TextField(
                           controller: _startDateController,
                           readOnly: true,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Fecha',
                             border: OutlineInputBorder(),
                             suffixIcon: Icon(Icons.calendar_today_outlined),
+                            errorText: _showValidationErrors &&
+                                    _startDate == null
+                                ? 'Campo requerido'
+                                : null,
                           ),
                           onTap: _pickStartDate,
                         ),
@@ -328,13 +407,27 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         flex: 2,
                         child: TextField(
                           controller: _amountController,
-                          decoration: const InputDecoration(
+                          statesController: _amountStatesController,
+                          decoration: InputDecoration(
                             labelText: 'Importe',
                             border: OutlineInputBorder(),
+                            prefixText: r'$ ',
+                            errorText: _showValidationErrors &&
+                                    _amountController.text.trim().isEmpty
+                                ? 'Campo requerido'
+                                : null,
                           ),
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
+                          inputFormatters: [
+                            CurrencyTextInputFormatter.currency(
+                              locale: 'es_AR',
+                              symbol: '',
+                              decimalDigits: 2,
+                              enableNegative: false,
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -346,13 +439,20 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   if (_expenseType == ExpenseType.combustible) ...[
                     TextField(
                       controller: _litersController,
-                      decoration: const InputDecoration(
+                      statesController: _litersStatesController,
+                      decoration: InputDecoration(
                         labelText: 'Litros cargados',
                         border: OutlineInputBorder(),
+                        errorText: _showValidationErrors &&
+                                _expenseType == ExpenseType.combustible &&
+                                _litersController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                     ),
                     gap12,
                   ],
@@ -361,9 +461,15 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   if (_expenseType == ExpenseType.multa) ...[
                     TextField(
                       controller: _municipalityController,
-                      decoration: const InputDecoration(
+                      statesController: _municipalityStatesController,
+                      decoration: InputDecoration(
                         labelText: 'Municipio',
                         border: OutlineInputBorder(),
+                        errorText: _showValidationErrors &&
+                                _expenseType == ExpenseType.multa &&
+                                _municipalityController.text.trim().isEmpty
+                            ? 'Campo requerido'
+                            : null,
                       ),
                     ),
                     gap12,
@@ -377,7 +483,18 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         label: label,
                         options: subtypeOptions,
                         value: _subtype,
-                        onChanged: (v) => setState(() => _subtype = v),
+                        errorText: _showValidationErrors &&
+                                (_expenseType == ExpenseType.peaje ||
+                                    _expenseType == ExpenseType.reparaciones) &&
+                                _subtype == null
+                            ? 'Campo requerido'
+                            : null,
+                        onChanged: (v) {
+                          setState(() {
+                            _subtype = v;
+                            _updateValidationStates();
+                          });
+                        },
                       ),
                     ),
                     gap12,
@@ -398,11 +515,17 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       minimumSize: const Size.fromHeight(48),
                     ),
                     onPressed: () async {
+                      if (!_validateRequiredFields()) {
+                        return;
+                      }
+
+                      final amount = parseCurrency(
+                        _amountController.text,
+                      );
                       final data = <String, dynamic>{
                         'expense_type': _expenseType.name,
                         'date': _startDate!.toIso8601String().split('T')[0],
-                        'amount':
-                            double.tryParse(_amountController.text) ?? 0.0,
+                        'amount': amount,
                         'description': _descriptionController.text.isNotEmpty
                             ? _descriptionController.text
                             : null,

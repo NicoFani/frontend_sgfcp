@@ -10,6 +10,7 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/models/load_owner_data.dart';
 import 'package:frontend_sgfcp/models/load_type_data.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
+import 'package:frontend_sgfcp/utils/document_type_mapper.dart';
 
 import 'package:frontend_sgfcp/services/load_owner_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
@@ -47,8 +48,6 @@ class _StartTripPageState extends State<StartTripPage> {
   // Controllers para el selector de tipo de documento y datepicker
   final TextEditingController _docNumberController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
-  final TextEditingController _transportCodeController =
-      TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _kmController = TextEditingController();
   final TextEditingController _tariffController = TextEditingController();
@@ -78,7 +77,6 @@ class _StartTripPageState extends State<StartTripPage> {
   void dispose() {
     _docNumberController.dispose();
     _startDateController.dispose();
-    _transportCodeController.dispose();
     _weightController.dispose();
     _kmController.dispose();
     _tariffController.dispose();
@@ -135,10 +133,7 @@ class _StartTripPageState extends State<StartTripPage> {
         'state_id': 'En curso',
         if (_docNumberController.text.isNotEmpty)
           'document_number': _docNumberController.text,
-        if (_docType == DocumentType.ctg)
-          'document_type': 'CTG'
-        else
-          'document_type': 'Remito',
+        'document_type': documentTypeToApiValue(_docType),
         if (_weightController.text.isNotEmpty)
           'load_weight_on_load': double.tryParse(_weightController.text),
         if (_kmController.text.isNotEmpty)
@@ -250,22 +245,6 @@ class _StartTripPageState extends State<StartTripPage> {
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              gap12,
-
-              // Codigo de transporte
-              TextField(
-                enabled: !_isLoading,
-                controller: _transportCodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Código de transporte',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
                 ],
               ),
 
@@ -461,7 +440,7 @@ class _StartTripPageState extends State<StartTripPage> {
 
               gap4,
 
-              // Dador de Carga + Tarifa por Tonelada
+              // Tarifa por Tonelada
               TextField(
                 enabled: !_isLoading,
                 controller: _tariffController,
