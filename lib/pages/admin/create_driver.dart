@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class CreateDriverPageAdmin extends StatefulWidget {
   const CreateDriverPageAdmin({super.key});
@@ -19,6 +21,12 @@ class CreateDriverPageAdmin extends StatefulWidget {
 }
 
 class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
+  final cuilMaxLength = 11;
+  final cvuMaxLength = 22;
+  final phoneMaxLength = 10;
+  final cuilDisplayMaxLength = 13;
+  final phoneDisplayMaxLength = 12;
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -26,6 +34,31 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
   final TextEditingController _cvuController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
+  bool _showValidationErrors = false;
+
+  final WidgetStatesController _emailStatesController =
+    WidgetStatesController();
+  final WidgetStatesController _nameStatesController =
+    WidgetStatesController();
+  final WidgetStatesController _lastNameStatesController =
+    WidgetStatesController();
+  final WidgetStatesController _cuilStatesController =
+    WidgetStatesController();
+  final WidgetStatesController _cvuStatesController =
+    WidgetStatesController();
+  final WidgetStatesController _phoneStatesController =
+    WidgetStatesController();
+
+  @override
+  void initState() {
+  super.initState();
+  _emailController.addListener(_updateValidationStates);
+  _nameController.addListener(_updateValidationStates);
+  _lastNameController.addListener(_updateValidationStates);
+  _cuilController.addListener(_updateValidationStates);
+  _cvuController.addListener(_updateValidationStates);
+  _phoneController.addListener(_updateValidationStates);
+  }
 
   @override
   void dispose() {
@@ -35,52 +68,87 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
     _cuilController.dispose();
     _cvuController.dispose();
     _phoneController.dispose();
+    _emailStatesController.dispose();
+    _nameStatesController.dispose();
+    _lastNameStatesController.dispose();
+    _cuilStatesController.dispose();
+    _cvuStatesController.dispose();
+    _phoneStatesController.dispose();
     super.dispose();
   }
 
+  bool _isEmailValid(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return false;
+    final atCount = '@'.allMatches(trimmed).length;
+    return atCount == 1 && trimmed.contains('.');
+  }
+
+  bool _isExactDigits(String value, int length) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    return digits.length == length && RegExp(r'^\d+$').hasMatch(digits);
+  }
+
+  String _digitsOnly(String value) {
+    return value.replaceAll(RegExp(r'\D'), '');
+  }
+
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+    _emailStatesController.update(
+      WidgetState.error,
+      !_isEmailValid(_emailController.text),
+    );
+    _nameStatesController.update(
+      WidgetState.error,
+      _nameController.text.trim().isEmpty,
+    );
+    _lastNameStatesController.update(
+      WidgetState.error,
+      _lastNameController.text.trim().isEmpty,
+    );
+    _cuilStatesController.update(
+      WidgetState.error,
+      !_isExactDigits(_cuilController.text, cuilMaxLength),
+    );
+    _cvuStatesController.update(
+      WidgetState.error,
+      !_isExactDigits(_cvuController.text, cvuMaxLength),
+    );
+    _phoneStatesController.update(
+      WidgetState.error,
+      !_isExactDigits(_phoneController.text, phoneMaxLength),
+    );
+  }
+
+  bool _validateRequiredFields() {
+    final hasEmail = _isEmailValid(_emailController.text);
+    final hasName = _nameController.text.trim().isNotEmpty;
+    final hasLastName = _lastNameController.text.trim().isNotEmpty;
+    final hasCuil = _isExactDigits(_cuilController.text, cuilMaxLength);
+    final hasCvu = _isExactDigits(_cvuController.text, cvuMaxLength);
+    final hasPhone = _isExactDigits(_phoneController.text, phoneMaxLength);
+
+    setState(() {
+      _showValidationErrors = true;
+      _emailStatesController.update(WidgetState.error, !hasEmail);
+      _nameStatesController.update(WidgetState.error, !hasName);
+      _lastNameStatesController.update(WidgetState.error, !hasLastName);
+      _cuilStatesController.update(WidgetState.error, !hasCuil);
+      _cvuStatesController.update(WidgetState.error, !hasCvu);
+      _phoneStatesController.update(WidgetState.error, !hasPhone);
+    });
+
+    return hasEmail &&
+        hasName &&
+        hasLastName &&
+        hasCuil &&
+        hasCvu &&
+        hasPhone;
+  }
+
   void _createDriver() async {
-    // Validaciones
-    if (_emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa el email')),
-      );
-      return;
-    }
-
-    if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa el nombre')),
-      );
-      return;
-    }
-
-    if (_lastNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa el apellido')),
-      );
-      return;
-    }
-
-    if (_cuilController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa el CUIL')),
-      );
-      return;
-    }
-
-    if (_cvuController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Por favor ingresa el CVU')));
-      return;
-    }
-
-    if (_phoneController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa el número de teléfono'),
-        ),
-      );
+    if (!_validateRequiredFields()) {
       return;
     }
 
@@ -91,9 +159,9 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
         email: _emailController.text.trim(),
         name: _nameController.text.trim(),
         surname: _lastNameController.text.trim(),
-        cuil: _cuilController.text.trim().replaceAll('-', ''),
-        cvu: _cvuController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
+        cuil: _digitsOnly(_cuilController.text),
+        cvu: _digitsOnly(_cvuController.text),
+        phoneNumber: _digitsOnly(_phoneController.text),
       );
 
       if (mounted) {
@@ -139,7 +207,8 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                statesController: _emailStatesController,
+                decoration: InputDecoration(
                   labelText: 'Email',
                   hintText: 'juan@gmail.com',
                   border: OutlineInputBorder(),
@@ -147,6 +216,10 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          !_isEmailValid(_emailController.text)
+                      ? 'Email invalido'
+                      : null,
                 ),
               ),
 
@@ -155,6 +228,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
               // Nombre(s)
               TextField(
                 controller: _nameController,
+                statesController: _nameStatesController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre(s)',
                   hintText: 'Juan Antonio',
@@ -171,6 +245,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
               // Apellido(s)
               TextField(
                 controller: _lastNameController,
+                statesController: _lastNameStatesController,
                 decoration: const InputDecoration(
                   labelText: 'Apellido(s)',
                   hintText: 'Rodriguez',
@@ -188,14 +263,22 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
               TextField(
                 controller: _cuilController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                inputFormatters: [CuilInputFormatter()],
+                statesController: _cuilStatesController,
+                maxLength: cuilDisplayMaxLength,
+                decoration: InputDecoration(
                   labelText: 'CUIL',
                   hintText: '27-28033514-8',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          !_isExactDigits(_cuilController.text, cuilMaxLength)
+                      ? 'Debe tener $cuilMaxLength digitos'
+                      : null,
                 ),
               ),
 
@@ -205,14 +288,22 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
               TextField(
                 controller: _cvuController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                statesController: _cvuStatesController,
+                maxLength: cvuMaxLength,
+                decoration: InputDecoration(
                   labelText: 'CVU',
                   hintText: '0000031547612579452356',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          !_isExactDigits(_cvuController.text, cvuMaxLength)
+                      ? 'Debe tener $cvuMaxLength dígitos'
+                      : null,
                 ),
               ),
 
@@ -222,14 +313,22 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
+                inputFormatters: [PhoneInputFormatter()],
+                statesController: _phoneStatesController,
+                maxLength: phoneDisplayMaxLength,
+                decoration: InputDecoration(
                   labelText: 'Número de teléfono',
                   hintText: '3462 37-8485',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          !_isExactDigits(_phoneController.text, phoneMaxLength)
+                      ? 'Debe tener $phoneMaxLength dígitos'
+                      : null,
                 ),
               ),
 

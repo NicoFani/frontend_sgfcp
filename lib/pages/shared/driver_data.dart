@@ -133,7 +133,7 @@ class _DriverDataPageState extends State<DriverDataPage> {
                     InfoItem(label: 'Apellido(s)', value: driver.lastName),
                     InfoItem(
                       label: 'CUIL',
-                      value: driver.cuil ?? 'No registrado',
+                      value: driver.cuil ?? 'No registrado', // TODO: Decorator para mostrar CUIL con formato (XX-XXXXXXXX-X)
                     ),
                     InfoItem(
                       label: 'CVU',
@@ -141,7 +141,7 @@ class _DriverDataPageState extends State<DriverDataPage> {
                     ),
                     InfoItem(
                       label: 'Número de teléfono',
-                      value: driver.phoneNumber ?? 'No registrado',
+                      value: driver.phoneNumber ?? 'No registrado', // TODO: Decorator para mostrar número de teléfono con formato (XXXX XX-XXXXX)
                     ),
                   ],
                   labelColumnWidth: infoLabelWidth,

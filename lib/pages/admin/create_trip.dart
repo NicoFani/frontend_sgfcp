@@ -23,10 +23,17 @@ class CreateTripPageAdmin extends StatefulWidget {
 }
 
 class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
+  final maxCityLength = 22;
+  final maxDescriptionLength = 40;
+
   DateTime? _startDate;
   final List<int> _selectedDriverIds = [];
   int? _selectedClientId;
   bool _isLoading = false;
+  bool _showValidationErrors = false;
+
+  late final Future<List<ClientData>> _clientsFuture;
+  late final Future<List<DriverData>> _driversFuture;
 
   // Controllers
   final TextEditingController _originController = TextEditingController();
@@ -35,8 +42,25 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
   final TextEditingController _destinationDescController =
       TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
-  final TextEditingController _clientAdvanceController =
-      TextEditingController();
+
+  final WidgetStatesController _originStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _destinationStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _dateStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _clientStatesController =
+      WidgetStatesController();
+
+  @override
+  void initState() {
+    super.initState();
+    _clientsFuture = ClientService.getClients();
+    _driversFuture = DriverService.getDrivers();
+
+    _originController.addListener(_updateValidationStates);
+    _destinationController.addListener(_updateValidationStates);
+  }
 
   @override
   void dispose() {
@@ -45,7 +69,10 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
     _destinationController.dispose();
     _destinationDescController.dispose();
     _startDateController.dispose();
-    _clientAdvanceController.dispose();
+    _originStatesController.dispose();
+    _destinationStatesController.dispose();
+    _dateStatesController.dispose();
+    _clientStatesController.dispose();
     super.dispose();
   }
 
@@ -67,72 +94,48 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
           'dd/MM/yyyy',
           locale,
         ).format(picked);
+        _updateValidationStates();
       });
     }
   }
 
-  void _createTrip() async {
-    // Validaciones
-    if (_originController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa la localidad de origen'),
-        ),
-      );
-      return;
-    }
-
-    if (_destinationController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa la localidad de destino'),
-        ),
-      );
-      return;
-    }
-
-    if (_startDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona la fecha de inicio'),
-        ),
-      );
-      return;
-    }
-
-    // Validar que la fecha de inicio no sea anterior a hoy
-    final today = DateTime.now();
-    final startDateOnly = DateTime(
-      _startDate!.year,
-      _startDate!.month,
-      _startDate!.day,
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+    _originStatesController.update(
+      WidgetState.error,
+      _originController.text.trim().isEmpty,
     );
-    final todayOnly = DateTime(today.year, today.month, today.day);
+    _destinationStatesController.update(
+      WidgetState.error,
+      _destinationController.text.trim().isEmpty,
+    );
+    _dateStatesController.update(WidgetState.error, _startDate == null);
+    _clientStatesController.update(
+      WidgetState.error,
+      _selectedClientId == null,
+    );
+  }
 
-    if (startDateOnly.isBefore(todayOnly)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'La fecha de inicio no puede ser anterior al día actual',
-          ),
-        ),
-      );
-      return;
-    }
+  bool _validateRequiredFields() {
+    final hasOrigin = _originController.text.trim().isNotEmpty;
+    final hasDestination = _destinationController.text.trim().isNotEmpty;
+    final hasStartDate = _startDate != null;
+    final hasClient = _selectedClientId != null;
+    final hasDriver = _selectedDriverIds.isNotEmpty;
 
-    if (_selectedClientId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona un cliente')),
-      );
-      return;
-    }
+    setState(() {
+      _showValidationErrors = true;
+      _originStatesController.update(WidgetState.error, !hasOrigin);
+      _destinationStatesController.update(WidgetState.error, !hasDestination);
+      _dateStatesController.update(WidgetState.error, !hasStartDate);
+      _clientStatesController.update(WidgetState.error, !hasClient);
+    });
 
-    if (_selectedDriverIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona al menos un chofer'),
-        ),
-      );
+    return hasOrigin && hasDestination && hasStartDate && hasClient && hasDriver;
+  }
+
+  void _createTrip() async {
+    if (!_validateRequiredFields()) {
       return;
     }
 
@@ -151,9 +154,6 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
         startDate: _startDate!,
         clientId: _selectedClientId!,
         driverIds: _selectedDriverIds,
-        clientAdvancePayment: _clientAdvanceController.text.isNotEmpty
-            ? double.tryParse(_clientAdvanceController.text)
-            : null,
       );
 
       if (mounted) {
@@ -200,13 +200,20 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
               TextField(
                 controller: _originController,
                 enabled: !_isLoading,
-                decoration: const InputDecoration(
+                statesController: _originStatesController,
+                maxLength: maxCityLength,
+                decoration: InputDecoration(
                   labelText: 'Origen',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          _originController.text.trim().isEmpty
+                      ? 'Campo requerido'
+                      : null,
                 ),
               ),
               gap12,
@@ -215,8 +222,10 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
               TextField(
                 controller: _originDescController,
                 enabled: !_isLoading,
+                maxLength: maxDescriptionLength,
                 decoration: const InputDecoration(
                   labelText: 'Descripción Origen',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
@@ -230,13 +239,20 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
               TextField(
                 controller: _destinationController,
                 enabled: !_isLoading,
-                decoration: const InputDecoration(
+                statesController: _destinationStatesController,
+                maxLength: maxCityLength,
+                decoration: InputDecoration(
                   labelText: 'Destino',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          _destinationController.text.trim().isEmpty
+                      ? 'Campo requerido'
+                      : null,
                 ),
               ),
               gap12,
@@ -245,8 +261,10 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
               TextField(
                 controller: _destinationDescController,
                 enabled: !_isLoading,
+                maxLength: maxDescriptionLength,
                 decoration: const InputDecoration(
                   labelText: 'Descripción Destino',
+                  counterText: '',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
@@ -261,7 +279,8 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                 controller: _startDateController,
                 readOnly: true,
                 enabled: !_isLoading,
-                decoration: const InputDecoration(
+                statesController: _dateStatesController,
+                decoration: InputDecoration(
                   labelText: 'Fecha Inicio',
                   border: OutlineInputBorder(),
                   suffixIcon: Icon(Icons.calendar_today_outlined),
@@ -269,33 +288,17 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors && _startDate == null
+                      ? 'Campo requerido'
+                      : null,
                 ),
                 onTap: _isLoading ? null : _pickStartDate,
               ),
               gap16,
 
-              // Adelanto del Cliente
-              TextField(
-                controller: _clientAdvanceController,
-                enabled: !_isLoading,
-                decoration: const InputDecoration(
-                  labelText: 'Adelanto del Cliente (opcional)',
-                  border: OutlineInputBorder(),
-                  prefixText: '\$ ',
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-              ),
-              gap16,
-
               // Cliente
               FutureBuilder<List<ClientData>>(
-                future: ClientService.getClients(),
+                future: _clientsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Container(
@@ -326,29 +329,33 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
 
                   final clients = snapshot.data ?? [];
 
-                  return DropdownButtonFormField<int>(
-                    value: _selectedClientId,
-                    decoration: const InputDecoration(
-                      labelText: 'Cliente',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                    items: clients
-                        .map(
-                          (client) => DropdownMenuItem(
-                            value: client.id,
-                            child: Text(client.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: _isLoading
-                        ? null
-                        : (value) {
-                            setState(() => _selectedClientId = value);
-                          },
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return DropdownMenu<int>(
+                        enabled: !_isLoading,
+                        width: constraints.maxWidth,
+                        label: const Text('Cliente'),
+                        errorText: _showValidationErrors &&
+                                _selectedClientId == null
+                            ? 'Campo requerido'
+                            : null,
+                        initialSelection: _selectedClientId,
+                        dropdownMenuEntries: clients
+                            .map(
+                              (client) => DropdownMenuEntry(
+                                value: client.id,
+                                label: client.name,
+                              ),
+                            )
+                            .toList(),
+                        onSelected: (value) {
+                          setState(() {
+                            _selectedClientId = value;
+                            _updateValidationStates();
+                          });
+                        },
+                      );
+                    },
                   );
                 },
               ),
@@ -356,10 +363,20 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
 
               // Choferes Asignados
               Text('Choferes Asignados', style: textTheme.titleMedium),
+              if (_showValidationErrors && _selectedDriverIds.isEmpty) ...[
+                gap4,
+                Text(
+                  'Selecciona al menos un chofer',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.error,
+                  ),
+                ),
+              ],
               gap8,
 
+              // Selector de choferes
               FutureBuilder<List<DriverData>>(
-                future: DriverService.getDrivers(),
+                future: _driversFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -407,6 +424,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
                             } else {
                               _selectedDriverIds.remove(driver.id);
                             }
+                            _updateValidationStates();
                           });
                         },
                         controlAffinity: ListTileControlAffinity.leading,
