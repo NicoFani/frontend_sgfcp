@@ -17,16 +17,17 @@ import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class EditExpensePage extends StatefulWidget {
   final ExpenseData expense;
+  final TripData? trip;
 
-  const EditExpensePage({super.key, required this.expense});
+  const EditExpensePage({super.key, required this.expense, this.trip});
 
   /// Route name you can use with Navigator.pushNamed
   static const String routeName = '/edit_expense';
 
   /// Helper to create a route to this page
-  static Route route({required ExpenseData expense}) {
+  static Route route({required ExpenseData expense, TripData? trip}) {
     return MaterialPageRoute<void>(
-      builder: (_) => EditExpensePage(expense: expense),
+      builder: (_) => EditExpensePage(expense: expense, trip: trip),
     );
   }
 
@@ -62,14 +63,16 @@ class _EditExpensePageState extends State<EditExpensePage> {
   @override
   void initState() {
     super.initState();
-    if (widget.expense.tripId != null) {
+    if (widget.trip != null) {
+      _tripFuture = Future.value(widget.trip!);
+    } else if (widget.expense.tripId != null) {
       _tripFuture = TripService.getTrip(tripId: widget.expense.tripId!);
     } else {
       _tripFuture = Future.error('Gasto sin viaje asociado');
     }
 
     // Populate data
-    _startDate = widget.expense.createdAt;
+    _startDate = DateTime.now();
     _accountingPaid = widget.expense.accountingPaid ?? false;
     _expenseType = _mapTypeToExpenseType(widget.expense.type);
     _subtype = _getSubtype(widget.expense);
@@ -84,9 +87,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
       decimalDigits: 2,
       enableNegative: false,
     );
-    _amountController.text = currencyFormatter.formatDouble(
-      widget.expense.amount,
-    );
+    _amountController.text = currencyFormatter.formatDouble(widget.expense.amount);
     if (widget.expense.fuelLiters != null) {
       _litersController.text = widget.expense.fuelLiters!.toString();
     }
@@ -112,7 +113,16 @@ class _EditExpensePageState extends State<EditExpensePage> {
   }
 
   ExpenseType _mapTypeToExpenseType(String type) {
-    switch (type) {
+    final normalized = type
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .trim();
+
+    switch (normalized) {
       case 'peaje':
         return ExpenseType.peaje;
       case 'reparaciones':
@@ -129,8 +139,42 @@ class _EditExpensePageState extends State<EditExpensePage> {
   }
 
   String? _getSubtype(ExpenseData expense) {
-    if (expense.type == 'peaje') return expense.tollType;
-    if (expense.type == 'reparaciones') return expense.repairType;
+    final normalized = expense.type
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .trim();
+
+    if (normalized == 'peaje') {
+      final toll = expense.tollType;
+      if (toll == null || toll.trim().isEmpty) return null;
+
+      final normalizedToll = toll
+          .toLowerCase()
+          .replaceAll('á', 'a')
+          .replaceAll('é', 'e')
+          .replaceAll('í', 'i')
+          .replaceAll('ó', 'o')
+          .replaceAll('ú', 'u')
+          .trim();
+
+      if (normalizedToll.contains('ruta') ||
+          normalizedToll.contains('peaje de ruta')) {
+        return 'Peaje de ruta';
+      }
+      if (normalizedToll.contains('portuaria')) {
+        return 'Tasa portuaria';
+      }
+      if (normalizedToll.contains('ingreso')) {
+        return 'Derecho de Ingreso a establecimiento';
+      }
+
+      return toll;
+    }
+    if (normalized == 'reparaciones') return expense.repairType;
     return null;
   }
 
@@ -169,6 +213,21 @@ class _EditExpensePageState extends State<EditExpensePage> {
         ).format(picked);
         _updateValidationStates();
       });
+    }
+  }
+
+  String _mapExpenseTypeToBackend(ExpenseType type) {
+    switch (type) {
+      case ExpenseType.peaje:
+        return 'Peaje';
+      case ExpenseType.viaticos:
+        return 'Viáticos';
+      case ExpenseType.reparaciones:
+        return 'Reparaciones';
+      case ExpenseType.combustible:
+        return 'Combustible';
+      case ExpenseType.multa:
+        return 'Multa';
     }
   }
 
@@ -291,7 +350,11 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
           final trip = tripSnapshot.data!;
 
-          final peajeOptions = ['Tasa portuaria', 'Ruta'];
+          final peajeOptions = [
+            'Peaje de ruta',
+            'Tasa portuaria',
+            'Derecho de Ingreso a establecimiento',
+          ];
           final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
 
           List<String> subtypeOptions;
@@ -299,7 +362,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
           switch (_expenseType) {
             case ExpenseType.peaje:
-              label = 'Tipo de peaje';
+              label = 'Peaje/Playa';
               subtypeOptions = peajeOptions;
               break;
             case ExpenseType.reparaciones:
@@ -382,53 +445,44 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
                   gap12,
 
-                  // Fecha de inicio + Importe
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: TextField(
-                          controller: _startDateController,
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            labelText: 'Fecha',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today_outlined),
-                            errorText: _showValidationErrors &&
-                                    _startDate == null
-                                ? 'Campo requerido'
-                                : null,
-                          ),
-                          onTap: _pickStartDate,
-                        ),
-                      ),
-                      gapW12,
-                      Expanded(
-                        flex: 2,
-                        child: TextField(
-                          controller: _amountController,
-                          statesController: _amountStatesController,
-                          decoration: InputDecoration(
-                            labelText: 'Importe',
-                            border: OutlineInputBorder(),
-                            prefixText: r'$ ',
-                            errorText: _showValidationErrors &&
-                                    _amountController.text.trim().isEmpty
-                                ? 'Campo requerido'
-                                : null,
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [
-                            CurrencyTextInputFormatter.currency(
-                              locale: 'es_AR',
-                              symbol: '',
-                              decimalDigits: 2,
-                              enableNegative: false,
-                            ),
-                          ],
-                        ),
+                  // Fecha
+                  TextField(
+                    controller: _startDateController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: 'Fecha',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today_outlined),
+                      errorText: _showValidationErrors && _startDate == null
+                          ? 'Campo requerido'
+                          : null,
+                    ),
+                    onTap: _pickStartDate,
+                  ),
+
+                  gap12,
+
+                  TextField(
+                    controller: _amountController,
+                    statesController: _amountStatesController,
+                    decoration: InputDecoration(
+                      labelText: 'Importe',
+                      border: OutlineInputBorder(),
+                      prefixText: r'$ ',
+                      errorText: _showValidationErrors &&
+                              _amountController.text.trim().isEmpty
+                          ? 'Campo requerido'
+                          : null,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      CurrencyTextInputFormatter.currency(
+                        locale: 'es_AR',
+                        symbol: '',
+                        decimalDigits: 2,
+                        enableNegative: false,
                       ),
                     ],
                   ),
@@ -500,14 +554,16 @@ class _EditExpensePageState extends State<EditExpensePage> {
                     gap12,
                   ],
 
-                  // Switch: ¿Pagó contaduría?
-                  LabeledSwitch(
-                    label: '¿Pagó contaduría?',
-                    value: _accountingPaid,
-                    onChanged: (v) => setState(() => _accountingPaid = v),
-                  ),
-
-                  gap16,
+                  if (_expenseType == ExpenseType.peaje ||
+                      _expenseType == ExpenseType.reparaciones) ...[
+                    LabeledSwitch(
+                      label: '¿Pagó contaduría?',
+                      value: _accountingPaid,
+                      onChanged: (v) => setState(() => _accountingPaid = v),
+                    ),
+                    gap16,
+                  ] else
+                    gap16,
 
                   // Botón principal: Guardar cambios
                   FilledButton.icon(
@@ -519,18 +575,21 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         return;
                       }
 
-                      final amount = parseCurrency(
-                        _amountController.text,
-                      );
+                        final amount = parseCurrency(_amountController.text);
                       final data = <String, dynamic>{
-                        'expense_type': _expenseType.name,
+                        'expense_type': _mapExpenseTypeToBackend(_expenseType),
                         'date': _startDate!.toIso8601String().split('T')[0],
                         'amount': amount,
-                        'description': _descriptionController.text.isNotEmpty
-                            ? _descriptionController.text
-                            : null,
-                        'paid_by_admin': _accountingPaid,
+                        'paid_by_admin':
+                            (_expenseType == ExpenseType.peaje ||
+                                    _expenseType == ExpenseType.reparaciones)
+                                ? _accountingPaid
+                                : null,
                       };
+
+                      if (_descriptionController.text.trim().isNotEmpty) {
+                        data['description'] = _descriptionController.text.trim();
+                      }
 
                       if (_expenseType == ExpenseType.combustible) {
                         data['fuel_liters'] = double.tryParse(
@@ -554,7 +613,15 @@ class _EditExpensePageState extends State<EditExpensePage> {
                           expenseId: widget.expense.id,
                           data: data,
                         );
-                        if (mounted) Navigator.of(context).pop();
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Gasto actualizado correctamente'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

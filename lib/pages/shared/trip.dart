@@ -549,7 +549,7 @@ class _TripPageState extends State<TripPage> {
             onEdit: () {
               Navigator.of(context)
                   .push(
-                    EditExpensePage.route(expense: expense),
+                    EditExpensePage.route(expense: expense, trip: _currentTrip),
                   )
                   .then((_) => _loadData());
             },

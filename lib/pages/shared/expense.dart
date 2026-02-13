@@ -63,6 +63,8 @@ class _ExpensePageState extends State<ExpensePage> {
   @override
   void initState() {
     super.initState();
+    _startDate = DateTime.now();
+    _startDateController.text = formatDate(_startDate!);
     _amountController.addListener(_updateValidationStates);
     _litersController.addListener(_updateValidationStates);
     _municipalityController.addListener(_updateValidationStates);
@@ -211,7 +213,10 @@ class _ExpensePageState extends State<ExpensePage> {
             : null,
         repairType: _expenseType == ExpenseType.reparaciones ? _subtype : null,
         tollType: _expenseType == ExpenseType.peaje ? _subtype : null,
-        paidByAdmin: _accountingPaid,
+        paidByAdmin: (_expenseType == ExpenseType.peaje ||
+                _expenseType == ExpenseType.reparaciones)
+            ? _accountingPaid
+            : null,
       );
 
       if (mounted) {
@@ -305,7 +310,7 @@ class _ExpensePageState extends State<ExpensePage> {
 
     switch (_expenseType) {
       case ExpenseType.peaje:
-        label = 'Tipo de peaje';
+        label = 'Peaje/Playa';
         subtypeOptions = peajeOptions;
         break;
       case ExpenseType.reparaciones:
@@ -424,53 +429,45 @@ class _ExpensePageState extends State<ExpensePage> {
 
               gap12,
 
-              // Fecha de inicio + Importe
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      controller: _startDateController,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: 'Fecha',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today_outlined),
-                        errorText: _showValidationErrors && _startDate == null
-                            ? 'Campo requerido'
-                            : null,
-                      ),
-                      onTap: _pickStartDate,
-                    ),
-                  ),
-                  gapW12,
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: _amountController,
-                      enabled: !_isLoading,
-                      statesController: _amountStatesController,
-                      decoration: InputDecoration(
-                        labelText: 'Importe',
-                        border: OutlineInputBorder(),
-                        prefixText: r'$ ',
-                        errorText: _showValidationErrors &&
-                                _amountController.text.trim().isEmpty
-                            ? 'Campo requerido'
-                            : null,
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        CurrencyTextInputFormatter.currency(
-                          locale: 'es_AR',
-                          symbol: '',
-                          decimalDigits: 2,
-                          enableNegative: false,
-                        ),
-                      ],
-                    ),
+              // Fecha
+              TextField(
+                controller: _startDateController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Fecha',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today_outlined),
+                  errorText: _showValidationErrors && _startDate == null
+                      ? 'Campo requerido'
+                      : null,
+                ),
+                onTap: _pickStartDate,
+              ),
+
+              gap12,
+
+              TextField(
+                controller: _amountController,
+                enabled: !_isLoading,
+                statesController: _amountStatesController,
+                decoration: InputDecoration(
+                  labelText: 'Importe',
+                  border: OutlineInputBorder(),
+                  prefixText: r'$ ',
+                  errorText: _showValidationErrors &&
+                          _amountController.text.trim().isEmpty
+                      ? 'Campo requerido'
+                      : null,
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  CurrencyTextInputFormatter.currency(
+                    locale: 'es_AR',
+                    symbol: '',
+                    decimalDigits: 2,
+                    enableNegative: false,
                   ),
                 ],
               ),
@@ -544,14 +541,16 @@ class _ExpensePageState extends State<ExpensePage> {
                 gap12,
               ],
 
-              // Switch: ¿Pagó contaduría?
-              LabeledSwitch(
-                label: '¿Pagó contaduría?',
-                value: _accountingPaid,
-                onChanged: (v) => setState(() => _accountingPaid = v),
-              ),
-
-              gap16,
+              if (_expenseType == ExpenseType.peaje ||
+                  _expenseType == ExpenseType.reparaciones) ...[
+                LabeledSwitch(
+                  label: '¿Pagó contaduría?',
+                  value: _accountingPaid,
+                  onChanged: (v) => setState(() => _accountingPaid = v),
+                ),
+                gap16,
+              ] else
+                gap16,
 
               // Botón principal: Cargar gasto
               FilledButton.icon(

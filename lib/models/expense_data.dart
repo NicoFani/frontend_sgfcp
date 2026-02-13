@@ -53,7 +53,9 @@ class ExpenseData {
       tollType: json['toll_type'] as String?,
       paidByAdmin: json['paid_by_admin'] as bool?,
       tollPortFeeName: json['toll_port_fee_name'] as String?,
-      accountingPaid: json['accounting_paid'] as bool?,
+      accountingPaid:
+          (json['accounting_paid'] as bool?) ??
+          (json['paid_by_admin'] as bool?),
     );
   }
 }
