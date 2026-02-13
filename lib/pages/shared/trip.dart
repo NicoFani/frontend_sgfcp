@@ -367,14 +367,16 @@ class _TripPageState extends State<TripPage> {
                       leftLabel: 'Tipo de cálculo',
                       leftValue: trip.calculatedPerKm ? 'Por kilómetro' : 'Por tonelada',
                       rightLabel: 'Tarifa',
-                      rightValue: trip.calculatedPerKm ? '${currencyFormat.format(trip.rate)}/km' : '${currencyFormat.format(trip.rate)}/t',
+                      rightValue: trip.rate > 0 ? 
+                        (trip.calculatedPerKm ? '${currencyFormat.format(trip.rate)}/km' : '${currencyFormat.format(trip.rate)}/t') :
+                        'Sin tarifa',
                       leftColumnWidth: infoLabelWidth,
                     ),
 
                     gap4,
 
                     // Balance - only for Finalizado
-                    if (trip.state == 'Finalizado' && _commissionFuture != null)
+                    if (trip.state == 'Finalizado' && _commissionFuture != null && trip.rate > 0)
                       FutureBuilder<Map<String, dynamic>>(
                         future: _commissionFuture,
                         builder: (context, commissionSnapshot) {
