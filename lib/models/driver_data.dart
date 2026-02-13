@@ -4,6 +4,7 @@ class DriverData {
   final int id;
   final String firstName;
   final String lastName;
+  final bool isActive;
   final String? email;
   final String? phoneNumber;
   final String? cuil;
@@ -16,6 +17,7 @@ class DriverData {
     required this.id,
     required this.firstName,
     required this.lastName,
+    this.isActive = false,
     this.email,
     this.phoneNumber,
     this.cuil,
@@ -32,6 +34,7 @@ class DriverData {
       id: json['id'] as int,
       firstName: (json['name'] ?? json['first_name'] ?? '') as String,
       lastName: (json['surname'] ?? json['last_name'] ?? '') as String,
+      isActive: json['is_active'] as bool? ?? false,
       email: json['email'] as String?,
       phoneNumber: json['phone_number'] as String? ?? json['phone'] as String?,
       cuil: json['cuil'] as String?,
@@ -53,6 +56,7 @@ class DriverData {
       'id': id,
       'name': firstName,
       'surname': lastName,
+      'is_active': isActive,
       'email': email,
       'phone_number': phoneNumber,
       'cuil': cuil,
