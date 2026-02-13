@@ -22,6 +22,7 @@ import 'package:intl/intl.dart';
 
 import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
+import 'package:frontend_sgfcp/services/driver_commission_service.dart';
 
 class TripPage extends StatefulWidget {
   final int? tripId;
@@ -44,6 +45,7 @@ class TripPage extends StatefulWidget {
 class _TripPageState extends State<TripPage> {
   late Future<TripData> _tripFuture;
   late Future<List<ExpenseData>> _expensesFuture;
+  Future<Map<String, dynamic>>? _commissionFuture;
   TripData? _currentTrip;
 
   @override
@@ -61,6 +63,12 @@ class _TripPageState extends State<TripPage> {
         _expensesFuture = ExpenseService.getExpensesByTrip(
           tripId: widget.trip!.id,
         );
+        // Load commission if trip is finalized and has driver
+        if (widget.trip!.state == 'Finalizado' && widget.trip!.driver != null) {
+          _commissionFuture = DriverCommissionService.getDriverCommissionById(
+            driverId: widget.trip!.driverId,
+          );
+        }
       });
     } else if (widget.tripId != null) {
       setState(() {
@@ -68,6 +76,16 @@ class _TripPageState extends State<TripPage> {
         _expensesFuture = ExpenseService.getExpensesByTrip(
           tripId: widget.tripId!,
         );
+        // Load commission after trip loads if finalized
+        _tripFuture.then((trip) {
+          if (trip.state == 'Finalizado' && trip.driver != null) {
+            setState(() {
+              _commissionFuture = DriverCommissionService.getDriverCommissionById(
+                driverId: trip.driverId,
+              );
+            });
+          }
+        });
       });
     } else {
       setState(() {
@@ -80,6 +98,16 @@ class _TripPageState extends State<TripPage> {
         _expensesFuture = _tripFuture.then(
           (trip) => ExpenseService.getExpensesByTrip(tripId: trip.id),
         );
+        // Load commission after trip loads if finalized
+        _tripFuture.then((trip) {
+          if (trip.state == 'Finalizado' && trip.driver != null) {
+            setState(() {
+              _commissionFuture = DriverCommissionService.getDriverCommissionById(
+                driverId: trip.driverId,
+              );
+            });
+          }
+        });
       });
     }
   }
@@ -164,9 +192,8 @@ class _TripPageState extends State<TripPage> {
                   gap8,
 
                   // Card de estado y acción
-                  if (trip.state != 'Finalizado')
+                  if (trip.state == 'En curso')
                     SimpleCard(
-                      // title: trip.state,
                       title: 'Viaje en curso',
                       icon: Symbols.where_to_vote,
                       label: 'Finalizar',
@@ -176,11 +203,17 @@ class _TripPageState extends State<TripPage> {
                         ).push(FinishTripPage.route(trip: trip));
                       },
                     )
+                  else if (trip.state == 'Pendiente')
+                    const FinishedTripCard(
+                      trip: null,
+                      customText: 'Viaje pendiente',
+                    )
                   else
                     FinishedTripCard(trip: trip),
 
                   gap4,
 
+                  // Dates card - shown for all states
                   InlineInfoCard(
                     title: 'Fechas',
                     leftLabel: 'Inicio',
@@ -194,6 +227,7 @@ class _TripPageState extends State<TripPage> {
 
                   gap4,
 
+                  // Driver card - shown for all states (admin only)
                   if (isAdmin) ...[
                     if (trip.driver != null)
                       SimpleCard.iconOnly(
@@ -243,31 +277,21 @@ class _TripPageState extends State<TripPage> {
                     gap4,
                   ],
 
-                  // Balance será calculado junto a los gastos más abajo
-                  InfoCard(
-                    title: 'Información',
-                    items: [
-                      InfoItem(
-                        label: 'Distancia',
-                        value: '${trip.estimatedKms} km',
-                      ),
-                      InfoItem(
-                        label: 'Tarifa por tonelada',
-                        value: '\$${trip.rate}',
-                      ),
-                      InfoItem(
-                        label: 'Vale para combustible',
-                        value: '${trip.fuelLiters} lts',
-                      ),
-                      InfoItem(
-                        label: 'Tipo de documento',
-                        value: trip.documentType,
-                      ),
-                    ],
-                    labelColumnWidth: infoLabelWidth,
-                  ),
-
-                  gap4,
+                  // Origin/Destination descriptions - shown for all states
+                  if (trip.originDescription != null ||
+                      trip.destinationDescription != null) ...[
+                    InlineInfoCard(
+                      title: 'Descripciones',
+                      leftLabel: 'Origen',
+                      leftValue: trip.originDescription ??
+                          'Descripción no proporcionada',
+                      rightLabel: 'Destino',
+                      rightValue: trip.destinationDescription ??
+                          'Descripción no proporcionada',
+                      leftColumnWidth: infoLabelWidth,
+                    ),
+                    gap4,
+                  ],
 
                   InlineInfoCard(
                     title: 'Documento',
@@ -280,128 +304,126 @@ class _TripPageState extends State<TripPage> {
 
                   gap4,
 
-                  InfoCard(
-                    title: 'Carga',
-                    items: [
-                      InfoItem(
-                        label: 'Peso',
-                        value:
-                            '${trip.loadWeightOnLoad.toStringAsFixed(2)} ton',
-                      ),
-                      InfoItem(
-                        label: 'Peso luego de descarga',
-                        value: trip.loadWeightOnUnload > 0
-                            ? '${trip.loadWeightOnUnload.toStringAsFixed(2)} ton'
-                            : 'Viaje no finalizado',
-                      ),
-                    ],
-                    labelColumnWidth: infoLabelWidth,
-                  ),
-
-                  gap4,
-
-                  InlineInfoCard(
-                    title: 'Tarifa',
-                    leftLabel: 'Tipo',
-                    leftValue: 'Por tonelada',
-                    rightLabel: 'Tarifa',
-                    rightValue: '${currencyFormat.format(trip.rate)}/t',
-                    leftColumnWidth: infoLabelWidth,
-                  ),
-
-                  gap4,
-
-                  // Sección Balance y Gastos
-                  FutureBuilder<List<ExpenseData>>(
-                    future: _expensesFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.primary,
+                  // Rest of the information - hidden for "Pendiente"
+                  if (trip.state != 'Pendiente') ...[
+                    // Balance será calculado junto a los gastos más abajo
+                    InfoCard(
+                      title: 'Cliente',
+                      items: [
+                        InfoItem(
+                          label: 'Nombre',
+                          value: trip.client!.name,
+                        ),
+                        if(trip.fuelOnClient)
+                          InfoItem(
+                            label: 'Vale para combustible',
+                            value: '${trip.fuelLiters} lts',
                           ),
-                        );
-                      }
-
-                      if (snapshot.hasError) {
-                        return Text(
-                          'Error al cargar gastos: ${snapshot.error}',
-                          style: textTheme.bodySmall,
-                        );
-                      }
-
-                      final expenses = snapshot.data ?? [];
-                      final expensesTotal = expenses.fold<double>(
-                        0.0,
-                        (sum, e) => sum + e.amount,
-                      );
-                      final weightTons = trip.loadWeightOnUnload > 0
-                          ? trip.loadWeightOnUnload
-                          : trip.loadWeightOnLoad;
-                      final commissionTotal = trip.rate * weightTons;
-                      final balanceFinal = commissionTotal - expensesTotal;
-
-                      final rows = expenses
-                          .map(
-                            (expense) => SimpleTableRowData(
-                              col1: expense.type,
-                              col2: currencyFormat.format(expense.amount),
-                              onEdit: () {
-                                Navigator.of(context)
-                                    .push(
-                                      EditExpensePage.route(expense: expense),
-                                    )
-                                    .then((_) => _loadData());
-                              },
-                            ),
-                          )
-                          .toList();
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          InfoCard(
-                            title: 'Balance',
-                            items: [
-                              InfoItem(
-                                label: 'Comisión total',
-                                value: currencyFormat.format(commissionTotal),
-                              ),
-                              InfoItem(
-                                label: 'Gastos totales',
-                                value: currencyFormat.format(expensesTotal),
-                              ),
-                              InfoItem(
-                                label: 'Balance final',
-                                value: currencyFormat.format(balanceFinal),
-                              ),
-                            ],
-                            labelColumnWidth: infoLabelWidth,
+                        if(trip.clientAdvancePayment > 0)
+                          InfoItem(
+                            label: 'Adelanto',
+                            value: currencyFormat.format(trip.clientAdvancePayment),
                           ),
+                      ],
+                      labelColumnWidth: infoLabelWidth,
+                    ),
 
-                          gap16,
+                    gap4,
 
-                          if (expenses.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                    InfoCard(
+                      title: 'Carga y distancia',
+                      items: [
+                        InfoItem(
+                          label: 'Peso',
+                          value:
+                              '${trip.loadWeightOnLoad.toStringAsFixed(2)} ton',
+                        ),
+                        InfoItem(
+                          label: 'Peso luego de descarga',
+                          value: trip.loadWeightOnUnload > 0
+                              ? '${trip.loadWeightOnUnload.toStringAsFixed(2)} ton'
+                              : 'Viaje no finalizado',
+                        ),
+                        InfoItem(
+                          label: 'Dueño de la carga',
+                          value: trip.loadOwner!.name,
+                        ),
+                        InfoItem(
+                          label: 'Tipo de carga',
+                          value: trip.loadType!.name,
+                        ),
+                        InfoItem(
+                          label: 'Distancia',
+                          value: '${trip.estimatedKms} km',
+                        ),
+                      ],
+                      labelColumnWidth: infoLabelWidth,
+                    ),
+
+                    gap4,
+
+                    InlineInfoCard(
+                      title: 'Tarifa',
+                      leftLabel: 'Tipo de cálculo',
+                      leftValue: trip.calculatedPerKm ? 'Por kilómetro' : 'Por tonelada',
+                      rightLabel: 'Tarifa',
+                      rightValue: trip.calculatedPerKm ? '${currencyFormat.format(trip.rate)}/km' : '${currencyFormat.format(trip.rate)}/t',
+                      leftColumnWidth: infoLabelWidth,
+                    ),
+
+                    gap4,
+
+                    // Balance - only for Finalizado
+                    if (trip.state == 'Finalizado' && _commissionFuture != null)
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: _commissionFuture,
+                        builder: (context, commissionSnapshot) {
+                          if (commissionSnapshot.connectionState == ConnectionState.waiting) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                              child: Text(
-                                'No hay gastos registrados',
-                                style: textTheme.bodyMedium,
+                            );
+                          }
+
+                          return _buildBalanceCard(
+                            trip: trip,
+                            commissionSnapshot: commissionSnapshot,
+                            currencyFormat: currencyFormat,
+                            infoLabelWidth: infoLabelWidth,
+                          );
+                        },
+                      ),
+
+                      // Sección Gastos
+                      FutureBuilder<List<ExpenseData>>(
+                        future: _expensesFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                            )
-                          else
-                            SimpleTable(
-                              title: 'Gastos',
-                              headers: const ['Tipo', 'Importe', 'Editar'],
-                              rows: rows,
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            return Text(
+                              'Error al cargar gastos: ${snapshot.error}',
+                              style: textTheme.bodySmall,
+                            );
+                          }
+
+                          return _buildExpensesSection(
+                            expenses: snapshot.data ?? [],
+                            currencyFormat: currencyFormat,
+                            textTheme: textTheme,
+                          );
+                        },
+                      ),
+                  ], // End of "if (trip.state != 'Pendiente')"
                   const SizedBox(height: 60), // Espacio para el FAB
                 ],
               ),
@@ -429,12 +451,107 @@ class _TripPageState extends State<TripPage> {
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
+
+  Widget _buildBalanceCard({
+    required TripData trip,
+    required AsyncSnapshot<Map<String, dynamic>> commissionSnapshot,
+    required NumberFormat currencyFormat,
+    required double infoLabelWidth,
+  }) {
+    double commissionDecimal = 0.0;
+    
+    if (commissionSnapshot.hasData) {
+      final commissionValue = commissionSnapshot.data!['commission_percentage'];
+      
+      // Handle both String and num types from API
+      if (commissionValue is String) {
+        commissionDecimal = double.tryParse(commissionValue) ?? 0.0;
+      } else if (commissionValue is num) {
+        commissionDecimal = commissionValue.toDouble();
+      }
+    }
+
+    // Convert from decimal (0.0-1.0) to percentage (0-100)
+    final double commissionPercentage = commissionDecimal * 100;
+
+    // Calculate total commission based on calculatedPerKm flag
+    final double commissionTotal = trip.calculatedPerKm
+        ? trip.rate * trip.estimatedKms
+        : trip.rate * trip.loadWeightOnUnload;
+    
+    // Calculate driver commission (using decimal for calculation)
+    final double driverCommission = commissionTotal * commissionDecimal;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InfoCard(
+          title: 'Balance',
+          items: [
+            InfoItem(
+              label: 'Comisión total',
+              value: currencyFormat.format(commissionTotal),
+            ),
+            InfoItem(
+              label: 'Porcentaje de comisión del chofer',
+              value: '${commissionPercentage.toStringAsFixed(1)}%',
+            ),
+            InfoItem(
+              label: 'Comisión del chofer',
+              value: currencyFormat.format(driverCommission),
+            ),
+          ],
+          labelColumnWidth: infoLabelWidth,
+        ),
+        gap16,
+      ],
+    );
+  }
+
+  Widget _buildExpensesSection({
+    required List<ExpenseData> expenses,
+    required NumberFormat currencyFormat,
+    required TextTheme textTheme,
+  }) {
+    if (expenses.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Text(
+          'No hay gastos registrados',
+          style: textTheme.bodyMedium,
+        ),
+      );
+    }
+
+    final rows = expenses
+        .map(
+          (expense) => SimpleTableRowData(
+            col1: expense.type,
+            col2: currencyFormat.format(expense.amount),
+            onEdit: () {
+              Navigator.of(context)
+                  .push(
+                    EditExpensePage.route(expense: expense),
+                  )
+                  .then((_) => _loadData());
+            },
+          ),
+        )
+        .toList();
+
+    return SimpleTable(
+      title: 'Gastos',
+      headers: const ['Tipo', 'Importe', 'Editar'],
+      rows: rows,
+    );
+  }
 }
 
 class FinishedTripCard extends StatelessWidget {
-  final TripData trip;
+  final TripData? trip;
+  final String? customText;
 
-  const FinishedTripCard({super.key, required this.trip});
+  const FinishedTripCard({super.key, this.trip, this.customText});
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +567,7 @@ class FinishedTripCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           child: Text(
-            'Viaje finalizado',
+            customText ?? 'Viaje finalizado',
             textAlign: TextAlign.center,
             style: textTheme.bodyLarge?.copyWith(
               color: colors.onSecondaryContainer,
