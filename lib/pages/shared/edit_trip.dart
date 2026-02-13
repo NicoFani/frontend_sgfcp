@@ -112,14 +112,14 @@ class _EditTripPageState extends State<EditTripPage> {
     _destinationController.text = widget.trip.destination;
     _destinationDescController.text = widget.trip.destinationDescription ?? '';
     _calculatedPerKm = widget.trip.calculatedPerKm;
-    _netWeightController.text = widget.trip.loadWeightOnLoad.toString();
-    _kmsController.text = widget.trip.estimatedKms.toString();
     final currencyFormatter = CurrencyTextInputFormatter.currency(
       locale: 'es_AR',
       symbol: '',
       decimalDigits: 2,
       enableNegative: false,
     );
+    _netWeightController.text = currencyFormatter.formatDouble(widget.trip.loadWeightOnLoad);
+    _kmsController.text = currencyFormatter.formatDouble(widget.trip.estimatedKms);
     _rateController.text = currencyFormatter.formatDouble(widget.trip.rate);
     _advanceController.text = widget.trip.clientAdvancePayment > 0
       ? currencyFormatter.formatDouble(widget.trip.clientAdvancePayment)
@@ -224,11 +224,11 @@ class _EditTripPageState extends State<EditTripPage> {
     final hasOrigin = !isAdmin || _originController.text.trim().isNotEmpty;
     final hasDestination =
         !isAdmin || _destinationController.text.trim().isNotEmpty;
-    final hasClient = !isAdmin || _selectedClient != null;
+    final hasClient = !isAdmin || (_selectedClient?.id ?? widget.trip.clientId) != null;
     final hasWeight = _netWeightController.text.trim().isNotEmpty;
     final hasKm = _kmsController.text.trim().isNotEmpty;
-    final hasLoadOwner = _selectedLoadOwner != null;
-    final hasLoadType = _selectedLoadType != null;
+    final hasLoadOwner = (_selectedLoadOwner?.id ?? widget.trip.loadOwnerId) != null;
+    final hasLoadType = (_selectedLoadType?.id ?? widget.trip.loadTypeId) != null;
     final hasEndDate = !_isFinalized || _endDate != null;
 
     setState(() {
@@ -258,10 +258,15 @@ class _EditTripPageState extends State<EditTripPage> {
 
   void _updateTrip() async {
     if (!_validateRequiredFields()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Completá los campos requeridos para guardar cambios.')),
+      );
       return;
     }
 
     setState(() => _isLoading = true);
+    var updateSucceeded = false;
+    TripData? updatedTrip;
 
     final data = <String, dynamic>{
       'document_type': documentTypeToApiValue(_docType),
@@ -271,7 +276,7 @@ class _EditTripPageState extends State<EditTripPage> {
           widget.trip.driver?.id ??
           widget.trip.driverId,
       'load_type_id':
-          _selectedLoadType?.id ?? widget.trip.loadType?.id,
+          _selectedLoadType?.id ?? widget.trip.loadType?.id ?? widget.trip.loadTypeId,
       'origin': isAdmin ? _originController.text : widget.trip.origin,
       if (isAdmin && _originDescController.text.trim().isNotEmpty)
         'origin_description': _originDescController.text.trim(),
@@ -279,18 +284,20 @@ class _EditTripPageState extends State<EditTripPage> {
           isAdmin ? _destinationController.text : widget.trip.destination,
       if (isAdmin && _destinationDescController.text.trim().isNotEmpty)
         'destination_description': _destinationDescController.text.trim(),
-      if (isAdmin) 'client_id': _selectedClient?.id,
+      if (isAdmin) 'client_id': _selectedClient?.id ?? widget.trip.clientId,
       'start_date': _startDate!.toIso8601String().split('T')[0],
       if (_endDate != null)
         'end_date': _endDate!.toIso8601String().split('T')[0],
       'load_owner_id': _selectedLoadOwner?.id ??
-        widget.trip.loadOwner?.id,
+        widget.trip.loadOwner?.id ??
+        widget.trip.loadOwnerId,
       'calculated_per_km': _calculatedPerKm,
       'estimated_kms':
-          double.tryParse(_kmsController.text) ?? 0.0,
+          parseCurrency(_kmsController.text),
       'load_weight_on_load':
-          double.tryParse(_netWeightController.text) ?? 0.0,
-      'rate': parseCurrency(_rateController.text),
+          parseCurrency(_netWeightController.text),
+      if (_rateController.text.trim().isNotEmpty)
+        'rate': parseCurrency(_rateController.text),
       if (_fuelDelivered &&
         _fuelLitersController.text.isNotEmpty)
         'fuel_liters':
@@ -304,10 +311,11 @@ class _EditTripPageState extends State<EditTripPage> {
 
     final currentContext = context;
     try {
-      await TripService.updateTrip(
+      updatedTrip = await TripService.updateTrip(
         tripId: widget.trip.id,
         data: data,
       );
+      updateSucceeded = true;
     } catch (e) {
       if (mounted) {
         // ignore: use_build_context_synchronously
@@ -315,12 +323,13 @@ class _EditTripPageState extends State<EditTripPage> {
           SnackBar(content: Text('Error al guardar cambios: $e')),
         );
       }
-      return;
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
-        // ignore: use_build_context_synchronously
-        Navigator.of(currentContext).pop();
+        if (updateSucceeded) {
+          // ignore: use_build_context_synchronously
+          Navigator.of(currentContext).pop(updatedTrip);
+        }
       }
     }
   }
@@ -476,7 +485,7 @@ class _EditTripPageState extends State<EditTripPage> {
                           width: constraints.maxWidth,
                           label: const Text('Cliente'),
                           errorText: _showValidationErrors &&
-                                  _selectedClient == null
+                              (_selectedClient?.id ?? widget.trip.clientId) == null
                               ? 'Campo requerido'
                               : null,
                           initialSelection:
@@ -692,7 +701,7 @@ class _EditTripPageState extends State<EditTripPage> {
                         width: constraints.maxWidth,
                         label: const Text('Dador de Carga'),
                         errorText: _showValidationErrors &&
-                                _selectedLoadOwner == null
+                          (_selectedLoadOwner?.id ?? widget.trip.loadOwnerId) == null
                             ? 'Campo requerido'
                             : null,
                         initialSelection: selectedLoadOwner,
@@ -758,7 +767,7 @@ class _EditTripPageState extends State<EditTripPage> {
                             width: constraints.maxWidth,
                             label: const Text('Tipo de carga'),
                             errorText: _showValidationErrors &&
-                                    _selectedLoadType == null
+                                  (_selectedLoadType?.id ?? widget.trip.loadTypeId) == null
                                 ? 'Campo requerido'
                                 : null,
                             initialSelection: selectedLoadType,

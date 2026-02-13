@@ -48,8 +48,8 @@ class _LoadingPageState extends State<LoadingPage> {
     // Auto-login solo en modo debug para desarrollo
     if (kDebugMode) {
       final result = await AuthService.login(
-        // email: 'admin@sgfcp.com',
-        email: 'maria.gonzalez@sgfcp.com',
+        email: 'admin@sgfcp.com',
+        // email: 'maria.gonzalez@sgfcp.com',
         password: '123456',
       );
 

@@ -51,30 +51,29 @@ class _TripPageState extends State<TripPage> {
   @override
   void initState() {
     super.initState();
+    _currentTrip = widget.trip;
     _loadData();
   }
 
+  Future<TripData> _getTripWithFallback(int tripId) async {
+    try {
+      return await TripService.getTrip(tripId: tripId);
+    } catch (_) {
+      if (widget.trip != null && widget.trip!.id == tripId) {
+        return widget.trip!;
+      }
+      rethrow;
+    }
+  }
+
   void _loadData() {
-    // Si ya tenemos el viaje completo, no hacemos otra llamada
-    if (widget.trip != null) {
-      _currentTrip = widget.trip;
+    final int? effectiveTripId = widget.tripId ?? widget.trip?.id;
+
+    if (effectiveTripId != null) {
       setState(() {
-        _tripFuture = Future.value(widget.trip!);
+        _tripFuture = _getTripWithFallback(effectiveTripId);
         _expensesFuture = ExpenseService.getExpensesByTrip(
-          tripId: widget.trip!.id,
-        );
-        // Load commission if trip is finalized and has driver
-        if (widget.trip!.state == 'Finalizado' && widget.trip!.driver != null) {
-          _commissionFuture = DriverCommissionService.getDriverCommissionById(
-            driverId: widget.trip!.driverId,
-          );
-        }
-      });
-    } else if (widget.tripId != null) {
-      setState(() {
-        _tripFuture = TripService.getTrip(tripId: widget.tripId!);
-        _expensesFuture = ExpenseService.getExpensesByTrip(
-          tripId: widget.tripId!,
+          tripId: effectiveTripId,
         );
         // Load commission after trip loads if finalized
         _tripFuture.then((trip) {
@@ -150,22 +149,7 @@ class _TripPageState extends State<TripPage> {
                   gap16,
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        if (widget.tripId != null) {
-                          _tripFuture = TripService.getTrip(
-                            tripId: widget.tripId!,
-                          );
-                        } else {
-                          _tripFuture = TripService.getCurrentTrip().then((
-                            trip,
-                          ) {
-                            if (trip == null) {
-                              throw Exception('No hay viaje actual disponible');
-                            }
-                            return trip;
-                          });
-                        }
-                      });
+                      _loadData();
                     },
                     child: const Text('Reintentar'),
                   ),
@@ -440,10 +424,38 @@ class _TripPageState extends State<TripPage> {
                     .push(ExpensePage.route(trip: _currentTrip!))
                     .then((_) => _loadData());
               },
-              onEditTrip: () {
-                Navigator.of(context)
-                    .push(EditTripPage.route(trip: _currentTrip!))
-                    .then((_) => _loadData());
+              onEditTrip: () async {
+                final updated = await Navigator.of(context).push(
+                  EditTripPage.route(trip: _currentTrip!),
+                );
+
+                if (!mounted) return;
+
+                if (updated is TripData) {
+                  setState(() {
+                    _currentTrip = updated;
+                    _tripFuture = Future.value(updated);
+                    _expensesFuture = ExpenseService.getExpensesByTrip(
+                      tripId: updated.id,
+                    );
+                    if (updated.state == 'Finalizado' && updated.driver != null) {
+                      _commissionFuture = DriverCommissionService.getDriverCommissionById(
+                        driverId: updated.driverId,
+                      );
+                    } else {
+                      _commissionFuture = null;
+                    }
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Viaje actualizado exitosamente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  _loadData();
+                }
               },
             )
           : null,

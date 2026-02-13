@@ -22,6 +22,30 @@ class ApiException implements Exception {
 class ApiResponseHandler {
   static const Duration defaultTimeout = Duration(seconds: 10);
 
+  static String? _normalizeDetails(dynamic details) {
+    if (details == null) return null;
+    if (details is String) return details;
+    if (details is List) {
+      final parts = details
+          .map((item) => _normalizeDetails(item))
+          .where((item) => item != null && item!.trim().isNotEmpty)
+          .cast<String>()
+          .toList();
+      return parts.isEmpty ? null : parts.join(' | ');
+    }
+    if (details is Map) {
+      final parts = <String>[];
+      details.forEach((key, value) {
+        final normalized = _normalizeDetails(value);
+        if (normalized != null && normalized.trim().isNotEmpty) {
+          parts.add('$key: $normalized');
+        }
+      });
+      return parts.isEmpty ? null : parts.join(' | ');
+    }
+    return details.toString();
+  }
+
   /// Handle HTTP response and throw standardized exceptions
   static T handleResponse<T>(
     http.Response response,
@@ -40,7 +64,10 @@ class ApiResponseHandler {
           throw ApiException(
             'Datos inválidos',
             statusCode: 400,
-            details: errorData['details'] ?? errorData['error'] ?? 'Verifique los campos',
+            details: _normalizeDetails(
+                  errorData['details'] ?? errorData['error'],
+                ) ??
+                'Verifique los campos',
           );
 
         case 401:
@@ -66,7 +93,7 @@ class ApiResponseHandler {
           throw ApiException(
             'Conflicto de datos',
             statusCode: 409,
-            details: errorData['error'] ?? 'El recurso ya existe',
+            details: _normalizeDetails(errorData['error']) ?? 'El recurso ya existe',
           );
 
         case 500:

@@ -16,7 +16,7 @@ DocumentType parseDocumentType(String type) {
 String documentTypeToApiValue(DocumentType type) {
   switch (type) {
     case DocumentType.ctg:
-      return 'CGT';
+      return 'CTG';
     case DocumentType.remito:
       return 'Remito';
   }
