@@ -157,7 +157,7 @@ class _CreateTripPageAdminState extends State<CreateTripPageAdmin> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

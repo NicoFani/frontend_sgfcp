@@ -151,7 +151,7 @@ class _FinishTripPageState extends State<FinishTripPage> {
       );
 
       if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Viaje finalizado exitosamente'),

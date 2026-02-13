@@ -182,9 +182,13 @@ class _TripPageState extends State<TripPage> {
                       icon: Symbols.where_to_vote,
                       label: 'Finalizar',
                       onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).push(FinishTripPage.route(trip: trip));
+                        Navigator.of(context)
+                            .push(FinishTripPage.route(trip: trip))
+                            .then((finished) {
+                          if (finished == true) {
+                            _loadData();
+                          }
+                        });
                       },
                     )
                   else if (trip.state == 'Pendiente')
