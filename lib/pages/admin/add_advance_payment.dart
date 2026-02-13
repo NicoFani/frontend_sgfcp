@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:intl/intl.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 import 'package:frontend_sgfcp/services/advance_payment_service.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
@@ -26,23 +27,115 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
   int? _selectedDriverId;
   // ignore: unused_field
   String? _selectedDriverName;
-  DateTime? _date;
+  DateTime _date = DateTime.now();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   late Future<List<DriverData>> _driversFuture;
   bool _isLoading = false;
 
+  // Validation controllers
+  final WidgetStatesController _driverStatesController = WidgetStatesController();
+  final WidgetStatesController _dateStatesController = WidgetStatesController();
+  final WidgetStatesController _amountStatesController = WidgetStatesController();
+  bool _showValidationErrors = false;
+
   @override
   void initState() {
     super.initState();
     _driversFuture = DriverService.getDrivers();
+    _dateController.text = formatDate(_date);
+
+    // Add validation listeners
+    _amountController.addListener(_updateValidationStates);
   }
 
   @override
   void dispose() {
     _dateController.dispose();
     _amountController.dispose();
+    _driverStatesController.dispose();
+    _dateStatesController.dispose();
+    _amountStatesController.dispose();
     super.dispose();
+  }
+
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+
+    setState(() {
+      // Driver validation
+      if (_selectedDriverId == null) {
+        _driverStatesController.update(WidgetState.error, true);
+      } else {
+        _driverStatesController.update(WidgetState.error, false);
+      }
+
+      // Date validation
+      if (_dateController.text.isEmpty) {
+        _dateStatesController.update(WidgetState.error, true);
+      } else {
+        _dateStatesController.update(WidgetState.error, false);
+      }
+
+      // Amount validation
+      final amountText = _amountController.text.trim();
+      if (amountText.isEmpty) {
+        _amountStatesController.update(WidgetState.error, true);
+      } else {
+        try {
+          final amount = parseCurrency(amountText);
+          if (amount <= 0) {
+            _amountStatesController.update(WidgetState.error, true);
+          } else {
+            _amountStatesController.update(WidgetState.error, false);
+          }
+        } catch (e) {
+          _amountStatesController.update(WidgetState.error, true);
+        }
+      }
+    });
+  }
+
+  bool _validateRequiredFields() {
+    bool isValid = true;
+
+    // Driver validation
+    if (_selectedDriverId == null) {
+      _driverStatesController.update(WidgetState.error, true);
+      isValid = false;
+    } else {
+      _driverStatesController.update(WidgetState.error, false);
+    }
+
+    // Date validation
+    if (_dateController.text.isEmpty) {
+      _dateStatesController.update(WidgetState.error, true);
+      isValid = false;
+    } else {
+      _dateStatesController.update(WidgetState.error, false);
+    }
+
+    // Amount validation
+    final amountText = _amountController.text.trim();
+    if (amountText.isEmpty) {
+      _amountStatesController.update(WidgetState.error, true);
+      isValid = false;
+    } else {
+      try {
+        final amount = parseCurrency(amountText);
+        if (amount <= 0) {
+          _amountStatesController.update(WidgetState.error, true);
+          isValid = false;
+        } else {
+          _amountStatesController.update(WidgetState.error, false);
+        }
+      } catch (e) {
+        _amountStatesController.update(WidgetState.error, true);
+        isValid = false;
+      }
+    }
+
+    return isValid;
   }
 
   Future<void> _pickDate() async {
@@ -50,7 +143,7 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date ?? now,
+      initialDate: _date,
       firstDate: DateTime(now.year - 5),
       lastDate: now,
     );
@@ -58,7 +151,8 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
     if (picked != null) {
       setState(() {
         _date = picked;
-        _dateController.text = DateFormat('dd/MM/yyyy').format(picked);
+        _dateController.text = formatDate(picked);
+        _updateValidationStates();
       });
     }
   }
@@ -81,57 +175,14 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
     );
   }
 
-  bool _validateForm() {
-    if (_selectedDriverId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona un chofer'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return false;
-    }
 
-    if (_date == null || _dateController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona una fecha'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return false;
-    }
-
-    if (_amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa un importe'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return false;
-    }
-
-    try {
-      final amount = double.parse(_amountController.text.replaceAll(',', '.'));
-      if (amount <= 0) {
-        throw Exception();
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El importe debe ser un número válido mayor a 0'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return false;
-    }
-
-    return true;
-  }
 
   Future<void> _loadAdvance() async {
-    if (!_validateForm()) {
+    setState(() {
+      _showValidationErrors = true;
+    });
+
+    if (!_validateRequiredFields()) {
       return;
     }
 
@@ -140,11 +191,11 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
     });
 
     try {
-      final amount = double.parse(_amountController.text.replaceAll(',', '.'));
+      final amount = parseCurrency(_amountController.text);
 
       await AdvancePaymentService.createAdvancePayment(
         driverId: _selectedDriverId!,
-        date: _date!,
+        date: _date,
         amount: amount,
       );
 
@@ -218,23 +269,20 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Chofer
-                  DropdownButtonFormField<int>(
-                    value: _selectedDriverId,
-                    decoration: const InputDecoration(
-                      labelText: 'Chofer',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                    items: drivers.map((driver) {
-                      return DropdownMenuItem(
+                  DropdownMenu<int>(
+                    expandedInsets: EdgeInsets.zero,
+                    initialSelection: _selectedDriverId,
+                    label: const Text('Chofer'),
+                    errorText: _showValidationErrors && _selectedDriverId == null
+                        ? 'Selecciona un chofer'
+                        : null,
+                    dropdownMenuEntries: drivers.map((driver) {
+                      return DropdownMenuEntry<int>(
                         value: driver.id,
-                        child: Text('${driver.firstName} ${driver.lastName}'),
+                        label: '${driver.firstName} ${driver.lastName}',
                       );
                     }).toList(),
-                    onChanged: (value) {
+                    onSelected: (value) {
                       setState(() {
                         _selectedDriverId = value;
                         if (value != null) {
@@ -242,6 +290,7 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                               .firstWhere((d) => d.id == value)
                               .firstName;
                         }
+                        _updateValidationStates();
                       });
                     },
                   ),
@@ -256,14 +305,19 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                         child: TextField(
                           controller: _dateController,
                           readOnly: true,
-                          decoration: const InputDecoration(
+                          statesController: _dateStatesController,
+                          decoration: InputDecoration(
                             labelText: 'Fecha',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today_outlined),
-                            contentPadding: EdgeInsets.symmetric(
+                            border: const OutlineInputBorder(),
+                            suffixIcon: const Icon(Icons.calendar_today_outlined),
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 12,
                             ),
+                            errorText: _showValidationErrors &&
+                                    _dateController.text.isEmpty
+                                ? 'Selecciona una fecha'
+                                : null,
                           ),
                           onTap: _pickDate,
                         ),
@@ -275,16 +329,42 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                       Expanded(
                         child: TextField(
                           controller: _amountController,
+                          statesController: _amountStatesController,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
-                          decoration: const InputDecoration(
+                          inputFormatters: [
+                            CurrencyTextInputFormatter.currency(
+                              locale: 'es_AR',
+                              symbol: '',
+                              decimalDigits: 2,
+                            ),
+                          ],
+                          decoration: InputDecoration(
                             labelText: 'Importe',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
+                            prefixText: r'$ ',
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 12,
                             ),
+                            errorText: _showValidationErrors
+                                ? () {
+                                    final text = _amountController.text.trim();
+                                    if (text.isEmpty) {
+                                      return 'Ingresa un importe';
+                                    }
+                                    try {
+                                      final amount = parseCurrency(text);
+                                      if (amount <= 0) {
+                                        return 'Debe ser mayor a 0';
+                                      }
+                                    } catch (e) {
+                                      return 'Importe inválido';
+                                    }
+                                    return null;
+                                  }()
+                                : null,
                           ),
                         ),
                       ),

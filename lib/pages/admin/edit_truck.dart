@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:frontend_sgfcp/pages/admin/trucks.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
@@ -6,6 +7,7 @@ import 'package:frontend_sgfcp/services/truck_service.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/models/truck_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class EditTruckPage extends StatefulWidget {
   final int truckId;
@@ -43,12 +45,26 @@ class _EditTruckPageState extends State<EditTruckPage> {
   late Future<List<DriverData>> _driversFuture;
   late Future<Map<String, dynamic>?> _currentDriverFuture;
 
+  // Validation controllers
+  final WidgetStatesController _brandStatesController = WidgetStatesController();
+  final WidgetStatesController _modelStatesController = WidgetStatesController();
+  final WidgetStatesController _yearStatesController = WidgetStatesController();
+  final WidgetStatesController _plateStatesController = WidgetStatesController();
+  bool _showValidationErrors = false;
+  bool _controllersInitialized = false;
+
   @override
   void initState() {
     super.initState();
     _truckFuture = TruckService.getTruckById(truckId: widget.truckId);
     _driversFuture = DriverService.getDrivers();
     _currentDriverFuture = TruckService.getTruckCurrentDriver(truckId: widget.truckId);
+
+    // Add validation listeners
+    _brandController.addListener(_updateValidationStates);
+    _modelController.addListener(_updateValidationStates);
+    _yearController.addListener(_updateValidationStates);
+    _plateController.addListener(_updateValidationStates);
   }
 
   @override
@@ -57,10 +73,64 @@ class _EditTruckPageState extends State<EditTruckPage> {
     _modelController.dispose();
     _yearController.dispose();
     _plateController.dispose();
+    _brandStatesController.dispose();
+    _modelStatesController.dispose();
+    _yearStatesController.dispose();
+    _plateStatesController.dispose();
     super.dispose();
   }
 
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+
+    setState(() {
+      _brandStatesController.update(
+        WidgetState.error,
+        _brandController.text.trim().isEmpty,
+      );
+      _modelStatesController.update(
+        WidgetState.error,
+        _modelController.text.trim().isEmpty,
+      );
+      
+      // Year validation: must be 4 digits
+      final yearText = _yearController.text.trim();
+      _yearStatesController.update(
+        WidgetState.error,
+        yearText.isEmpty || yearText.length != 4,
+      );
+      
+      // Plate validation
+      _plateStatesController.update(
+        WidgetState.error,
+        !isValidPlate(_plateController.text),
+      );
+    });
+  }
+
+  bool _validateRequiredFields() {
+    final hasBrand = _brandController.text.trim().isNotEmpty;
+    final hasModel = _modelController.text.trim().isNotEmpty;
+    final yearText = _yearController.text.trim();
+    final hasYear = yearText.isNotEmpty && yearText.length == 4;
+    final hasValidPlate = isValidPlate(_plateController.text);
+
+    setState(() {
+      _showValidationErrors = true;
+      _brandStatesController.update(WidgetState.error, !hasBrand);
+      _modelStatesController.update(WidgetState.error, !hasModel);
+      _yearStatesController.update(WidgetState.error, !hasYear);
+      _plateStatesController.update(WidgetState.error, !hasValidPlate);
+    });
+
+    return hasBrand && hasModel && hasYear && hasValidPlate;
+  }
+
   Future<void> _saveChanges() async {
+    if (!_validateRequiredFields()) {
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -71,7 +141,7 @@ class _EditTruckPageState extends State<EditTruckPage> {
         brand: _brandController.text,
         modelName: _modelController.text,
         fabricationYear: int.parse(_yearController.text),
-        plate: _plateController.text,
+        plate: _plateController.text.replaceAll(' ', ''),
       );
 
       if (mounted) {
@@ -191,12 +261,12 @@ class _EditTruckPageState extends State<EditTruckPage> {
 
           final truck = truckSnapshot.data!;
           
-          // Initialize controllers with truck data if not already set
-          if (_brandController.text.isEmpty) {
+          if (!_controllersInitialized) {
             _brandController.text = truck.brand;
             _modelController.text = truck.modelName;
             _yearController.text = truck.fabricationYear.toString();
-            _plateController.text = truck.plate;
+            _plateController.text = formatPlate(truck.plate);
+            _controllersInitialized = true;
           }
 
           return FutureBuilder<List<DriverData>>(
@@ -230,13 +300,18 @@ class _EditTruckPageState extends State<EditTruckPage> {
                             // Marca
                             TextField(
                               controller: _brandController,
-                              decoration: const InputDecoration(
+                              statesController: _brandStatesController,
+                              decoration: InputDecoration(
                                 labelText: 'Marca',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
                                 ),
+                                errorText: _showValidationErrors &&
+                                        _brandController.text.isEmpty
+                                    ? 'Ingresa una marca'
+                                    : null,
                               ),
                             ),
 
@@ -245,13 +320,18 @@ class _EditTruckPageState extends State<EditTruckPage> {
                             // Modelo
                             TextField(
                               controller: _modelController,
-                              decoration: const InputDecoration(
+                              statesController: _modelStatesController,
+                              decoration: InputDecoration(
                                 labelText: 'Modelo',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
                                 ),
+                                errorText: _showValidationErrors &&
+                                        _modelController.text.isEmpty
+                                    ? 'Ingresa un modelo'
+                                    : null,
                               ),
                             ),
 
@@ -260,14 +340,27 @@ class _EditTruckPageState extends State<EditTruckPage> {
                             // Año
                             TextField(
                               controller: _yearController,
+                              statesController: _yearStatesController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              maxLength: 4,
+                              decoration: InputDecoration(
                                 labelText: 'Año',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
+                                hintText: '2024',
+                                counterText: '',
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
                                 ),
+                                errorText: _showValidationErrors
+                                    ? () {
+                                        final text = _yearController.text.trim();
+                                        if (text.isEmpty) return 'Ingresa un año';
+                                        if (text.length != 4) return 'Debe tener 4 dígitos';
+                                        return null;
+                                      }()
+                                    : null,
                               ),
                             ),
 
@@ -276,13 +369,22 @@ class _EditTruckPageState extends State<EditTruckPage> {
                             // Patente
                             TextField(
                               controller: _plateController,
-                              decoration: const InputDecoration(
+                              statesController: _plateStatesController,
+                              inputFormatters: [PlateInputFormatter()],
+                              maxLength: 9,
+                              decoration: InputDecoration(
                                 labelText: 'Patente',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
+                                hintText: 'ABC 123 o AB 123 CD',
+                                counterText: '',
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
                                 ),
+                                errorText: _showValidationErrors &&
+                                        !isValidPlate(_plateController.text)
+                                    ? 'Formato inválido'
+                                    : null,
                               ),
                             ),
 
@@ -299,32 +401,28 @@ class _EditTruckPageState extends State<EditTruckPage> {
                                   return Text('Error: ${driversSnapshot.error}');
                                 }
                                 final drivers = driversSnapshot.data ?? [];
-                                return LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return DropdownMenu<int?>(
-                                      width: constraints.maxWidth,
-                                      label: const Text('Chofer asignado'),
-                                      initialSelection: _selectedDriverId,
-                                      dropdownMenuEntries: [
-                                        const DropdownMenuEntry<int?>(
-                                          value: null,
-                                          label: 'Sin asignar',
-                                        ),
-                                        ...drivers
-                                            .map(
-                                              (driver) => DropdownMenuEntry<int?>(
-                                                value: driver.id,
-                                                label: driver.fullName,
-                                              ),
-                                            )
-                                            .toList(),
-                                      ],
-                                      onSelected: (value) {
-                                        setState(() {
-                                          _selectedDriverId = value;
-                                        });
-                                      },
-                                    );
+                                return DropdownMenu<int?>(
+                                  expandedInsets: EdgeInsets.zero,
+                                  initialSelection: _selectedDriverId,
+                                  label: const Text('Chofer asignado'),
+                                  dropdownMenuEntries: [
+                                    const DropdownMenuEntry<int?>(
+                                      value: null,
+                                      label: 'Sin asignar',
+                                    ),
+                                    ...drivers
+                                        .map(
+                                          (driver) => DropdownMenuEntry<int?>(
+                                            value: driver.id,
+                                            label: driver.fullName,
+                                          ),
+                                        )
+                                        .toList(),
+                                  ],
+                                  onSelected: (value) {
+                                    setState(() {
+                                      _selectedDriverId = value;
+                                    });
                                   },
                                 );
                               },

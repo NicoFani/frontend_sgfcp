@@ -422,7 +422,7 @@ class _StartTripPageState extends State<StartTripPage> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Tipo de cálculo'),
+                        title: Text('Tipo de cálculo', style: Theme.of(context).textTheme.labelLarge,),
                         subtitle: Text(
                           _calculatedPerKm ? 'Por kilómetro' : 'Por tonelada',
                         ),

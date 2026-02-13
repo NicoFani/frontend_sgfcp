@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/user.dart';
 import 'package:frontend_sgfcp/services/auth_service.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class EditAccountPageAdmin extends StatefulWidget {
   final User user;
@@ -22,10 +23,18 @@ class EditAccountPageAdmin extends StatefulWidget {
 }
 
 class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
+  final fieldsMaxLength = 24;
+
   late TextEditingController _nameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   bool _isLoading = false;
+
+  // Validation controllers
+  final WidgetStatesController _nameStatesController = WidgetStatesController();
+  final WidgetStatesController _lastNameStatesController = WidgetStatesController();
+  final WidgetStatesController _emailStatesController = WidgetStatesController();
+  bool _showValidationErrors = false;
 
   @override
   void initState() {
@@ -33,6 +42,11 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
     _nameController = TextEditingController(text: widget.user.firstName);
     _lastNameController = TextEditingController(text: widget.user.lastName);
     _emailController = TextEditingController(text: widget.user.email);
+
+    // Add validation listeners
+    _nameController.addListener(_updateValidationStates);
+    _lastNameController.addListener(_updateValidationStates);
+    _emailController.addListener(_updateValidationStates);
   }
 
   @override
@@ -40,19 +54,48 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
     _nameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _nameStatesController.dispose();
+    _lastNameStatesController.dispose();
+    _emailStatesController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveChanges() async {
-    if (_nameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor completa todos los campos'),
-          backgroundColor: Colors.orange,
-        ),
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+
+    setState(() {
+      _nameStatesController.update(
+        WidgetState.error,
+        _nameController.text.trim().isEmpty,
       );
+      _lastNameStatesController.update(
+        WidgetState.error,
+        _lastNameController.text.trim().isEmpty,
+      );
+      _emailStatesController.update(
+        WidgetState.error,
+        !isValidEmail(_emailController.text),
+      );
+    });
+  }
+
+  bool _validateRequiredFields() {
+    final hasName = _nameController.text.trim().isNotEmpty;
+    final hasLastName = _lastNameController.text.trim().isNotEmpty;
+    final hasEmail = isValidEmail(_emailController.text);
+
+    setState(() {
+      _showValidationErrors = true;
+      _nameStatesController.update(WidgetState.error, !hasName);
+      _lastNameStatesController.update(WidgetState.error, !hasLastName);
+      _emailStatesController.update(WidgetState.error, !hasEmail);
+    });
+
+    return hasName && hasLastName && hasEmail;
+  }
+
+  Future<void> _saveChanges() async {
+    if (!_validateRequiredFields()) {
       return;
     }
 
@@ -110,13 +153,20 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
               // Nombre(s)
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                statesController: _nameStatesController,
+                maxLength: fieldsMaxLength,
+                decoration: InputDecoration(
                   labelText: 'Nombre(s)',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
+                  border: const OutlineInputBorder(),
+                  counterText: '', // Ocultar contador de caracteres
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          _nameController.text.trim().isEmpty
+                      ? 'Ingresa un nombre'
+                      : null,
                 ),
               ),
 
@@ -125,13 +175,20 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
               // Apellido(s)
               TextField(
                 controller: _lastNameController,
-                decoration: const InputDecoration(
+                statesController: _lastNameStatesController,
+                maxLength: fieldsMaxLength,
+                decoration: InputDecoration(
                   labelText: 'Apellido(s)',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
+                  border: const OutlineInputBorder(),
+                  counterText: '', // Ocultar contador de caracteres
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          _lastNameController.text.trim().isEmpty
+                      ? 'Ingresa un apellido'
+                      : null,
                 ),
               ),
 
@@ -140,14 +197,19 @@ class _EditAccountPageAdminState extends State<EditAccountPageAdmin> {
               // Email
               TextField(
                 controller: _emailController,
+                statesController: _emailStatesController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 12,
                   ),
+                  errorText: _showValidationErrors &&
+                          !isValidEmail(_emailController.text)
+                      ? 'Email inválido'
+                      : null,
                 ),
               ),
 

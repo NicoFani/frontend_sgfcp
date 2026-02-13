@@ -90,6 +90,7 @@ class _PayrollDataPageState extends State<PayrollDataPage> {
                     DriverPayrollDataCard(
                       title: 'Comisión por viajes',
                       valueLabel: 'Comisión',
+                      valueSuffixText: '%',
                       startDateLabel: 'Fecha de inicio',
                       endDateLabel: 'Fecha de fin',
                       driverId: driver.id,
@@ -104,6 +105,7 @@ class _PayrollDataPageState extends State<PayrollDataPage> {
                     DriverPayrollDataCard(
                       title: 'Salario mínimo garantizado',
                       valueLabel: 'Importe',
+                      valuePrefixText: r'$ ',
                       startDateLabel: 'Fecha de inicio',
                       endDateLabel: 'Fecha de fin',
                       driverId: driver.id,

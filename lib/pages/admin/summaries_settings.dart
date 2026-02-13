@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class SummariesSettingsPageAdmin extends StatefulWidget {
   const SummariesSettingsPageAdmin({super.key});
@@ -173,7 +174,7 @@ class _SummariesSettingsPageAdminState extends State<SummariesSettingsPageAdmin>
               FilledButton(
                 onPressed: () {
                   final value = controller.text.trim();
-                  final isValid = _basicEmailValid(value);
+                  final isValid = isValidEmail(value);
                   setLocalState(() => errorText = isValid ? null : 'Email inválido');
                   if (isValid) {
                     setState(() => _email = value);
@@ -187,12 +188,5 @@ class _SummariesSettingsPageAdminState extends State<SummariesSettingsPageAdmin>
         });
       },
     );
-  }
-
-  bool _basicEmailValid(String v) {
-    // Very light validation; server-side should enforce correctness.
-    final at = v.indexOf('@');
-    final dot = v.lastIndexOf('.');
-    return at > 0 && dot > at + 1 && dot < v.length - 1;
   }
 }

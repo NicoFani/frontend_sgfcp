@@ -28,19 +28,29 @@ class _GenerateSummaryState extends State<GenerateSummary> {
   bool _isLoading = false;
   final TextEditingController _periodController = TextEditingController();
 
-  Future<void> _generateSummary() async {
-    // Validaciones
-    if (_selectedPeriodId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona un período')),
-      );
-      return;
-    }
+  late Future<List<DriverData>> _driversFuture;
+  late Future<List<PayrollPeriodData>> _periodsFuture;
 
-    if (_selectedDriverId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona un chofer')),
-      );
+  // Validation controllers
+  final WidgetStatesController _periodStatesController = WidgetStatesController();
+  final WidgetStatesController _driverStatesController = WidgetStatesController();
+  bool _showValidationErrors = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _driversFuture = DriverService.getDrivers();
+    _periodsFuture = PayrollPeriodService.getAllPeriods();
+  }
+
+  Future<void> _generateSummary() async {
+    setState(() {
+      _showValidationErrors = true;
+    });
+
+    // Validaciones
+    if (_selectedPeriodId == null || _selectedDriverId == null) {
+      _updateValidationStates();
       return;
     }
 
@@ -78,7 +88,24 @@ class _GenerateSummaryState extends State<GenerateSummary> {
   @override
   void dispose() {
     _periodController.dispose();
+    _periodStatesController.dispose();
+    _driverStatesController.dispose();
     super.dispose();
+  }
+
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+
+    setState(() {
+      _periodStatesController.update(
+        WidgetState.error,
+        _selectedPeriodId == null,
+      );
+      _driverStatesController.update(
+        WidgetState.error,
+        _selectedDriverId == null,
+      );
+    });
   }
 
   @override
@@ -98,7 +125,7 @@ class _GenerateSummaryState extends State<GenerateSummary> {
               Text('Período', style: textTheme.titleMedium),
               gap8,
               FutureBuilder<List<PayrollPeriodData>>(
-                future: PayrollPeriodService.getAllPeriods(),
+                future: _periodsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -146,10 +173,14 @@ class _GenerateSummaryState extends State<GenerateSummary> {
                   return TextFormField(
                     controller: _periodController,
                     readOnly: true,
-                    decoration: const InputDecoration(
+                    statesController: _periodStatesController,
+                    decoration: InputDecoration(
                       labelText: 'Seleccionar período',
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today_outlined),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: const Icon(Icons.calendar_today_outlined),
+                      errorText: _showValidationErrors && _selectedPeriodId == null
+                          ? 'Selecciona un período'
+                          : null,
                     ),
                     onTap: _isLoading
                         ? null
@@ -168,7 +199,7 @@ class _GenerateSummaryState extends State<GenerateSummary> {
               Text('Chofer', style: textTheme.titleMedium),
               gap8,
               FutureBuilder<List<DriverData>>(
-                future: DriverService.getDrivers(),
+                future: _driversFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -200,23 +231,27 @@ class _GenerateSummaryState extends State<GenerateSummary> {
                     );
                   }
 
-                  return DropdownButtonFormField<int>(
-                    value: _selectedDriverId,
-                    decoration: const InputDecoration(
-                      labelText: 'Seleccionar chofer',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: drivers.map((driver) {
-                      return DropdownMenuItem<int>(
-                        value: driver.id,
-                        child: Text(driver.fullName),
-                      );
-                    }).toList(),
-                    onChanged: _isLoading
+                  return DropdownMenu<int>(
+                    expandedInsets: EdgeInsets.zero,
+                    initialSelection: _selectedDriverId,
+                    label: const Text('Seleccionar chofer'),
+                    errorText: _showValidationErrors && _selectedDriverId == null
+                        ? 'Selecciona un chofer'
+                        : null,
+                    dropdownMenuEntries: drivers
+                        .map(
+                          (driver) => DropdownMenuEntry<int>(
+                            value: driver.id,
+                            label: driver.fullName,
+                          ),
+                        )
+                        .toList(),
+                    onSelected: _isLoading
                         ? null
                         : (value) {
                             setState(() {
                               _selectedDriverId = value;
+                              _updateValidationStates();
                             });
                           },
                   );
@@ -324,13 +359,14 @@ class _GenerateSummaryState extends State<GenerateSummary> {
       setState(() {
         _selectedPeriodId = null;
         _periodController.clear();
+        _updateValidationStates();
       });
-      return;
     }
 
     setState(() {
       _selectedPeriodId = match?.id;
       _periodController.text = label[0].toUpperCase() + label.substring(1);
+      _updateValidationStates();
     });
   }
 }

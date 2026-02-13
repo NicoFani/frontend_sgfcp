@@ -4,6 +4,7 @@ import 'package:frontend_sgfcp/main.dart';
 import 'package:frontend_sgfcp/pages/admin/admin_root_navigation.dart';
 import 'package:frontend_sgfcp/services/auth_service.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 /// Pantalla de inicio de sesión
 class LoginPage extends StatefulWidget {
@@ -23,7 +24,6 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _emailRegex = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$");
   final String logoLocation = 'assets/images/logo_mockup_gemini_no_background.png';
 
   bool _obscurePassword = true;
@@ -139,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) return 'Por favor ingresa tu email';
-                      if (!_emailRegex.hasMatch(value)) return 'Por favor ingresa un email válido';
+                      if (!isValidEmail(value)) return 'Por favor ingresa un email válido';
                       return null;
                     },
                   ),

@@ -5,6 +5,7 @@ import 'package:frontend_sgfcp/services/driver_guaranteed_minimum_service.dart';
 import 'package:frontend_sgfcp/models/driver_commission_history.dart';
 import 'package:frontend_sgfcp/models/minimum_guaranteed_history.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 
 enum PayrollType { commission, minimumGuaranteed }
 
@@ -13,6 +14,8 @@ class DriverPayrollDataCard extends StatefulWidget {
   final String valueLabel;
   final String startDateLabel;
   final String endDateLabel;
+  final String? valuePrefixText;
+  final String? valueSuffixText;
   final int driverId;
   final PayrollType payrollType;
   final List<DriverCommissionHistory>? commissionHistory;
@@ -25,6 +28,8 @@ class DriverPayrollDataCard extends StatefulWidget {
     required this.valueLabel,
     required this.startDateLabel,
     required this.endDateLabel,
+    this.valuePrefixText,
+    this.valueSuffixText,
     required this.driverId,
     required this.payrollType,
     this.commissionHistory,
@@ -67,11 +72,11 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
       final percentage =
           (_currentRecord as DriverCommissionHistory).commissionPercentage *
           100;
-      return '${percentage.toStringAsFixed(2)}%';
+      return formatCurrency(percentage, symbol: '', decimalDigits: 2);
     } else {
       final value =
           (_currentRecord as MinimumGuaranteedHistory).minimumGuaranteed;
-      return formatCurrency(value);
+      return formatCurrency(value, symbol: '', decimalDigits: 2);
     }
   }
 
@@ -201,7 +206,6 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
       // Limpiar el campo de valor
       _valueController.clear();
       // Para ambos tipos, la fecha se calculará automáticamente
-      _startDateController.text = '(se calculará automáticamente)';
       _endDateController.text = '-';
       _newStartDate = null;
     });
@@ -298,11 +302,7 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
       double value;
 
       if (widget.payrollType == PayrollType.commission) {
-        // Parse commission percentage (remove '%' if present)
-        final percentageText = valueText
-            .replaceAll('%', '')
-            .replaceAll(',', '.');
-        final percentageValue = double.parse(percentageText);
+        final percentageValue = parseCurrency(valueText);
         // Convertir de porcentaje (18) a decimal (0.18) para enviar al backend
         value = percentageValue / 100;
       } else {
@@ -455,7 +455,20 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
                     decoration: InputDecoration(
                       labelText: widget.valueLabel,
                       border: const OutlineInputBorder(),
+                      prefixText: widget.valuePrefixText,
+                      suffixText: widget.valueSuffixText,
                     ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      CurrencyTextInputFormatter.currency(
+                        locale: 'es_AR',
+                        symbol: '',
+                        decimalDigits: 2,
+                        enableNegative: false,
+                      ),
+                    ],
                   ),
                 ),
                 // Next button
@@ -476,12 +489,13 @@ class _DriverPayrollDataCardState extends State<DriverPayrollDataCard> {
                     controller: _startDateController,
                     readOnly: true,
                     enabled:
-                        !_isEditMode, // Deshabilitar en modo edición para que se vea claramente que no es editable
+                        !_isCreating || _isEditMode, // Habilitar solo en modo edición
                     decoration: InputDecoration(
                       labelText: widget.startDateLabel,
                       border: const OutlineInputBorder(),
                       suffixIcon: const Icon(Icons.calendar_today),
                     ),
+                    onTap: _isCreating ? _handleStartDateTap : null,
                   ),
                 ),
                 gapW12,

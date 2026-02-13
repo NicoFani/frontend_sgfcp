@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:frontend_sgfcp/models/other_items_type.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/models/payroll_period_data.dart';
@@ -8,7 +9,9 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/services/payroll_period_service.dart';
 import 'package:frontend_sgfcp/services/payroll_other_item_service.dart';
-import 'package:frontend_sgfcp/pages/shared/trip.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
+import 'package:frontend_sgfcp/widgets/month_picker.dart';
+import 'package:intl/intl.dart';
 
 class OtherItemsPage extends StatefulWidget {
   const OtherItemsPage({super.key});
@@ -35,16 +38,31 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _referenceController = TextEditingController();
+  final TextEditingController _periodController = TextEditingController();
 
   // Datos cargados
   List<DriverData> _drivers = [];
   List<PayrollPeriodData> _periods = [];
   bool _isLoading = true;
 
+  // Validation controllers
+  final WidgetStatesController _driverStatesController = WidgetStatesController();
+  final WidgetStatesController _periodStatesController = WidgetStatesController();
+  final WidgetStatesController _otherItemStatesController = WidgetStatesController();
+  final WidgetStatesController _amountStatesController = WidgetStatesController();
+  final WidgetStatesController _descriptionStatesController = WidgetStatesController();
+  final WidgetStatesController _referenceStatesController = WidgetStatesController();
+  bool _showValidationErrors = false;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+
+    // Add validation listeners
+    _amountController.addListener(_updateValidationStates);
+    _descriptionController.addListener(_updateValidationStates);
+    _referenceController.addListener(_updateValidationStates);
   }
 
   void _loadData() async {
@@ -72,7 +90,74 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
     _descriptionController.dispose();
     _amountController.dispose();
     _referenceController.dispose();
+    _periodController.dispose();
+    _driverStatesController.dispose();
+    _periodStatesController.dispose();
+    _otherItemStatesController.dispose();
+    _amountStatesController.dispose();
+    _descriptionStatesController.dispose();
+    _referenceStatesController.dispose();
     super.dispose();
+  }
+
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+
+    setState(() {
+      _driverStatesController.update(
+        WidgetState.error,
+        _selectedDriver == null,
+      );
+      _periodStatesController.update(
+        WidgetState.error,
+        _selectedPeriod == null,
+      );
+      _otherItemStatesController.update(
+        WidgetState.error,
+        false, // Always valid since we have a default
+      );
+      _amountStatesController.update(
+        WidgetState.error,
+        _amountController.text.trim().isEmpty,
+      );
+      _descriptionStatesController.update(
+        WidgetState.error,
+        _descriptionController.text.trim().isEmpty,
+      );
+
+      // Reference required only for multa
+      if (_otherItemsType == OtherItemsType.multa) {
+        _referenceStatesController.update(
+          WidgetState.error,
+          _referenceController.text.trim().isEmpty,
+        );
+      } else {
+        _referenceStatesController.update(WidgetState.error, false);
+      }
+    });
+  }
+
+  bool _validateRequiredFields() {
+    final hasDriver = _selectedDriver != null;
+    final hasPeriod = _selectedPeriod != null;
+    final hasAmount = _amountController.text.trim().isNotEmpty;
+    final hasDescription = _descriptionController.text.trim().isNotEmpty;
+    final hasReference = _otherItemsType == OtherItemsType.multa
+        ? _referenceController.text.trim().isNotEmpty
+        : true;
+
+    setState(() {
+      _showValidationErrors = true;
+      _driverStatesController.update(WidgetState.error, !hasDriver);
+      _periodStatesController.update(WidgetState.error, !hasPeriod);
+      _amountStatesController.update(WidgetState.error, !hasAmount);
+      _descriptionStatesController.update(WidgetState.error, !hasDescription);
+      if (_otherItemsType == OtherItemsType.multa) {
+        _referenceStatesController.update(WidgetState.error, !hasReference);
+      }
+    });
+
+    return hasDriver && hasPeriod && hasAmount && hasDescription && hasReference;
   }
 
   @override
@@ -90,111 +175,104 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Selector de Chofer
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return DropdownMenu<DriverData>(
-                    width: constraints.maxWidth,
-                    label: const Text('Chofer'),
-                    initialSelection: _selectedDriver,
-                    dropdownMenuEntries: _drivers
-                        .map(
-                          (driver) => DropdownMenuEntry(
-                            value: driver,
-                            label: driver.fullName,
-                          ),
-                        )
-                        .toList(),
-                    onSelected: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedDriver = value;
-                      });
-                    },
-                  );
+              DropdownMenu<DriverData>(
+                expandedInsets: EdgeInsets.zero,
+                label: const Text('Chofer'),
+                initialSelection: _selectedDriver,
+                errorText: _showValidationErrors && _selectedDriver == null
+                    ? 'Selecciona un chofer'
+                    : null,
+                dropdownMenuEntries: _drivers
+                    .map(
+                      (driver) => DropdownMenuEntry(
+                        value: driver,
+                        label: driver.fullName,
+                      ),
+                    )
+                    .toList(),
+                onSelected: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _selectedDriver = value;
+                    _updateValidationStates();
+                  });
                 },
               ),
 
               gap12,
 
               // Selector de Período
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return DropdownMenu<PayrollPeriodData>(
-                    width: constraints.maxWidth,
-                    label: const Text('Período'),
-                    initialSelection: _selectedPeriod,
-                    dropdownMenuEntries: _periods
-                        .map(
-                          (period) => DropdownMenuEntry(
-                            value: period,
-                            label: period.periodLabel,
-                          ),
-                        )
-                        .toList(),
-                    onSelected: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedPeriod = value;
-                      });
-                    },
-                  );
-                },
+              TextField(
+                controller: _periodController,
+                readOnly: true,
+                statesController: _periodStatesController,
+                decoration: InputDecoration(
+                  labelText: 'Período',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: const Icon(Icons.calendar_today_outlined),
+                  errorText: _showValidationErrors && _selectedPeriod == null
+                      ? 'Selecciona un período'
+                      : null,
+                ),
+                onTap: () => _pickPeriodMonth(),
               ),
 
               gap12,
 
               // Concepto
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return DropdownMenu<OtherItemsType>(
-                    width: constraints.maxWidth,
-                    label: const Text('Concepto'),
-                    initialSelection: _otherItemsType,
-                    dropdownMenuEntries: const [
-                      DropdownMenuEntry(
-                        value: OtherItemsType.ajuste,
-                        label: 'Ajuste',
-                      ),
-                      DropdownMenuEntry(
-                        value: OtherItemsType.multa,
-                        label: 'Multa',
-                      ),
-                      DropdownMenuEntry(
-                        value: OtherItemsType.bonificacionExtra,
-                        label: 'Bonificación Extra',
-                      ),
-                      DropdownMenuEntry(
-                        value: OtherItemsType.cargoExtra,
-                        label: 'Cargo Extra',
-                      ),
-                    ],
-                    onSelected: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _otherItemsType = value;
-                        _isAdjustmentPositive = true;
-                      });
-                    },
-                  );
+              DropdownMenu<OtherItemsType>(
+                expandedInsets: EdgeInsets.zero,
+                label: const Text('Concepto'),
+                initialSelection: _otherItemsType,
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(
+                    value: OtherItemsType.ajuste,
+                    label: 'Ajuste',
+                  ),
+                  DropdownMenuEntry(
+                    value: OtherItemsType.multa,
+                    label: 'Multa',
+                  ),
+                  DropdownMenuEntry(
+                    value: OtherItemsType.bonificacionExtra,
+                    label: 'Bonificación Extra',
+                  ),
+                  DropdownMenuEntry(
+                    value: OtherItemsType.cargoExtra,
+                    label: 'Cargo Extra',
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _otherItemsType = value;
+                    _isAdjustmentPositive = true;
+                    _updateValidationStates();
+                  });
                 },
               ),
 
               gap12,
 
               if (_otherItemsType == OtherItemsType.ajuste) ...[
-                const Text('Tipo de ajuste'),
-                gap8,
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: true, label: Text('Suma')),
-                    ButtonSegment(value: false, label: Text('Resta')),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                     Text('Tipo de ajuste', style: Theme.of(context).textTheme.bodyLarge,),
+                    gap8,
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: true, label: Text('Suma')),
+                        ButtonSegment(value: false, label: Text('Resta')),
+                      ],
+                      selected: {_isAdjustmentPositive},
+                      onSelectionChanged: (value) {
+                        setState(() {
+                          _isAdjustmentPositive = value.first;
+                        });
+                      },
+                    ),
                   ],
-                  selected: {_isAdjustmentPositive},
-                  onSelectionChanged: (value) {
-                    setState(() {
-                      _isAdjustmentPositive = value.first;
-                    });
-                  },
                 ),
                 gap12,
               ],
@@ -202,13 +280,26 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
               // Importe
               TextField(
                 controller: _amountController,
-                decoration: const InputDecoration(
+                statesController: _amountStatesController,
+                decoration: InputDecoration(
                   labelText: 'Importe',
-                  border: OutlineInputBorder(),
+                  prefixText: r'$ ',
+                  border: const OutlineInputBorder(),
+                  errorText: _showValidationErrors &&
+                          _amountController.text.trim().isEmpty
+                      ? 'Ingresa un importe'
+                      : null,
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [
+                  CurrencyTextInputFormatter.currency(
+                    locale: 'es_AR',
+                    symbol: '',
+                    decimalDigits: 2,
+                  ),
+                ],
               ),
 
               gap12,
@@ -216,11 +307,16 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
               // Descripción
               TextField(
                 controller: _descriptionController,
+                statesController: _descriptionStatesController,
                 maxLines: 3,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Descripción',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   alignLabelWithHint: true,
+                  errorText: _showValidationErrors &&
+                          _descriptionController.text.trim().isEmpty
+                      ? 'Ingresa una descripción'
+                      : null,
                 ),
               ),
 
@@ -229,9 +325,14 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
                 gap12,
                 TextField(
                   controller: _referenceController,
-                  decoration: const InputDecoration(
+                  statesController: _referenceStatesController,
+                  decoration: InputDecoration(
                     labelText: 'Referencia (Municipio, infracción, etc)',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    errorText: _showValidationErrors &&
+                            _referenceController.text.trim().isEmpty
+                        ? 'Ingresa una referencia'
+                        : null,
                   ),
                 ),
               ],
@@ -243,9 +344,7 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
-                onPressed: _selectedDriver == null || _selectedPeriod == null
-                    ? null
-                    : _submitForm,
+                onPressed: _submitForm,
                 icon: const Icon(Symbols.request_quote),
                 label: const Text('Cargar concepto'),
               ),
@@ -257,30 +356,13 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
   }
 
   Future<void> _submitForm() async {
-    if (_selectedDriver == null || _selectedPeriod == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe seleccionar chofer y período')),
-      );
-      return;
-    }
-
-    if (_amountController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Debe ingresar un importe')));
-      return;
-    }
-
-    if (_descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe ingresar una descripción')),
-      );
+    if (!_validateRequiredFields()) {
       return;
     }
 
     try {
       final itemType = _otherItemsType.toBackendString();
-      final rawAmount = double.parse(_amountController.text);
+      final rawAmount = parseCurrency(_amountController.text);
       double amount;
 
       if (_otherItemsType == OtherItemsType.ajuste) {
@@ -319,8 +401,10 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
         setState(() {
           _selectedDriver = null;
           _selectedPeriod = null;
+          _periodController.clear();
           _otherItemsType = OtherItemsType.ajuste;
           _isAdjustmentPositive = true;
+          _showValidationErrors = false;
         });
       }
     } catch (e) {
@@ -330,5 +414,84 @@ class _OtherItemsPageState extends State<OtherItemsPage> {
         ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
+  }
+
+  Future<void> _pickPeriodMonth() async {
+    if (_periods.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hay períodos disponibles')),
+        );
+      }
+      return;
+    }
+
+    final sortedPeriods = [..._periods]
+      ..sort((a, b) => a.startDate.compareTo(b.startDate));
+    final firstDate = DateTime(
+      sortedPeriods.first.startDate.year,
+      sortedPeriods.first.startDate.month,
+    );
+    final lastDate = DateTime(
+      sortedPeriods.last.startDate.year,
+      sortedPeriods.last.startDate.month,
+    );
+
+    final now = DateTime.now();
+    var initial = _selectedPeriod == null
+        ? DateTime(now.year, now.month)
+        : DateTime(
+            _selectedPeriod!.startDate.year,
+            _selectedPeriod!.startDate.month,
+          );
+
+    if (initial.isBefore(firstDate)) {
+      initial = firstDate;
+    } else if (initial.isAfter(lastDate)) {
+      initial = lastDate;
+    }
+
+    final picked = await showMonthPicker(
+      context: context,
+      initialDate: initial,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+
+    if (picked == null) return;
+
+    PayrollPeriodData? match;
+    for (final p in sortedPeriods) {
+      if (p.startDate.year == picked.year &&
+          p.startDate.month == picked.month) {
+        match = p;
+        break;
+      }
+    }
+
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final label = DateFormat.yMMMM(locale).format(picked);
+
+    if (match == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay un período para ese mes'),
+          ),
+        );
+      }
+      setState(() {
+        _selectedPeriod = null;
+        _periodController.clear();
+        _updateValidationStates();
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedPeriod = match;
+      _periodController.text = label[0].toUpperCase() + label.substring(1);
+      _updateValidationStates();
+    });
   }
 }

@@ -77,13 +77,6 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
     super.dispose();
   }
 
-  bool _isEmailValid(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return false;
-    final atCount = '@'.allMatches(trimmed).length;
-    return atCount == 1 && trimmed.contains('.');
-  }
-
   bool _isExactDigits(String value, int length) {
     final digits = value.replaceAll(RegExp(r'\D'), '');
     return digits.length == length && RegExp(r'^\d+$').hasMatch(digits);
@@ -97,7 +90,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
     if (!_showValidationErrors) return;
     _emailStatesController.update(
       WidgetState.error,
-      !_isEmailValid(_emailController.text),
+      !isValidEmail(_emailController.text),
     );
     _nameStatesController.update(
       WidgetState.error,
@@ -122,7 +115,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
   }
 
   bool _validateRequiredFields() {
-    final hasEmail = _isEmailValid(_emailController.text);
+    final hasEmail = isValidEmail(_emailController.text);
     final hasName = _nameController.text.trim().isNotEmpty;
     final hasLastName = _lastNameController.text.trim().isNotEmpty;
     final hasCuil = _isExactDigits(_cuilController.text, cuilMaxLength);
@@ -217,7 +210,7 @@ class _CreateDriverPageAdminState extends State<CreateDriverPageAdmin> {
                     vertical: 12,
                   ),
                   errorText: _showValidationErrors &&
-                          !_isEmailValid(_emailController.text)
+                          !isValidEmail(_emailController.text)
                       ? 'Email invalido'
                       : null,
                 ),

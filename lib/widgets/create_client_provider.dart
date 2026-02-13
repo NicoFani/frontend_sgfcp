@@ -53,28 +53,53 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
   final TextEditingController _nameController = TextEditingController();
   late String _entityType; // Solo para lectura, no se puede cambiar
   bool _isLoading = false;
+  final nameLengthLimit = 36;
+
+  // Validation controller
+  final WidgetStatesController _nameStatesController = WidgetStatesController();
+  bool _showValidationErrors = false;
 
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.initialName ?? '';
     _entityType = widget.initialType ?? 'Cliente';
+
+    // Add validation listener
+    _nameController.addListener(_updateValidationStates);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _nameStatesController.dispose();
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El nombre es obligatorio'),
-          backgroundColor: Colors.red,
-        ),
+  void _updateValidationStates() {
+    if (!_showValidationErrors) return;
+
+    setState(() {
+      _nameStatesController.update(
+        WidgetState.error,
+        _nameController.text.trim().isEmpty,
       );
+    });
+  }
+
+  bool _validateRequiredFields() {
+    final hasName = _nameController.text.trim().isNotEmpty;
+
+    setState(() {
+      _showValidationErrors = true;
+      _nameStatesController.update(WidgetState.error, !hasName);
+    });
+
+    return hasName;
+  }
+
+  Future<void> _save() async {
+    if (!_validateRequiredFields()) {
       return;
     }
 
@@ -212,14 +237,21 @@ class _ClientProviderDialogState extends State<ClientProviderDialog> {
             // Campo de nombre
             TextField(
               controller: _nameController,
+              statesController: _nameStatesController,
+              maxLength: nameLengthLimit,
               enabled: !_isLoading,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nombre',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
+                border: const OutlineInputBorder(),
+                counterText: '', // Ocultar contador de caracteres
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 12,
                 ),
+                errorText: _showValidationErrors &&
+                        _nameController.text.trim().isEmpty
+                    ? 'El nombre es obligatorio'
+                    : null,
               ),
             ),
 
