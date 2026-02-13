@@ -200,7 +200,7 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Adelanto cargado correctamente'),

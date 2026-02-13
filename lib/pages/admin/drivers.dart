@@ -57,10 +57,19 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
       0,
     );
 
-    return advances.where((advance) {
+    final filtered = advances.where((advance) {
       return !advance.date.isBefore(startOfMonth) &&
           !advance.date.isAfter(endOfMonth);
     }).toList();
+
+    // Mostrar más recientes primero
+    filtered.sort((a, b) {
+      final byDate = b.date.compareTo(a.date);
+      if (byDate != 0) return byDate;
+      return b.id.compareTo(a.id);
+    });
+
+    return filtered;
   }
 
   @override
@@ -168,9 +177,13 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                     // Botón Cargar adelanto
                     FilledButton.icon(
                       onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).push(AddAdvancePaymentPage.route());
+                        Navigator.of(context)
+                            .push(AddAdvancePaymentPage.route())
+                            .then((created) {
+                          if (created == true) {
+                            refreshData();
+                          }
+                        });
                       },
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
@@ -211,6 +224,7 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
                       _AdvancePaymentsList(
                         advancePayments: filteredAdvances,
                         drivers: drivers,
+                        onAdvanceUpdated: refreshData,
                       ),
                   ],
                 ),
@@ -226,10 +240,12 @@ class _DriversPageAdminState extends State<DriversPageAdmin> {
 class _AdvancePaymentsList extends StatelessWidget {
   final List<AdvancePaymentData> advancePayments;
   final List<DriverData> drivers;
+  final VoidCallback onAdvanceUpdated;
 
   const _AdvancePaymentsList({
     required this.advancePayments,
     required this.drivers,
+    required this.onAdvanceUpdated,
   });
 
   @override
@@ -285,15 +301,21 @@ class _AdvancePaymentsList extends StatelessWidget {
                   trailing: const Icon(Icons.arrow_right),
                   onTap: () {
                     if (driver.id != -1) {
-                      Navigator.of(context).push(
-                        EditAdvancePaymentPage.route(
-                          advancePaymentId: advance.id,
-                          driverId: advance.driverId,
-                          driverName: driverName,
-                          date: advance.date,
-                          amount: advance.amount,
-                        ),
-                      );
+                      Navigator.of(context)
+                          .push(
+                            EditAdvancePaymentPage.route(
+                              advancePaymentId: advance.id,
+                              driverId: advance.driverId,
+                              driverName: driverName,
+                              date: advance.date,
+                              amount: advance.amount,
+                            ),
+                          )
+                          .then((updated) {
+                        if (updated == true) {
+                          onAdvanceUpdated();
+                        }
+                      });
                     }
                   },
                 );

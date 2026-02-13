@@ -229,7 +229,7 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Adelanto actualizado correctamente'),
@@ -262,7 +262,60 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar adelanto')),
+      appBar: AppBar(
+        title: const Text('Editar adelanto'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () async {
+              await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) {
+                  return AlertDialog(
+                    title: const Text('¿Eliminar adelanto?'),
+                    content: const Text(
+                      '¿Estás seguro de que querés eliminar este adelanto? '
+                      'Esta acción no se puede deshacer.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                          foregroundColor: Theme.of(context).colorScheme.onError,
+                        ),
+                        onPressed: () async {
+                          try {
+                            await AdvancePaymentService.deleteAdvancePayment(
+                              advancePaymentId: widget.advancePaymentId,
+                            );
+
+                            if (!mounted) return;
+
+                            Navigator.of(dialogContext).pop(true);
+                            Navigator.of(context).pop(true);
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al eliminar adelanto: $e'),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('Eliminar'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: FutureBuilder<List<DriverData>>(
           future: _driversFuture,
