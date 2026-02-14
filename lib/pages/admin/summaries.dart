@@ -132,8 +132,15 @@ class _SummariesPageAdminState extends State<SummariesPageAdmin> {
                   child: FilledButton.icon(
                     icon: const Icon(Symbols.receipt_long),
                     label: const Text('Generar resumen'),
-                    onPressed: () =>
-                        Navigator.of(context).push(GenerateSummary.route()),
+                    onPressed: () async {
+                      final result = await Navigator.of(
+                        context,
+                      ).push(GenerateSummary.route());
+                      // Si se creó un resumen exitosamente, refrescar la lista
+                      if (result == true && mounted) {
+                        _loadSummaries();
+                      }
+                    },
                   ),
                 ),
                 gap8,

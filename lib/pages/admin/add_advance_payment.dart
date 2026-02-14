@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
@@ -33,10 +35,16 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
   late Future<List<DriverData>> _driversFuture;
   bool _isLoading = false;
 
+  // Archivo adjunto
+  Uint8List? _receiptFileBytes;
+  String? _receiptFileName;
+
   // Validation controllers
-  final WidgetStatesController _driverStatesController = WidgetStatesController();
+  final WidgetStatesController _driverStatesController =
+      WidgetStatesController();
   final WidgetStatesController _dateStatesController = WidgetStatesController();
-  final WidgetStatesController _amountStatesController = WidgetStatesController();
+  final WidgetStatesController _amountStatesController =
+      WidgetStatesController();
   bool _showValidationErrors = false;
 
   @override
@@ -157,25 +165,38 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
     }
   }
 
-  void _showReceiptDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Adjuntar comprobante'),
-        content: const Text(
-          'Funcionalidad de carga de comprobante (próximamente)',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cerrar'),
+  Future<void> _pickReceipt() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        withData: true,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        setState(() {
+          _receiptFileBytes = result.files.single.bytes;
+          _receiptFileName = result.files.single.name;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar archivo: $e'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
 
-
+  void _removeReceipt() {
+    setState(() {
+      _receiptFileBytes = null;
+      _receiptFileName = null;
+    });
+  }
 
   Future<void> _loadAdvance() async {
     setState(() {
@@ -197,6 +218,8 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
         driverId: _selectedDriverId!,
         date: _date,
         amount: amount,
+        receiptFileBytes: _receiptFileBytes,
+        receiptFileName: _receiptFileName,
       );
 
       if (mounted) {
@@ -230,7 +253,6 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(title: const Text('Cargar Adelanto')),
       body: SafeArea(
@@ -273,7 +295,8 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                     expandedInsets: EdgeInsets.zero,
                     initialSelection: _selectedDriverId,
                     label: const Text('Chofer'),
-                    errorText: _showValidationErrors && _selectedDriverId == null
+                    errorText:
+                        _showValidationErrors && _selectedDriverId == null
                         ? 'Selecciona un chofer'
                         : null,
                     dropdownMenuEntries: drivers.map((driver) {
@@ -309,12 +332,15 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
                           decoration: InputDecoration(
                             labelText: 'Fecha',
                             border: const OutlineInputBorder(),
-                            suffixIcon: const Icon(Icons.calendar_today_outlined),
+                            suffixIcon: const Icon(
+                              Icons.calendar_today_outlined,
+                            ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 12,
                             ),
-                            errorText: _showValidationErrors &&
+                            errorText:
+                                _showValidationErrors &&
                                     _dateController.text.isEmpty
                                 ? 'Selecciona una fecha'
                                 : null,
@@ -373,18 +399,40 @@ class _AddAdvancePaymentPageState extends State<AddAdvancePaymentPage> {
 
                   gap12,
 
-                  // Botón Adjuntar comprobante
-                  FilledButton.tonalIcon(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
+                  // Botón Adjuntar comprobante o mostrar archivo adjunto
+                  if (_receiptFileBytes == null)
+                    FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      onPressed: _pickReceipt,
+                      icon: const Icon(Symbols.receipt_long),
+                      label: const Text('Adjuntar comprobante'),
+                    )
+                  else
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.attach_file,
+                          color: Colors.green,
+                        ),
+                        title: Text(
+                          _receiptFileName ?? 'Archivo adjunto',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${(_receiptFileBytes!.length / 1024).toStringAsFixed(1)} KB',
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: _removeReceipt,
+                          tooltip: 'Quitar',
+                        ),
                       ),
                     ),
-                    onPressed: _showReceiptDialog,
-                    icon: const Icon(Symbols.receipt_long),
-                    label: const Text('Adjuntar comprobante'),
-                  ),
 
                   gap12,
 

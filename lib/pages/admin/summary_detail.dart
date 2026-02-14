@@ -116,19 +116,13 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               itemBuilder: (context) => [
-                const PopupMenuItem(value: 'pdf', child: Text('Descargar PDF')),
                 const PopupMenuItem(
                   value: 'excel',
                   child: Text('Descargar Excel'),
                 ),
+                const PopupMenuItem(value: 'pdf', child: Text('Descargar PDF')),
               ],
-              onSelected: (value) {
-                if (value == 'pdf') {
-                  // TODO: Implementar descarga de PDF
-                } else if (value == 'excel') {
-                  // TODO: Implementar descarga de Excel
-                }
-              },
+              onSelected: (value) => _handleExport(value),
             ),
           ],
         ),
@@ -278,18 +272,20 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
               gap16,
             ],
 
-            // Botón recalcular
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
+            // Botón recalcular (solo si no está aprobado)
+            if (summary.status != 'approved')
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: _recalculateSummary,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Recalcular resumen'),
               ),
-              onPressed: _recalculateSummary,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Recalcular resumen'),
-            ),
           ],
         ),
-        floatingActionButton: summary.status != 'approved'
+        floatingActionButton:
+            summary.status != 'approved' && summary.status != 'draft'
             ? FloatingActionButton(
                 child: const Icon(Icons.check),
                 onPressed: () async {
@@ -453,6 +449,66 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Future<void> _handleExport(String format) async {
+    final formatName = format == 'excel' ? 'Excel' : 'PDF';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Exportar a $formatName'),
+        content: Text('¿Deseas exportar este resumen a $formatName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Exportar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      try {
+        // Mostrar indicador de carga
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exportando a $formatName...'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Exportar
+        await PayrollSummaryService.exportSummary(
+          summaryId: widget.summaryId,
+          format: format,
+        );
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Resumen exportado a $formatName exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al exportar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

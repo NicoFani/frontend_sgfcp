@@ -5,6 +5,7 @@ import 'package:frontend_sgfcp/models/payroll_period_data.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/services/payroll_period_service.dart';
 import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
+import 'package:frontend_sgfcp/services/api_response_handler.dart';
 import 'package:frontend_sgfcp/pages/admin/summary_detail.dart';
 import 'package:frontend_sgfcp/widgets/month_picker.dart';
 import 'package:intl/intl.dart';
@@ -32,10 +33,12 @@ class _GenerateSummaryState extends State<GenerateSummary> {
   late Future<List<PayrollPeriodData>> _periodsFuture;
 
   // Validation controllers
-  final WidgetStatesController _periodStatesController = WidgetStatesController();
-  final WidgetStatesController _driverStatesController = WidgetStatesController();
+  final WidgetStatesController _periodStatesController =
+      WidgetStatesController();
+  final WidgetStatesController _driverStatesController =
+      WidgetStatesController();
   bool _showValidationErrors = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -64,18 +67,27 @@ class _GenerateSummaryState extends State<GenerateSummary> {
       );
 
       if (mounted) {
-        // Navegar al detalle del resumen generado
-        Navigator.of(
+        // Navegar al detalle del resumen generado y luego volver con resultado exitoso
+        await Navigator.of(
           context,
-        ).pushReplacement(SummaryDetailPage.route(summaryId: summary.id));
+        ).push(SummaryDetailPage.route(summaryId: summary.id));
+        // Volver a la página anterior indicando que se creó un resumen
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
+        // Mostrar solo el mensaje específico sin prefijos genéricos
+        String errorMessage;
+        if (e is ApiException && e.details != null) {
+          errorMessage = e.details!;
+        } else {
+          errorMessage = e.toString();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar resumen: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -178,21 +190,22 @@ class _GenerateSummaryState extends State<GenerateSummary> {
                       labelText: 'Seleccionar período',
                       border: const OutlineInputBorder(),
                       suffixIcon: const Icon(Icons.calendar_today_outlined),
-                      errorText: _showValidationErrors && _selectedPeriodId == null
+                      errorText:
+                          _showValidationErrors && _selectedPeriodId == null
                           ? 'Selecciona un período'
                           : null,
                     ),
                     onTap: _isLoading
                         ? null
                         : () => _pickPeriodMonth(
-                              sortedPeriods,
-                              firstDate,
-                              lastDate,
-                            ),
+                            sortedPeriods,
+                            firstDate,
+                            lastDate,
+                          ),
                   );
                 },
               ),
-              
+
               gap16,
 
               // Dropdown de Choferes
@@ -235,7 +248,8 @@ class _GenerateSummaryState extends State<GenerateSummary> {
                     expandedInsets: EdgeInsets.zero,
                     initialSelection: _selectedDriverId,
                     label: const Text('Seleccionar chofer'),
-                    errorText: _showValidationErrors && _selectedDriverId == null
+                    errorText:
+                        _showValidationErrors && _selectedDriverId == null
                         ? 'Selecciona un chofer'
                         : null,
                     dropdownMenuEntries: drivers
@@ -288,12 +302,13 @@ class _GenerateSummaryState extends State<GenerateSummary> {
 
   void _initializePeriodController(List<PayrollPeriodData> sortedPeriods) {
     if (_selectedPeriodId != null && _periodController.text.isEmpty) {
-      final selected =
-          sortedPeriods.firstWhere((p) => p.id == _selectedPeriodId);
-      final locale = Localizations.localeOf(context).toLanguageTag();
-      final label = DateFormat.yMMMM(locale).format(
-        DateTime(selected.startDate.year, selected.startDate.month),
+      final selected = sortedPeriods.firstWhere(
+        (p) => p.id == _selectedPeriodId,
       );
+      final locale = Localizations.localeOf(context).toLanguageTag();
+      final label = DateFormat.yMMMM(
+        locale,
+      ).format(DateTime(selected.startDate.year, selected.startDate.month));
       _periodController.text = label[0].toUpperCase() + label.substring(1);
     }
   }
@@ -351,9 +366,7 @@ class _GenerateSummaryState extends State<GenerateSummary> {
     if (match == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay un período para ese mes'),
-          ),
+          const SnackBar(content: Text('No hay un período para ese mes')),
         );
       }
       setState(() {
