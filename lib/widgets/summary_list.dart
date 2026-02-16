@@ -75,11 +75,10 @@ class SummaryList extends StatelessWidget {
                   child: Icon(row.status.icon, color: row.status.color(colors)),
                 ),
                 onTap: () async {
-                  final result = await Navigator.of(
+                  await Navigator.of(
                     context,
                   ).push(SummaryDetailPage.route(summaryId: row.summaryId));
-                  // result será true si se aprobó el resumen
-                  if (result == true && onSummaryChanged != null) {
+                  if (onSummaryChanged != null) {
                     onSummaryChanged!();
                   }
                 },

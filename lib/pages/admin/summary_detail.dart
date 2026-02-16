@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
 import 'package:frontend_sgfcp/models/payroll_summary_data.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
+import 'package:frontend_sgfcp/services/trip_service.dart';
+import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/summary_data_card.dart';
 import 'package:frontend_sgfcp/widgets/summary_item_group_card.dart';
+import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
 import 'package:intl/intl.dart';
 
 class SummaryDetailPage extends StatefulWidget {
@@ -30,7 +34,11 @@ class SummaryDetailPage extends StatefulWidget {
 class _SummaryDetailPageState extends State<SummaryDetailPage> {
   PayrollSummaryData? _summary;
   List<PayrollDetailData> _details = const [];
+  List<TripData> _missingRateTrips = const [];
+  bool _isLoadingMissingRateTrips = false;
+  TripData? _tripInProgress;
   bool _isLoading = true;
+  bool _isRefreshingSummary = false;
   String? _errorMessage;
   bool _wasApproved = false;
 
@@ -41,6 +49,9 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
   }
 
   Future<void> _loadSummary() async {
+    if (_isRefreshingSummary) return;
+
+    _isRefreshingSummary = true;
     try {
       final summaryWithDetails =
           await PayrollSummaryService.getSummaryWithDetailsById(
@@ -53,6 +64,9 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
           _details = summaryWithDetails.details;
           _isLoading = false;
         });
+
+        await _loadMissingRateTrips(summaryWithDetails.details);
+        await _loadTripInProgress(summaryWithDetails.summary);
       }
     } catch (e) {
       if (mounted) {
@@ -61,6 +75,8 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
           _isLoading = false;
         });
       }
+    } finally {
+      _isRefreshingSummary = false;
     }
   }
 
@@ -95,6 +111,8 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
     }
 
     final summary = _summary!;
+    final isCalculationError = summary.status == 'error';
+    final isCalculationPending = summary.status == 'calculation_pending';
     final tripCommissionDetails = _details
         .where(
           (detail) =>
@@ -132,19 +150,24 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
               Navigator.of(context).pop(_wasApproved);
             },
           ),
-          actions: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'excel',
-                  child: Text('Descargar Excel'),
-                ),
-                const PopupMenuItem(value: 'pdf', child: Text('Descargar PDF')),
-              ],
-              onSelected: (value) => _handleExport(value),
-            ),
-          ],
+          actions: (isCalculationError || isCalculationPending)
+              ? null
+              : [
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'excel',
+                        child: Text('Descargar Excel'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'pdf',
+                        child: Text('Descargar PDF'),
+                      ),
+                    ],
+                    onSelected: (value) => _handleExport(value),
+                  ),
+                ],
         ),
 
         body: ListView(
@@ -165,156 +188,245 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
 
             gap4,
 
-            // Comisión por viajes
-            if (tripCommissionDetails.isNotEmpty)
-              SummaryItemGroupCard(
-                title: 'Comisión por viajes',
-                items: tripCommissionDetails
-                    .map(
-                      (detail) => SummaryItemEntry(
-                        label: _getTripLabel(detail.description),
-                        amount: detail.amount,
-                        navigable: true,
-                      ),
-                    )
-                    .toList(),
-                onItemTap: (index) {
-                  final detail = tripCommissionDetails[index];
-                  final tripId = detail.tripId;
-                  if (tripId == null) return;
-
-                  Navigator.of(context).push(TripPage.route(tripId: tripId));
-                },
-              )
-            else
-              SummaryItemGroupCard(
-                title: 'Comisión por viajes',
-                items: [
-                  SummaryItemEntry(
-                    label: 'Total comisiones',
-                    amount: summary.commissionFromTrips,
-                  ),
-                ],
+            if (isCalculationError) ...[
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: _recalculateSummary,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Recalcular resumen'),
               ),
-
-            gap4,
-
-            // Gastos
-            SummaryItemGroupCard(
-              title: 'Gastos',
-              items: [
-                SummaryItemEntry(
-                  label: 'Gastos a reintegrar',
-                  amount: summary.expensesToReimburse,
-                ),
-                SummaryItemEntry(
-                  label: 'Gastos a descontar',
-                  amount: -summary.expensesToDeduct,
-                ),
-              ],
-            ),
-
-            gap4,
-
-            // Adelantos
-            SummaryItemGroupCard(
-              title: 'Adelantos',
-              items: [
-                SummaryItemEntry(
-                  label: 'Adelantos de administración',
-                  amount: -fallbackAdminAdvances,
-                ),
-                SummaryItemEntry(
-                  label: 'Adelantos de clientes',
-                  amount: -clientAdvances,
-                ),
-              ],
-            ),
-            gap4,
-
-            // Otros conceptos
-            SummaryItemGroupCard(
-              title: 'Otros conceptos',
-              items: [
-                if (summary.guaranteedMinimumApplied > 0)
-                  SummaryItemEntry(
-                    label: 'Mínimo garantizado aplicado',
-                    amount: summary.guaranteedMinimumApplied,
-                  ),
-                if (summary.otherItemsTotal != 0)
-                  SummaryItemEntry(
-                    label: 'Otros ajustes',
-                    amount: summary.otherItemsTotal,
-                  ),
-              ],
-            ),
-
-            gap4,
-
-            // Totales
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    gap16,
-                    _buildTotalRow(
-                      'Saldo a favor',
-                      summary.totalAmount > 0 ? summary.totalAmount : 0,
-                    ),
-                    gap8,
-                    _buildTotalRow(
-                      'Saldo en contra',
-                      summary.totalAmount < 0 ? summary.totalAmount : 0,
-                    ),
-                    const Divider(height: 24),
-                    _buildTotalRow('Total', summary.totalAmount, isBold: true),
-                  ],
-                ),
+              gap16,
+              Text('Error', style: Theme.of(context).textTheme.titleMedium),
+              gap8,
+              Text(
+                'Resumen no generado porque los siguientes viajes tienen datos faltantes:',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-            ),
-
-            gap16,
-
-            // Mensaje de error si existe
-            if (summary.errorMessage != null) ...[
+              gap8,
+              if (_isLoadingMissingRateTrips)
+                const Center(child: CircularProgressIndicator())
+              else if (_missingRateTrips.isNotEmpty)
+                TripsListSection(
+                  trips: _missingRateTrips,
+                  showDriverNameSubtitle: true,
+                  onTripTap: (trip) {
+                    _openTripDetail(trip.id, prefetchedTrip: trip);
+                  },
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    'No se encontraron viajes para mostrar.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+            ] else if (isCalculationPending) ...[
+              if (_tripInProgress != null)
+                SimpleCard(
+                  title: 'En viaje',
+                  subtitle: _tripInProgress!.route,
+                  icon: Icons.local_shipping_outlined,
+                  label: 'Abrir',
+                  onPressed: () {
+                    _openTripDetail(
+                      _tripInProgress!.id,
+                      prefetchedTrip: _tripInProgress,
+                    );
+                  },
+                )
+              else
+                const SizedBox.shrink(),
+              gap16,
               Card(
-                color: Colors.red.shade50,
+                color: Theme.of(context).colorScheme.primaryContainer,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700),
-                          gap8,
-                          Text(
-                            'Error',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(color: Colors.red.shade700),
-                          ),
-                        ],
+                      Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                       gap8,
-                      Text(
-                        summary.errorMessage!,
-                        style: TextStyle(color: Colors.red.shade700),
+                      Expanded(
+                        child: Text(
+                          'El calculo esta en pausa porque el viaje esta en curso',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                              ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
+            ] else ...[
+              // Comisión por viajes
+              if (tripCommissionDetails.isNotEmpty)
+                SummaryItemGroupCard(
+                  title: 'Comisión por viajes',
+                  items: tripCommissionDetails
+                      .map(
+                        (detail) => SummaryItemEntry(
+                          label: _getTripLabel(detail.description),
+                          amount: detail.amount,
+                          navigable: true,
+                        ),
+                      )
+                      .toList(),
+                  onItemTap: (index) {
+                    final detail = tripCommissionDetails[index];
+                    final tripId = detail.tripId;
+                    if (tripId == null) return;
+                    _openTripDetail(tripId);
+                  },
+                )
+              else
+                SummaryItemGroupCard(
+                  title: 'Comisión por viajes',
+                  items: [
+                    SummaryItemEntry(
+                      label: 'Total comisiones',
+                      amount: summary.commissionFromTrips,
+                    ),
+                  ],
+                ),
+
+              gap4,
+
+              // Gastos
+              SummaryItemGroupCard(
+                title: 'Gastos',
+                items: [
+                  SummaryItemEntry(
+                    label: 'Gastos a reintegrar',
+                    amount: summary.expensesToReimburse,
+                  ),
+                  SummaryItemEntry(
+                    label: 'Gastos a descontar',
+                    amount: -summary.expensesToDeduct,
+                  ),
+                ],
+              ),
+
+              gap4,
+
+              // Adelantos
+              SummaryItemGroupCard(
+                title: 'Adelantos',
+                items: [
+                  SummaryItemEntry(
+                    label: 'Adelantos de administración',
+                    amount: -fallbackAdminAdvances,
+                  ),
+                  SummaryItemEntry(
+                    label: 'Adelantos de clientes',
+                    amount: -clientAdvances,
+                  ),
+                ],
+              ),
+              gap4,
+
+              // Otros conceptos
+              SummaryItemGroupCard(
+                title: 'Otros conceptos',
+                items: [
+                  if (summary.guaranteedMinimumApplied > 0)
+                    SummaryItemEntry(
+                      label: 'Mínimo garantizado aplicado',
+                      amount: summary.guaranteedMinimumApplied,
+                    ),
+                  if (summary.otherItemsTotal != 0)
+                    SummaryItemEntry(
+                      label: 'Otros ajustes',
+                      amount: summary.otherItemsTotal,
+                    ),
+                ],
+              ),
+
+              gap4,
+
+              // Totales
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      gap16,
+                      _buildTotalRow(
+                        'Saldo a favor',
+                        summary.totalAmount > 0 ? summary.totalAmount : 0,
+                      ),
+                      gap8,
+                      _buildTotalRow(
+                        'Saldo en contra',
+                        summary.totalAmount < 0 ? summary.totalAmount : 0,
+                      ),
+                      const Divider(height: 24),
+                      _buildTotalRow(
+                        'Total',
+                        summary.totalAmount,
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               gap16,
+
+              // Mensaje de error si existe
+              if (summary.errorMessage != null) ...[
+                Card(
+                  color: Colors.red.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red.shade700,
+                            ),
+                            gap8,
+                            Text(
+                              'Error',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(color: Colors.red.shade700),
+                            ),
+                          ],
+                        ),
+                        gap8,
+                        Text(
+                          summary.errorMessage!,
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                gap16,
+              ],
             ],
 
             // Botón recalcular (solo si no está aprobado)
-            if (summary.status != 'approved')
+            if (summary.status != 'approved' &&
+                !isCalculationError &&
+                !isCalculationPending)
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
@@ -326,7 +438,10 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
           ],
         ),
         floatingActionButton:
-            summary.status != 'approved' && summary.status != 'draft'
+            summary.status != 'approved' &&
+                summary.status != 'draft' &&
+                summary.status != 'error' &&
+                summary.status != 'calculation_pending'
             ? FloatingActionButton(
                 child: const Icon(Icons.check),
                 onPressed: () async {
@@ -390,6 +505,131 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
             : null,
       ),
     );
+  }
+
+  Future<void> _loadMissingRateTrips(List<PayrollDetailData> details) async {
+    final tripIds = details
+        .where(
+          (detail) =>
+              detail.detailType == 'trip_missing_rate' && detail.tripId != null,
+        )
+        .map((detail) => detail.tripId!)
+        .toSet()
+        .toList();
+
+    if (tripIds.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _missingRateTrips = const [];
+          _isLoadingMissingRateTrips = false;
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingMissingRateTrips = true;
+      });
+    }
+
+    try {
+      final trips = await Future.wait(
+        tripIds.map((tripId) => TripService.getTrip(tripId: tripId)),
+      );
+
+      if (mounted) {
+        setState(() {
+          _missingRateTrips = trips;
+          _isLoadingMissingRateTrips = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _missingRateTrips = const [];
+          _isLoadingMissingRateTrips = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openTripDetail(int tripId, {TripData? prefetchedTrip}) async {
+    final previousStatus = _summary?.status;
+
+    try {
+      final trip = prefetchedTrip ?? await TripService.getTrip(tripId: tripId);
+      if (!mounted) return;
+
+      await Navigator.of(
+        context,
+      ).push(TripPage.route(tripId: tripId, trip: trip));
+    } catch (_) {
+      if (!mounted) return;
+      await Navigator.of(context).push(TripPage.route(tripId: tripId));
+    } finally {
+      if (!mounted) return;
+
+      // Si venía de error por tarifa, intentar recalcular automáticamente.
+      if (previousStatus == 'error') {
+        await _recalculateSummarySilently();
+      } else {
+        await _loadSummary();
+      }
+    }
+  }
+
+  Future<void> _recalculateSummarySilently() async {
+    try {
+      await PayrollSummaryService.recalculateSummary(
+        summaryId: widget.summaryId,
+      );
+    } catch (_) {
+      // Si falla recálculo automático, igualmente refrescar para mantener estado sincronizado.
+    }
+
+    await _loadSummary();
+  }
+
+  Future<void> _loadTripInProgress(PayrollSummaryData summary) async {
+    if (summary.status != 'calculation_pending') {
+      if (mounted) {
+        setState(() {
+          _tripInProgress = null;
+        });
+      }
+      return;
+    }
+
+    try {
+      final trips = await TripService.getTripsByDriver(
+        driverId: summary.driverId,
+      );
+      TripData? inProgress;
+
+      for (final trip in trips) {
+        if (trip.state == 'En curso') {
+          inProgress = trip;
+          break;
+        }
+      }
+
+      inProgress ??= trips.where((trip) => trip.state == 'Pendiente').isNotEmpty
+          ? trips.firstWhere((trip) => trip.state == 'Pendiente')
+          : null;
+
+      if (mounted) {
+        setState(() {
+          _tripInProgress = inProgress;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _tripInProgress = null;
+        });
+      }
+    }
   }
 
   Widget _buildTotalRow(String label, double amount, {bool isBold = false}) {
