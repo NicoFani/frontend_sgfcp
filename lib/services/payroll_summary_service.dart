@@ -127,6 +127,47 @@ class PayrollSummaryService {
     }
   }
 
+  /// Obtener un resumen específico por ID junto con sus detalles
+  static Future<PayrollSummaryWithDetailsData> getSummaryWithDetailsById({
+    required int summaryId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/payroll/summaries/$summaryId'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<PayrollSummaryWithDetailsData>(
+        response,
+        (jsonData) {
+          final data = jsonData['data'] as Map<String, dynamic>;
+          final summary = PayrollSummaryData.fromJson(
+            data['summary'] as Map<String, dynamic>,
+          );
+          final rawDetails = (data['details'] as List<dynamic>? ?? const []);
+          final details = rawDetails
+              .map(
+                (detail) =>
+                    PayrollDetailData.fromJson(detail as Map<String, dynamic>),
+              )
+              .toList();
+
+          return PayrollSummaryWithDetailsData(
+            summary: summary,
+            details: details,
+          );
+        },
+        operation: 'obtener resumen de nómina con detalles',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
   /// Recalcular un resumen existente
   ///
   /// Útil cuando:

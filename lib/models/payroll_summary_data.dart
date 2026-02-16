@@ -80,3 +80,48 @@ class PayrollSummaryData {
     return 0.0;
   }
 }
+
+class PayrollDetailData {
+  final int id;
+  final String detailType;
+  final int? tripId;
+  final int? expenseId;
+  final int? advanceId;
+  final int? adjustmentId;
+  final String description;
+  final double amount;
+  final String? calculationData;
+
+  PayrollDetailData({
+    required this.id,
+    required this.detailType,
+    this.tripId,
+    this.expenseId,
+    this.advanceId,
+    this.adjustmentId,
+    required this.description,
+    required this.amount,
+    this.calculationData,
+  });
+
+  factory PayrollDetailData.fromJson(Map<String, dynamic> json) {
+    return PayrollDetailData(
+      id: json['id'] as int,
+      detailType: json['detail_type'] as String? ?? '',
+      tripId: json['trip_id'] as int?,
+      expenseId: json['expense_id'] as int?,
+      advanceId: json['advance_id'] as int?,
+      adjustmentId: json['adjustment_id'] as int?,
+      description: json['description'] as String? ?? '',
+      amount: PayrollSummaryData._parseDecimal(json['amount']),
+      calculationData: json['calculation_data'] as String?,
+    );
+  }
+}
+
+class PayrollSummaryWithDetailsData {
+  final PayrollSummaryData summary;
+  final List<PayrollDetailData> details;
+
+  PayrollSummaryWithDetailsData({required this.summary, required this.details});
+}

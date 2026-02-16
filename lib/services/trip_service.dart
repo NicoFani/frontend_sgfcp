@@ -41,7 +41,7 @@ class TripService {
     try {
       final response = await http
           .get(
-            Uri.parse('$baseUrl/trips/$tripId/'),
+            Uri.parse('$baseUrl/trips/$tripId'),
             headers: ApiResponseHandler.createHeaders(token),
           )
           .timeout(ApiResponseHandler.defaultTimeout);

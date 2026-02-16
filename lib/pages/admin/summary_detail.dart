@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/summary_data.dart';
 import 'package:frontend_sgfcp/models/payroll_summary_data.dart';
+import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:frontend_sgfcp/services/payroll_summary_service.dart';
 import 'package:frontend_sgfcp/widgets/summary_data_card.dart';
 import 'package:frontend_sgfcp/widgets/summary_item_group_card.dart';
-import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
-import 'package:frontend_sgfcp/models/trip_data.dart';
-import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:intl/intl.dart';
 
 class SummaryDetailPage extends StatefulWidget {
@@ -31,6 +29,7 @@ class SummaryDetailPage extends StatefulWidget {
 
 class _SummaryDetailPageState extends State<SummaryDetailPage> {
   PayrollSummaryData? _summary;
+  List<PayrollDetailData> _details = const [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _wasApproved = false;
@@ -43,13 +42,15 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
 
   Future<void> _loadSummary() async {
     try {
-      final summary = await PayrollSummaryService.getSummaryById(
-        summaryId: widget.summaryId,
-      );
+      final summaryWithDetails =
+          await PayrollSummaryService.getSummaryWithDetailsById(
+            summaryId: widget.summaryId,
+          );
 
       if (mounted) {
         setState(() {
-          _summary = summary;
+          _summary = summaryWithDetails.summary;
+          _details = summaryWithDetails.details;
           _isLoading = false;
         });
       }
@@ -94,6 +95,25 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
     }
 
     final summary = _summary!;
+    final tripCommissionDetails = _details
+        .where(
+          (detail) =>
+              detail.detailType == 'trip_commission' && detail.tripId != null,
+        )
+        .toList();
+    final adminAdvances = _details
+        .where((detail) => detail.detailType == 'advance')
+        .fold<double>(0, (sum, detail) => sum + detail.amount);
+    final clientAdvances = _details
+        .where((detail) => detail.detailType == 'client_advance')
+        .fold<double>(0, (sum, detail) => sum + detail.amount);
+
+    final fallbackAdminAdvances =
+        adminAdvances == 0 &&
+            clientAdvances == 0 &&
+            summary.advancesDeducted > 0
+        ? summary.advancesDeducted
+        : adminAdvances;
 
     return PopScope(
       canPop: true,
@@ -146,15 +166,36 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
             gap4,
 
             // Comisión por viajes
-            SummaryItemGroupCard(
-              title: 'Comisión por viajes',
-              items: [
-                SummaryItemEntry(
-                  label: 'Total comisiones',
-                  amount: summary.commissionFromTrips,
-                ),
-              ],
-            ),
+            if (tripCommissionDetails.isNotEmpty)
+              SummaryItemGroupCard(
+                title: 'Comisión por viajes',
+                items: tripCommissionDetails
+                    .map(
+                      (detail) => SummaryItemEntry(
+                        label: _getTripLabel(detail.description),
+                        amount: detail.amount,
+                        navigable: true,
+                      ),
+                    )
+                    .toList(),
+                onItemTap: (index) {
+                  final detail = tripCommissionDetails[index];
+                  final tripId = detail.tripId;
+                  if (tripId == null) return;
+
+                  Navigator.of(context).push(TripPage.route(tripId: tripId));
+                },
+              )
+            else
+              SummaryItemGroupCard(
+                title: 'Comisión por viajes',
+                items: [
+                  SummaryItemEntry(
+                    label: 'Total comisiones',
+                    amount: summary.commissionFromTrips,
+                  ),
+                ],
+              ),
 
             gap4,
 
@@ -162,34 +203,34 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
             SummaryItemGroupCard(
               title: 'Gastos',
               items: [
-                if (summary.expensesToReimburse > 0)
-                  SummaryItemEntry(
-                    label: 'Gastos a reintegrar',
-                    amount: summary.expensesToReimburse,
-                  ),
-                if (summary.expensesToDeduct > 0)
-                  SummaryItemEntry(
-                    label: 'Gastos a descontar',
-                    amount: -summary.expensesToDeduct,
-                  ),
+                SummaryItemEntry(
+                  label: 'Gastos a reintegrar',
+                  amount: summary.expensesToReimburse,
+                ),
+                SummaryItemEntry(
+                  label: 'Gastos a descontar',
+                  amount: -summary.expensesToDeduct,
+                ),
               ],
             ),
 
             gap4,
 
             // Adelantos
-            if (summary.advancesDeducted > 0) ...[
-              SummaryItemGroupCard(
-                title: 'Adelantos',
-                items: [
-                  SummaryItemEntry(
-                    label: 'Adelantos descontados',
-                    amount: -summary.advancesDeducted,
-                  ),
-                ],
-              ),
-              gap4,
-            ],
+            SummaryItemGroupCard(
+              title: 'Adelantos',
+              items: [
+                SummaryItemEntry(
+                  label: 'Adelantos de administración',
+                  amount: -fallbackAdminAdvances,
+                ),
+                SummaryItemEntry(
+                  label: 'Adelantos de clientes',
+                  amount: -clientAdvances,
+                ),
+              ],
+            ),
+            gap4,
 
             // Otros conceptos
             SummaryItemGroupCard(
@@ -394,6 +435,14 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
     return formatted[0].toUpperCase() + formatted.substring(1);
   }
 
+  String _getTripLabel(String description) {
+    final separatorIndex = description.indexOf(' - ');
+    if (separatorIndex >= 0 && separatorIndex + 3 < description.length) {
+      return description.substring(separatorIndex + 3).trim();
+    }
+    return description;
+  }
+
   Future<void> _recalculateSummary() async {
     try {
       // Mostrar diálogo de carga
@@ -428,6 +477,9 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
       setState(() {
         _summary = recalculatedSummary;
       });
+
+      // Recargar para actualizar también los detalles del resumen
+      await _loadSummary();
 
       // Mostrar mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(
