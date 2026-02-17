@@ -182,8 +182,8 @@ class _HomePageAdminState extends State<HomePageAdmin> {
 
               gap24,
 
-              // --- Sección Próximos viajes ---
-              Text('Próximos viajes', style: textTheme.titleLarge),
+              // --- Sección Viajes ---
+              Text('Viajes', style: textTheme.titleLarge),
               gap8,
 
               // Calendario

@@ -69,6 +69,12 @@ class _TripsCalendarState extends State<TripsCalendar> {
     return _eventsMap[normalized] ?? [];
   }
 
+  // Trip state color helpers
+  Color _finishedTripColor(ColorScheme colors) => colors.primary;
+  Color _ongoingTripColor(ColorScheme colors) => colors.secondary;
+  Color _scheduledTripColor(ColorScheme colors) => colors.onSecondaryFixedVariant;
+  Color _moreThanOneTrip(ColorScheme colors) => colors.onPrimaryContainer;
+
   Color _getDayColor(
     ColorScheme colors,
     List<TripData> trips,
@@ -87,21 +93,21 @@ class _TripsCalendarState extends State<TripsCalendar> {
         case 'Pendiente':
           return colors.onTertiary;
         default:
-          return colors.onPrimary;
+          return colors.onSecondaryContainer;
       }
     }
 
     if (states.length != 1) {
-      return colors.onPrimaryContainer.withValues(alpha: 0.7);
+      return _moreThanOneTrip(colors).withValues(alpha: 0.7);
     }
 
     switch (states.first) {
       case 'Finalizado':
-        return colors.secondary.withValues(alpha: 0.7);
+        return _finishedTripColor(colors).withValues(alpha: 0.7);
       case 'En curso':
-        return colors.primary.withValues(alpha: 0.7);
+        return _ongoingTripColor(colors).withValues(alpha: 0.7);
       case 'Pendiente':
-        return colors.tertiary.withValues(alpha: 0.7);
+        return _scheduledTripColor(colors).withValues(alpha: 0.7);
       default:
         return colors.onPrimaryContainer.withValues(alpha: 0.7);
     }
@@ -110,13 +116,13 @@ class _TripsCalendarState extends State<TripsCalendar> {
   Color _getTripStateColor(ColorScheme colors, TripData trip) {
     switch (trip.state) {
       case 'Finalizado':
-        return colors.secondary;
+        return _finishedTripColor(colors);
       case 'En curso':
-        return colors.primary;
+        return _ongoingTripColor(colors);
       case 'Pendiente':
-        return colors.tertiary;
+        return _scheduledTripColor(colors);
       default:
-        return colors.onPrimaryContainer;
+        return _moreThanOneTrip(colors);
     }
   }
 

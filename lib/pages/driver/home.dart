@@ -134,7 +134,7 @@ class _HomePageDriverState extends State<HomePageDriver> {
               gap24,
 
               // --- Upcoming trips + calendar title ---
-              Text('Próximos viajes', style: textTheme.titleLarge),
+              Text('Viajes', style: textTheme.titleLarge),
               gap8,
 
               TripsCalendar(trips: _trips),
@@ -335,38 +335,38 @@ class NextTripCard extends StatelessWidget {
             // Secondary action (info button)
             Row(
               children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context)
+                        .push(TripPage.route(trip: trip))
+                        .then((_) => onRefresh());
+                  },
+                  icon: Icon(
+                    Icons.info_outline,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    'Info',
+                    style: TextStyle(color: colors.onSurfaceVariant),
+                  ),
+                ),
+                gapW8,
+                // Primary action (full width)
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
                     onPressed: () {
                       Navigator.of(context)
-                          .push(TripPage.route(trip: trip))
+                          .push(StartTripPage.route(trip: trip!))
                           .then((_) => onRefresh());
                     },
-                    icon: Icon(
-                      Icons.info_outline,
-                      color: colors.onSurfaceVariant,
-                    ),
-                    label: Text(
-                      'Ver información',
-                      style: TextStyle(color: colors.onSurfaceVariant),
-                    ),
+                    icon: const Icon(Icons.add_road),
+                    label: const Text('Comenzar viaje'),
                   ),
                 ),
               ],
-            ),
-            gap8,
-            // Primary action (full width)
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-              ),
-              onPressed: () {
-                Navigator.of(context)
-                    .push(StartTripPage.route(trip: trip!))
-                    .then((_) => onRefresh());
-              },
-              icon: const Icon(Icons.add_road),
-              label: const Text('Comenzar viaje'),
             ),
           ],
         ),
