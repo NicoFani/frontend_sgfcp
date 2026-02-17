@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/admin/summaries.dart';
+import 'package:frontend_sgfcp/utils/url_navigator.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/pages/admin/account.dart';
@@ -36,6 +37,8 @@ class AdministrationPageAdmin extends StatefulWidget {
 
 class _AdministrationPageAdminState extends State<AdministrationPageAdmin> {
   late User _currentUser;
+  final String guideUrl =
+      'https://drive.google.com/file/d/1f64qWGkYV72DaU1nLu8WhzdWX7UuA_0y/view?usp=sharing';
 
   @override
   void initState() {
@@ -106,22 +109,6 @@ class _AdministrationPageAdminState extends State<AdministrationPageAdmin> {
           ),
 
           _MenuItem(
-            icon: Symbols.insert_chart,
-            label: 'Estadísticas',
-            onTap: () {
-              // TODO: Navegar a Estadísticas
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Estadísticas - En desarrollo')),
-              );
-            },
-          ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: const Divider(height: 1),
-          ),
-
-          _MenuItem(
             icon: Symbols.local_shipping,
             label: 'Vehículos',
             onTap: () {
@@ -152,6 +139,46 @@ class _AdministrationPageAdminState extends State<AdministrationPageAdmin> {
             label: 'Cargar Adelanto',
             onTap: () {
               Navigator.of(context).push(AddAdvancePaymentPage.route());
+            },
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
+
+          _MenuItem(
+            icon: Symbols.insert_chart,
+            label: 'Estadísticas',
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Funcionalidad externa'),
+                  content: const Text(
+                    'Para acceder a las estadísticas de la flota, dirigirse al sitio web externo de estadísticas.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Aceptar'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
+
+          _MenuItem(
+            icon: Symbols.unknown_document,
+            label: 'Manual de usuario',
+            onTap: () {
+              launchUserManual(context, guideUrl);
             },
           ),
 

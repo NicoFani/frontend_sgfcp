@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/shared/driver_data.dart';
+import 'package:frontend_sgfcp/utils/url_navigator.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
@@ -124,6 +125,9 @@ class _ProfileOptionsList extends StatelessWidget {
     required this.driver,
     required this.currentTruckFuture,
   });
+    
+  final String guideUrl =
+      'https://drive.google.com/file/d/1hngMVd_jtwxgr5MlU3QZxzKyWWrwPDcc/view?usp=sharing';
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +170,21 @@ class _ProfileOptionsList extends StatelessWidget {
               );
             },
           ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
+
+          ListTile(
+            leading: Icon(Symbols.unknown_document),
+            title: Text('Manual de usuario'),
+            trailing: const Icon(Icons.arrow_right),
+            onTap: () {
+              launchUserManual(context, guideUrl);
+            },
+          ),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: const Divider(height: 1),
