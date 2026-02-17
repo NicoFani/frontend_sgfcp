@@ -73,7 +73,10 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    final peajeOptions = ['Tasa portuaria', 'Ruta'];
+    final peajeOptions = [
+      'Peaje de ruta',
+      'Derecho de Ingreso a establecimiento',
+    ];
     final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
 
     List<String> subtypeOptions;
@@ -94,9 +97,7 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cargar Gasto'),
-      ),
+      appBar: AppBar(title: const Text('Cargar Gasto')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -108,7 +109,9 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
                 onPressed: () {
                   // TODO: Tomar foto del comprobante
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Funcionalidad de foto en desarrollo')),
+                    const SnackBar(
+                      content: Text('Funcionalidad de foto en desarrollo'),
+                    ),
                   );
                 },
                 icon: const Icon(Symbols.add_a_photo),
@@ -133,11 +136,26 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
                     label: const Text('Tipo de gasto'),
                     initialSelection: _expenseType,
                     dropdownMenuEntries: const [
-                      DropdownMenuEntry(value: ExpenseType.peaje, label: 'Peaje'),
-                      DropdownMenuEntry(value: ExpenseType.viaticos, label: 'Viáticos'),
-                      DropdownMenuEntry(value: ExpenseType.reparaciones, label: 'Reparaciones'),
-                      DropdownMenuEntry(value: ExpenseType.combustible, label: 'Combustible'),
-                      DropdownMenuEntry(value: ExpenseType.multa, label: 'Multa'),
+                      DropdownMenuEntry(
+                        value: ExpenseType.peaje,
+                        label: 'Peaje',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.viaticos,
+                        label: 'Viáticos',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.reparaciones,
+                        label: 'Reparaciones',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.combustible,
+                        label: 'Combustible',
+                      ),
+                      DropdownMenuEntry(
+                        value: ExpenseType.multa,
+                        label: 'Multa',
+                      ),
                     ],
                     onSelected: (value) {
                       if (value == null) return;
@@ -177,7 +195,9 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
                         labelText: 'Importe',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
                   ),
                 ],
@@ -186,7 +206,8 @@ class _AddExpensePageAdminState extends State<AddExpensePageAdmin> {
               gap12,
 
               // Subtipo (si aplica)
-              if (_expenseType == ExpenseType.peaje || _expenseType == ExpenseType.reparaciones) ...[
+              if (_expenseType == ExpenseType.peaje ||
+                  _expenseType == ExpenseType.reparaciones) ...[
                 LayoutBuilder(
                   builder: (context, constraints) => ExpenseSubtypeDropdown(
                     label: label,

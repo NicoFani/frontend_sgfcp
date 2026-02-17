@@ -418,7 +418,6 @@ class _EditExpensePageState extends State<EditExpensePage> {
 
           final peajeOptions = [
             'Peaje de ruta',
-            'Tasa portuaria',
             'Derecho de Ingreso a establecimiento',
           ];
           final reparacionOptions = ['Neumáticos', 'Motor', 'Chapa y pintura'];
