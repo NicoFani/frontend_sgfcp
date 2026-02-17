@@ -13,19 +13,20 @@ class SummaryList extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final double sizedBoxWidth = 48;
+    final double sizedBoxWidth = 40;
 
-    final headerStyle = textTheme.labelLarge?.copyWith(
+    final headerStyle = textTheme.labelSmall?.copyWith(
       color: colors.onSurfaceVariant,
     );
+
+    final bodyStyle = textTheme.bodySmall;
 
     return Column(
       children: [
         // Header aligned with list rows
         ListTile(
           dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          leading: SizedBox(width: sizedBoxWidth, child: const Text('id')),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
           title: Row(
             children: const [
               Expanded(child: Text('Chofer')),
@@ -49,30 +50,27 @@ class SummaryList extends StatelessWidget {
           return Column(
             children: [
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: SizedBox(
-                  width: sizedBoxWidth,
-                  child: Text(row.id, style: textTheme.bodySmall),
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
                 ),
                 title: Row(
                   children: [
+                    Expanded(child: Text(row.driver, style: bodyStyle)),
+                    Expanded(child: Text(row.period, style: bodyStyle)),
                     Expanded(
-                      child: Text(row.driver, style: textTheme.bodyMedium),
-                    ),
-                    Expanded(
-                      child: Text(row.period, style: textTheme.bodyMedium),
-                    ),
-                    Expanded(
-                      child: Text(
-                        _formatDate(row.date),
-                        style: textTheme.bodyMedium,
-                      ),
+                      child: Text(_formatDate(row.date), style: bodyStyle),
                     ),
                   ],
                 ),
                 trailing: SizedBox(
                   width: sizedBoxWidth,
-                  child: Icon(row.status.icon, color: row.status.color(colors)),
+                  child: Icon(
+                    row.status.icon,
+                    color: row.status.color(colors),
+                    size: 20,
+                  ),
                 ),
                 onTap: () async {
                   await Navigator.of(

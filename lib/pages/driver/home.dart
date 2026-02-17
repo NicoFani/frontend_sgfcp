@@ -332,6 +332,30 @@ class NextTripCard extends StatelessWidget {
               ),
             ),
             gap16,
+            // Secondary action (info button)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context)
+                          .push(TripPage.route(trip: trip))
+                          .then((_) => onRefresh());
+                    },
+                    icon: Icon(
+                      Icons.info_outline,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    label: Text(
+                      'Ver información',
+                      style: TextStyle(color: colors.onSurfaceVariant),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            gap8,
+            // Primary action (full width)
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),

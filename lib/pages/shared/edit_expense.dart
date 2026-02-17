@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend_sgfcp/widgets/expense_subtype_dropdown.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:intl/intl.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/expense_type.dart';
@@ -13,6 +17,8 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/widgets/labeled_switch.dart';
 import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
+import 'package:frontend_sgfcp/services/receipt_storage_service.dart';
+import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
 
 class EditExpensePage extends StatefulWidget {
@@ -42,9 +48,13 @@ class _EditExpensePageState extends State<EditExpensePage> {
   bool _accountingPaid = false;
   bool _didInitDateText = false;
   bool _showValidationErrors = false;
+  bool _isLoading = false;
+  bool _isUploadingReceipt = false;
 
   ExpenseType _expenseType = ExpenseType.reparaciones;
   String? _subtype;
+  XFile? _receiptFile;
+  String? _currentReceiptUrl;
 
   // Controllers
   final TextEditingController _amountController = TextEditingController();
@@ -53,11 +63,11 @@ class _EditExpensePageState extends State<EditExpensePage> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _startDateController = TextEditingController();
 
-    final WidgetStatesController _amountStatesController =
+  final WidgetStatesController _amountStatesController =
       WidgetStatesController();
-    final WidgetStatesController _litersStatesController =
+  final WidgetStatesController _litersStatesController =
       WidgetStatesController();
-    final WidgetStatesController _municipalityStatesController =
+  final WidgetStatesController _municipalityStatesController =
       WidgetStatesController();
 
   @override
@@ -76,6 +86,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
     _accountingPaid = widget.expense.accountingPaid ?? false;
     _expenseType = _mapTypeToExpenseType(widget.expense.type);
     _subtype = _getSubtype(widget.expense);
+    _currentReceiptUrl = widget.expense.receiptUrl;
 
     _amountController.addListener(_updateValidationStates);
     _litersController.addListener(_updateValidationStates);
@@ -87,7 +98,9 @@ class _EditExpensePageState extends State<EditExpensePage> {
       decimalDigits: 2,
       enableNegative: false,
     );
-    _amountController.text = currencyFormatter.formatDouble(widget.expense.amount);
+    _amountController.text = currencyFormatter.formatDouble(
+      widget.expense.amount,
+    );
     if (widget.expense.fuelLiters != null) {
       _litersController.text = widget.expense.fuelLiters!.toString();
     }
@@ -97,7 +110,6 @@ class _EditExpensePageState extends State<EditExpensePage> {
     if (widget.expense.description != null) {
       _descriptionController.text = widget.expense.description!;
     }
-
   }
 
   @override
@@ -252,11 +264,14 @@ class _EditExpensePageState extends State<EditExpensePage> {
   bool _validateRequiredFields() {
     final hasDate = _startDate != null;
     final hasAmount = _amountController.text.trim().isNotEmpty;
-    final hasLiters = _expenseType != ExpenseType.combustible ||
+    final hasLiters =
+        _expenseType != ExpenseType.combustible ||
         _litersController.text.trim().isNotEmpty;
-    final hasMunicipality = _expenseType != ExpenseType.multa ||
+    final hasMunicipality =
+        _expenseType != ExpenseType.multa ||
         _municipalityController.text.trim().isNotEmpty;
-    final hasSubtype = (_expenseType != ExpenseType.peaje &&
+    final hasSubtype =
+        (_expenseType != ExpenseType.peaje &&
             _expenseType != ExpenseType.reparaciones) ||
         _subtype != null;
 
@@ -268,6 +283,57 @@ class _EditExpensePageState extends State<EditExpensePage> {
     });
 
     return hasDate && hasAmount && hasLiters && hasMunicipality && hasSubtype;
+  }
+
+  Future<void> _showReceiptPicker() async {
+    if (_isLoading || _isUploadingReceipt) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Cámara'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _pickReceipt(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Galería'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await _pickReceipt(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickReceipt(ImageSource source) async {
+    final picker = ImagePicker();
+    final effectiveSource = kIsWeb && source == ImageSource.camera
+        ? ImageSource.gallery
+        : source;
+
+    final picked = await picker.pickImage(
+      source: effectiveSource,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _receiptFile = picked;
+      });
+    }
   }
 
   @override
@@ -386,11 +452,15 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   gap20,
 
                   FilledButton.tonalIcon(
-                    onPressed: () {
-                      // TODO: receipt image handler, show current receipt if exists and option to change it
-                    },
+                    onPressed: _isLoading || _isUploadingReceipt
+                        ? null
+                        : _showReceiptPicker,
                     icon: const Icon(Symbols.add_a_photo),
-                    label: const Text('Tomar nueva foto del comprobante'),
+                    label: Text(
+                      _receiptFile != null || _currentReceiptUrl != null
+                          ? 'Cambiar foto del comprobante'
+                          : 'Adjuntar foto del comprobante',
+                    ),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
@@ -400,6 +470,72 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   ),
 
                   gap20,
+
+                  if (_receiptFile != null) ...[
+                    Text(
+                      'Nueva foto adjunta: ${_receiptFile!.name}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    gap12,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: FutureBuilder<Uint8List>(
+                        future: _receiptFile!.readAsBytes(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const SizedBox(
+                              height: 140,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          return Image.memory(
+                            snapshot.data!,
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      ),
+                    ),
+                    gap12,
+                    TextButton.icon(
+                      onPressed: _isLoading || _isUploadingReceipt
+                          ? null
+                          : () => setState(() => _receiptFile = null),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Quitar nueva foto'),
+                    ),
+                    gap12,
+                  ] else if (_currentReceiptUrl != null) ...[
+                    Text('Comprobante actual:', style: textTheme.bodyMedium),
+                    gap12,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _currentReceiptUrl!,
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 160,
+                            width: double.infinity,
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            child: const Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 48,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    gap12,
+                  ],
 
                   // Tipo de gasto
                   LayoutBuilder(
@@ -469,7 +605,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       labelText: 'Importe',
                       border: OutlineInputBorder(),
                       prefixText: r'$ ',
-                      errorText: _showValidationErrors &&
+                      errorText:
+                          _showValidationErrors &&
                               _amountController.text.trim().isEmpty
                           ? 'Campo requerido'
                           : null,
@@ -497,16 +634,15 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       decoration: InputDecoration(
                         labelText: 'Litros cargados',
                         border: OutlineInputBorder(),
-                        errorText: _showValidationErrors &&
+                        errorText:
+                            _showValidationErrors &&
                                 _expenseType == ExpenseType.combustible &&
                                 _litersController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
                       ),
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     gap12,
                   ],
@@ -519,7 +655,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
                       decoration: InputDecoration(
                         labelText: 'Municipio',
                         border: OutlineInputBorder(),
-                        errorText: _showValidationErrors &&
+                        errorText:
+                            _showValidationErrors &&
                                 _expenseType == ExpenseType.multa &&
                                 _municipalityController.text.trim().isEmpty
                             ? 'Campo requerido'
@@ -537,7 +674,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         label: label,
                         options: subtypeOptions,
                         value: _subtype,
-                        errorText: _showValidationErrors &&
+                        errorText:
+                            _showValidationErrors &&
                                 (_expenseType == ExpenseType.peaje ||
                                     _expenseType == ExpenseType.reparaciones) &&
                                 _subtype == null
@@ -570,68 +708,126 @@ class _EditExpensePageState extends State<EditExpensePage> {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    onPressed: () async {
-                      if (!_validateRequiredFields()) {
-                        return;
-                      }
+                    onPressed: _isLoading || _isUploadingReceipt
+                        ? null
+                        : () async {
+                            if (!_validateRequiredFields()) {
+                              return;
+                            }
 
-                        final amount = parseCurrency(_amountController.text);
-                      final data = <String, dynamic>{
-                        'expense_type': _mapExpenseTypeToBackend(_expenseType),
-                        'date': _startDate!.toIso8601String().split('T')[0],
-                        'amount': amount,
-                        'paid_by_admin':
-                            (_expenseType == ExpenseType.peaje ||
-                                    _expenseType == ExpenseType.reparaciones)
-                                ? _accountingPaid
-                                : null,
-                      };
+                            setState(() => _isLoading = true);
 
-                      if (_descriptionController.text.trim().isNotEmpty) {
-                        data['description'] = _descriptionController.text.trim();
-                      }
+                            try {
+                              String? receiptPath = _currentReceiptUrl;
 
-                      if (_expenseType == ExpenseType.combustible) {
-                        data['fuel_liters'] = double.tryParse(
-                          _litersController.text,
-                        );
-                      }
-                      if (_expenseType == ExpenseType.multa) {
-                        data['fine_municipality'] =
-                            _municipalityController.text;
-                      }
-                      if (_subtype != null) {
-                        if (_expenseType == ExpenseType.peaje) {
-                          data['toll_type'] = _subtype;
-                        } else if (_expenseType == ExpenseType.reparaciones) {
-                          data['repair_type'] = _subtype;
-                        }
-                      }
+                              // Si hay una nueva foto, subirla
+                              if (_receiptFile != null) {
+                                final user = TokenStorage.user;
+                                if (user == null || user['id'] == null) {
+                                  throw Exception(
+                                    'No se encontró el ID del chofer',
+                                  );
+                                }
+                                final driverId = user['id'] as int;
 
-                      try {
-                        await ExpenseService.updateExpense(
-                          expenseId: widget.expense.id,
-                          data: data,
-                        );
-                        if (mounted) {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gasto actualizado correctamente'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error al guardar cambios: $e'),
-                            ),
-                          );
-                        }
-                      }
-                    },
+                                setState(() => _isUploadingReceipt = true);
+                                try {
+                                  receiptPath =
+                                      await ReceiptStorageService.uploadReceipt(
+                                        file: _receiptFile!,
+                                        driverId: driverId,
+                                        tripId: trip.id,
+                                      );
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _isUploadingReceipt = false);
+                                  }
+                                }
+                              }
+
+                              final amount = parseCurrency(
+                                _amountController.text,
+                              );
+                              final data = <String, dynamic>{
+                                'expense_type': _mapExpenseTypeToBackend(
+                                  _expenseType,
+                                ),
+                                'date': _startDate!.toIso8601String().split(
+                                  'T',
+                                )[0],
+                                'amount': amount,
+                                'paid_by_admin':
+                                    (_expenseType == ExpenseType.peaje ||
+                                        _expenseType ==
+                                            ExpenseType.reparaciones)
+                                    ? _accountingPaid
+                                    : null,
+                              };
+
+                              // Agregar receipt_url solo si hay una
+                              if (receiptPath != null) {
+                                data['receipt_url'] = receiptPath;
+                              }
+
+                              if (_descriptionController.text
+                                  .trim()
+                                  .isNotEmpty) {
+                                data['description'] = _descriptionController
+                                    .text
+                                    .trim();
+                              }
+
+                              if (_expenseType == ExpenseType.combustible) {
+                                data['fuel_liters'] = double.tryParse(
+                                  _litersController.text,
+                                );
+                              }
+                              if (_expenseType == ExpenseType.multa) {
+                                data['fine_municipality'] =
+                                    _municipalityController.text;
+                              }
+                              if (_subtype != null) {
+                                if (_expenseType == ExpenseType.peaje) {
+                                  data['toll_type'] = _subtype;
+                                } else if (_expenseType ==
+                                    ExpenseType.reparaciones) {
+                                  data['repair_type'] = _subtype;
+                                }
+                              }
+
+                              await ExpenseService.updateExpense(
+                                expenseId: widget.expense.id,
+                                data: data,
+                              );
+
+                              if (mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Gasto actualizado correctamente',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error al guardar cambios: $e',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                              }
+                            }
+                          },
                     icon: const Icon(Icons.check),
                     label: const Text('Guardar cambios'),
                   ),

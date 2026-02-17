@@ -44,6 +44,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'SGFCP',
+      debugShowCheckedModeBanner: false,
       theme: theme
           .light(), // brightness == Brightness.light ? theme.light() : theme.dark(),
       locale: const Locale('es', 'AR'),

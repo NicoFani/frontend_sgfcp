@@ -79,9 +79,10 @@ class _TripPageState extends State<TripPage> {
         _tripFuture.then((trip) {
           if (trip.state == 'Finalizado' && trip.driver != null) {
             setState(() {
-              _commissionFuture = DriverCommissionService.getDriverCommissionById(
-                driverId: trip.driverId,
-              );
+              _commissionFuture =
+                  DriverCommissionService.getDriverCommissionById(
+                    driverId: trip.driverId,
+                  );
             });
           }
         });
@@ -101,9 +102,10 @@ class _TripPageState extends State<TripPage> {
         _tripFuture.then((trip) {
           if (trip.state == 'Finalizado' && trip.driver != null) {
             setState(() {
-              _commissionFuture = DriverCommissionService.getDriverCommissionById(
-                driverId: trip.driverId,
-              );
+              _commissionFuture =
+                  DriverCommissionService.getDriverCommissionById(
+                    driverId: trip.driverId,
+                  );
             });
           }
         });
@@ -185,10 +187,10 @@ class _TripPageState extends State<TripPage> {
                         Navigator.of(context)
                             .push(FinishTripPage.route(trip: trip))
                             .then((finished) {
-                          if (finished == true) {
-                            _loadData();
-                          }
-                        });
+                              if (finished == true) {
+                                _loadData();
+                              }
+                            });
                       },
                     )
                   else if (trip.state == 'Pendiente')
@@ -268,15 +270,23 @@ class _TripPageState extends State<TripPage> {
                   // Origin/Destination descriptions - shown for all states
                   if (trip.originDescription != null ||
                       trip.destinationDescription != null) ...[
-                    InlineInfoCard(
+                    InfoCard(
                       title: 'Descripciones',
-                      leftLabel: 'Origen',
-                      leftValue: trip.originDescription ??
-                          'Descripción no proporcionada',
-                      rightLabel: 'Destino',
-                      rightValue: trip.destinationDescription ??
-                          'Descripción no proporcionada',
-                      leftColumnWidth: infoLabelWidth,
+                      items: [
+                        InfoItem(
+                          label: 'Origen',
+                          value:
+                              trip.originDescription ??
+                              'Descripción no proporcionada',
+                        ),
+                        InfoItem(
+                          label: 'Destino',
+                          value:
+                              trip.destinationDescription ??
+                              'Descripción no proporcionada',
+                        ),
+                      ],
+                      labelColumnWidth: infoLabelWidth,
                     ),
                     gap4,
                   ],
@@ -298,19 +308,18 @@ class _TripPageState extends State<TripPage> {
                     InfoCard(
                       title: 'Cliente',
                       items: [
-                        InfoItem(
-                          label: 'Nombre',
-                          value: trip.client!.name,
-                        ),
-                        if(trip.fuelOnClient)
+                        InfoItem(label: 'Nombre', value: trip.client!.name),
+                        if (trip.fuelOnClient)
                           InfoItem(
                             label: 'Vale para combustible',
                             value: '${trip.fuelLiters} lts',
                           ),
-                        if(trip.clientAdvancePayment > 0)
+                        if (trip.clientAdvancePayment > 0)
                           InfoItem(
                             label: 'Adelanto',
-                            value: currencyFormat.format(trip.clientAdvancePayment),
+                            value: currencyFormat.format(
+                              trip.clientAdvancePayment,
+                            ),
                           ),
                       ],
                       labelColumnWidth: infoLabelWidth,
@@ -353,24 +362,33 @@ class _TripPageState extends State<TripPage> {
                     InlineInfoCard(
                       title: 'Tarifa',
                       leftLabel: 'Tipo de cálculo',
-                      leftValue: trip.calculatedPerKm ? 'Por kilómetro' : 'Por tonelada',
+                      leftValue: trip.calculatedPerKm
+                          ? 'Por kilómetro'
+                          : 'Por tonelada',
                       rightLabel: 'Tarifa',
-                      rightValue: trip.rate > 0 ? 
-                        (trip.calculatedPerKm ? '${currencyFormat.format(trip.rate)}/km' : '${currencyFormat.format(trip.rate)}/t') :
-                        'Sin tarifa',
+                      rightValue: trip.rate > 0
+                          ? (trip.calculatedPerKm
+                                ? '${currencyFormat.format(trip.rate)}/km'
+                                : '${currencyFormat.format(trip.rate)}/t')
+                          : 'Sin tarifa',
                       leftColumnWidth: infoLabelWidth,
                     ),
 
                     gap4,
 
                     // Balance - only for Finalizado
-                    if (trip.state == 'Finalizado' && _commissionFuture != null && trip.rate > 0)
+                    if (trip.state == 'Finalizado' &&
+                        _commissionFuture != null &&
+                        trip.rate > 0)
                       FutureBuilder<Map<String, dynamic>>(
                         future: _commissionFuture,
                         builder: (context, commissionSnapshot) {
-                          if (commissionSnapshot.connectionState == ConnectionState.waiting) {
+                          if (commissionSnapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
                               child: CircularProgressIndicator(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -386,33 +404,34 @@ class _TripPageState extends State<TripPage> {
                         },
                       ),
 
-                      // Sección Gastos
-                      FutureBuilder<List<ExpenseData>>(
-                        future: _expensesFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                              child: CircularProgressIndicator(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return Text(
-                              'Error al cargar gastos: ${snapshot.error}',
-                              style: textTheme.bodySmall,
-                            );
-                          }
-
-                          return _buildExpensesSection(
-                            expenses: snapshot.data ?? [],
-                            currencyFormat: currencyFormat,
-                            textTheme: textTheme,
+                    // Sección Gastos
+                    FutureBuilder<List<ExpenseData>>(
+                      future: _expensesFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: CircularProgressIndicator(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           );
-                        },
-                      ),
+                        }
+
+                        if (snapshot.hasError) {
+                          return Text(
+                            'Error al cargar gastos: ${snapshot.error}',
+                            style: textTheme.bodySmall,
+                          );
+                        }
+
+                        return _buildExpensesSection(
+                          expenses: snapshot.data ?? [],
+                          currencyFormat: currencyFormat,
+                          textTheme: textTheme,
+                        );
+                      },
+                    ),
                   ], // End of "if (trip.state != 'Pendiente')"
                   const SizedBox(height: 60), // Espacio para el FAB
                 ],
@@ -429,9 +448,9 @@ class _TripPageState extends State<TripPage> {
                     .then((_) => _loadData());
               },
               onEditTrip: () async {
-                final updated = await Navigator.of(context).push(
-                  EditTripPage.route(trip: _currentTrip!),
-                );
+                final updated = await Navigator.of(
+                  context,
+                ).push(EditTripPage.route(trip: _currentTrip!));
 
                 if (!mounted) return;
 
@@ -442,10 +461,12 @@ class _TripPageState extends State<TripPage> {
                     _expensesFuture = ExpenseService.getExpensesByTrip(
                       tripId: updated.id,
                     );
-                    if (updated.state == 'Finalizado' && updated.driver != null) {
-                      _commissionFuture = DriverCommissionService.getDriverCommissionById(
-                        driverId: updated.driverId,
-                      );
+                    if (updated.state == 'Finalizado' &&
+                        updated.driver != null) {
+                      _commissionFuture =
+                          DriverCommissionService.getDriverCommissionById(
+                            driverId: updated.driverId,
+                          );
                     } else {
                       _commissionFuture = null;
                     }
@@ -477,10 +498,10 @@ class _TripPageState extends State<TripPage> {
     required double infoLabelWidth,
   }) {
     double commissionDecimal = 0.0;
-    
+
     if (commissionSnapshot.hasData) {
       final commissionValue = commissionSnapshot.data!['commission_percentage'];
-      
+
       // Handle both String and num types from API
       if (commissionValue is String) {
         commissionDecimal = double.tryParse(commissionValue) ?? 0.0;
@@ -496,7 +517,7 @@ class _TripPageState extends State<TripPage> {
     final double commissionTotal = trip.calculatedPerKm
         ? trip.rate * trip.estimatedKms
         : trip.rate * trip.loadWeightOnUnload;
-    
+
     // Calculate driver commission (using decimal for calculation)
     final double driverCommission = commissionTotal * commissionDecimal;
 
@@ -534,10 +555,7 @@ class _TripPageState extends State<TripPage> {
     if (expenses.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Text(
-          'No hay gastos registrados',
-          style: textTheme.bodyMedium,
-        ),
+        child: Text('No hay gastos registrados', style: textTheme.bodyMedium),
       );
     }
 
