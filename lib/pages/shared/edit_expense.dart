@@ -43,6 +43,7 @@ class EditExpensePage extends StatefulWidget {
 
 class _EditExpensePageState extends State<EditExpensePage> {
   late Future<TripData> _tripFuture;
+  TripData? _loadedTrip;
 
   DateTime? _startDate;
   bool _accountingPaid = false;
@@ -81,8 +82,14 @@ class _EditExpensePageState extends State<EditExpensePage> {
       _tripFuture = Future.error('Gasto sin viaje asociado');
     }
 
+    // Guardar el trip cuando resuelva para usarlo en el datepicker
+    _tripFuture.then((trip) {
+      if (mounted) setState(() => _loadedTrip = trip);
+    }).catchError((_) {});
+
     // Populate data
-    _startDate = DateTime.now();
+    // Usar la fecha real del gasto (no DateTime.now())
+    _startDate = widget.expense.createdAt;
     _accountingPaid = widget.expense.accountingPaid ?? false;
     _expenseType = _mapTypeToExpenseType(widget.expense.type);
     _subtype = _getSubtype(widget.expense);
@@ -206,12 +213,40 @@ class _EditExpensePageState extends State<EditExpensePage> {
   // Datepicker para seleccionar fecha de inicio
   Future<void> _pickStartDate() async {
     final now = DateTime.now();
+    final trip = _loadedTrip;
+
+    DateTime firstDate;
+    DateTime lastDate;
+
+    if (trip != null) {
+      firstDate = DateTime(
+        trip.startDate.year,
+        trip.startDate.month,
+        trip.startDate.day,
+      );
+      final isFinalized = trip.state == 'Finalizado';
+      if (isFinalized && trip.endDate != null) {
+        final end = trip.endDate!;
+        lastDate = DateTime(end.year, end.month, end.day);
+      } else {
+        lastDate = DateTime(now.year + 5);
+      }
+    } else {
+      // Si el trip aún no cargó, rango sin restricciones
+      firstDate = DateTime(now.year - 5);
+      lastDate = DateTime(now.year + 5);
+    }
+
+    // initialDate debe estar dentro del rango válido
+    DateTime initialDate = _startDate ?? now;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: _startDate ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (picked != null) {
@@ -347,7 +382,7 @@ class _EditExpensePageState extends State<EditExpensePage> {
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
-              await showDialog<bool>(
+              final deleted = await showDialog<bool>(
                 context: context,
                 builder: (context) {
                   return AlertDialog(
@@ -373,7 +408,8 @@ class _EditExpensePageState extends State<EditExpensePage> {
                             await ExpenseService.deleteExpense(
                               expenseId: widget.expense.id,
                             );
-                            Navigator.of(context).pop();
+                            if (!mounted) return;
+                            Navigator.of(context).pop(true);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -388,6 +424,10 @@ class _EditExpensePageState extends State<EditExpensePage> {
                   );
                 },
               );
+
+              if (deleted == true && mounted) {
+                Navigator.of(context).pop(true);
+              }
             },
           ),
         ],

@@ -268,7 +268,7 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
-              await showDialog<bool>(
+              final deleted = await showDialog<bool>(
                 context: context,
                 builder: (dialogContext) {
                   return AlertDialog(
@@ -296,7 +296,6 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
                             if (!mounted) return;
 
                             Navigator.of(dialogContext).pop(true);
-                            Navigator.of(context).pop(true);
                           } catch (e) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -312,6 +311,10 @@ class _EditAdvancePaymentPageState extends State<EditAdvancePaymentPage> {
                   );
                 },
               );
+
+              if (deleted == true && mounted) {
+                Navigator.of(context).pop(true);
+              }
             },
           ),
         ],

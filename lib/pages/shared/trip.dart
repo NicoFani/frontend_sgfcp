@@ -291,16 +291,18 @@ class _TripPageState extends State<TripPage> {
                     gap4,
                   ],
 
-                  InlineInfoCard(
-                    title: 'Documento',
-                    leftLabel: 'Tipo',
-                    leftValue: trip.documentType,
-                    rightLabel: 'Número',
-                    rightValue: trip.documentNumber,
-                    leftColumnWidth: infoLabelWidth,
-                  ),
+                  if (trip.state != 'Pendiente') ...[
+                    InlineInfoCard(
+                      title: 'Documento',
+                      leftLabel: 'Tipo',
+                      leftValue: trip.documentType,
+                      rightLabel: 'Número',
+                      rightValue: trip.documentNumber,
+                      leftColumnWidth: infoLabelWidth,
+                    ),
 
-                  gap4,
+                    gap4,
+                  ],
 
                   // Rest of the information - hidden for "Pendiente"
                   if (trip.state != 'Pendiente') ...[
@@ -569,7 +571,17 @@ class _TripPageState extends State<TripPage> {
                   .push(
                     EditExpensePage.route(expense: expense, trip: _currentTrip),
                   )
-                  .then((_) => _loadData());
+                  .then((result) {
+                    _loadData();
+                    if (result == true && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Gasto eliminado correctamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  });
             },
           ),
         )

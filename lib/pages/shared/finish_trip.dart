@@ -7,6 +7,7 @@ import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
 
+import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/trip_service.dart';
 
 class FinishTripPage extends StatefulWidget {
@@ -28,6 +29,7 @@ class FinishTripPage extends StatefulWidget {
 
 class _FinishTripPageState extends State<FinishTripPage> {
   DateTime? _endDate;
+  DateTime? _latestExpenseDate;
   bool _isLoading = false;
   bool _showValidationErrors = false;
   bool _didInitDateText = false;
@@ -47,6 +49,38 @@ class _FinishTripPageState extends State<FinishTripPage> {
         ? widget.trip.startDate
         : now;
     _weightController.addListener(_updateValidationStates);
+    _loadLatestExpenseDate();
+  }
+
+  Future<void> _loadLatestExpenseDate() async {
+    try {
+      final expenses = await ExpenseService.getExpensesByTrip(
+        tripId: widget.trip.id,
+      );
+      if (!mounted || expenses.isEmpty) return;
+
+      final latest = expenses
+          .map((e) => e.createdAt)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      final latestDateOnly = DateTime(latest.year, latest.month, latest.day);
+
+      setState(() {
+        _latestExpenseDate = latestDateOnly;
+        // Si la fecha de fin actual es anterior al gasto más lejano, ajustarla
+        if (_endDate != null && _endDate!.isBefore(latestDateOnly)) {
+          _endDate = latestDateOnly;
+          if (_didInitDateText) {
+            final locale = Localizations.localeOf(context).toString();
+            _endDateController.text = DateFormat(
+              'dd/MM/yyyy',
+              locale,
+            ).format(_endDate!);
+          }
+        }
+      });
+    } catch (_) {
+      // Si no se pueden cargar gastos, continuar sin restricción adicional
+    }
   }
 
   @override
@@ -73,10 +107,25 @@ class _FinishTripPageState extends State<FinishTripPage> {
   Future<void> _pickEndDate() async {
     final now = DateTime.now();
 
+    // firstDate: la más tardía entre inicio del viaje y fecha del gasto más lejano
+    final tripStartDateOnly = DateTime(
+      widget.trip.startDate.year,
+      widget.trip.startDate.month,
+      widget.trip.startDate.day,
+    );
+    final firstDate = (_latestExpenseDate != null &&
+            _latestExpenseDate!.isAfter(tripStartDateOnly))
+        ? _latestExpenseDate!
+        : tripStartDateOnly;
+
+    // initialDate debe estar dentro del rango válido
+    DateTime initialDate = _endDate ?? now;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _endDate,
-      firstDate: widget.trip.startDate,
+      initialDate: initialDate,
+      firstDate: firstDate,
       lastDate: DateTime(now.year + 5),
     );
 
@@ -117,6 +166,19 @@ class _FinishTripPageState extends State<FinishTripPage> {
 
   void _finishTrip() async {
     if (!_validateRequiredFields()) {
+      return;
+    }
+
+    // Validar que la fecha de fin sea posterior o igual al gasto más lejano
+    if (_latestExpenseDate != null && _endDate!.isBefore(_latestExpenseDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'La fecha de fin debe ser posterior o igual a la fecha del gasto '
+            'más reciente (${DateFormat('dd/MM/yyyy').format(_latestExpenseDate!)})',
+          ),
+        ),
+      );
       return;
     }
 

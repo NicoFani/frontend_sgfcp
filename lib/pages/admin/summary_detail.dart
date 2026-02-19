@@ -254,7 +254,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                       gap8,
                       Expanded(
                         child: Text(
-                          'El calculo esta en pausa porque el viaje esta en curso',
+                          'El cálculo está en pausa porque el viaje está en curso',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -570,25 +570,8 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
     } finally {
       if (!mounted) return;
 
-      // Si venía de error por tarifa, intentar recalcular automáticamente.
-      if (previousStatus == 'error') {
-        await _recalculateSummarySilently();
-      } else {
-        await _loadSummary();
-      }
+      await _loadSummary();
     }
-  }
-
-  Future<void> _recalculateSummarySilently() async {
-    try {
-      await PayrollSummaryService.recalculateSummary(
-        summaryId: widget.summaryId,
-      );
-    } catch (_) {
-      // Si falla recálculo automático, igualmente refrescar para mantener estado sincronizado.
-    }
-
-    await _loadSummary();
   }
 
   Future<void> _loadTripInProgress(PayrollSummaryData summary) async {

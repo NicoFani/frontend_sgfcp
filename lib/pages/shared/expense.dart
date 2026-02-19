@@ -63,7 +63,14 @@ class _ExpensePageState extends State<ExpensePage> {
   @override
   void initState() {
     super.initState();
-    _startDate = DateTime.now();
+    final now = DateTime.now();
+    final tripStart = DateTime(
+      widget.trip.startDate.year,
+      widget.trip.startDate.month,
+      widget.trip.startDate.day,
+    );
+    // La fecha inicial debe ser >= fecha de inicio del viaje
+    _startDate = now.isBefore(tripStart) ? tripStart : now;
     _startDateController.text = formatDate(_startDate!);
     _amountController.addListener(_updateValidationStates);
     _litersController.addListener(_updateValidationStates);
@@ -85,12 +92,31 @@ class _ExpensePageState extends State<ExpensePage> {
   // Datepicker para seleccionar fecha de inicio
   Future<void> _pickStartDate() async {
     final now = DateTime.now();
+    final tripStart = widget.trip.startDate;
+    final tripEnd = widget.trip.endDate;
+    final isFinalized = widget.trip.state == 'Finalizado';
+
+    // firstDate: fecha de inicio del viaje (sin hora)
+    final firstDate = DateTime(tripStart.year, tripStart.month, tripStart.day);
+
+    // lastDate: si el viaje está finalizado → fecha fin del viaje; si no → futuro lejano (se permiten gastos futuros)
+    final DateTime lastDate;
+    if (isFinalized && tripEnd != null) {
+      lastDate = DateTime(tripEnd.year, tripEnd.month, tripEnd.day);
+    } else {
+      lastDate = DateTime(now.year + 5);
+    }
+
+    // initialDate debe estar dentro del rango válido
+    DateTime initialDate = _startDate ?? now;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: _startDate ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (picked != null) {
@@ -156,11 +182,7 @@ class _ExpensePageState extends State<ExpensePage> {
     setState(() => _isLoading = true);
 
     try {
-      final user = TokenStorage.user;
-      if (user == null || user['id'] == null) {
-        throw Exception('No se encontró el ID del chofer');
-      }
-      final driverId = user['id'] as int;
+      final driverId = widget.trip.driverId;
 
       String? receiptPath;
       if (_receiptFile != null) {
