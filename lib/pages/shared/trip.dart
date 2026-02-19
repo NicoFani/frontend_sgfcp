@@ -321,7 +321,8 @@ class _TripPageState extends State<TripPage> {
                     leftColumnWidth: infoLabelWidth,
                   ),
 
-                  gap4,
+                    gap4,
+                  
 
                     // Balance será calculado junto a los gastos más abajo
                     InfoCard(
@@ -553,7 +554,17 @@ class _TripPageState extends State<TripPage> {
                   .push(
                     EditExpensePage.route(expense: expense),
                   )
-                  .then((_) => _loadData());
+                  .then((result) {
+                    _loadData();
+                    if (result == true && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Gasto eliminado correctamente'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  });
             },
           ),
         )
