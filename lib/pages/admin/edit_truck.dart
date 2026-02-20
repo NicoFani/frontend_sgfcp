@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/driver_truck_service.dart';
 import 'package:frontend_sgfcp/models/truck_data.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
@@ -40,6 +41,9 @@ class _EditTruckPageState extends State<EditTruckPage> {
   final TextEditingController _plateController = TextEditingController();
   
   int? _selectedDriverId;
+  int? _originalDriverId; // To track if driver changed
+  int? _originalDriverTruckId;
+  bool _assignmentSelectionChanged = false;
   bool _isLoading = false;
   late Future<TruckData> _truckFuture;
   late Future<List<DriverData>> _driversFuture;
@@ -59,12 +63,31 @@ class _EditTruckPageState extends State<EditTruckPage> {
     _truckFuture = TruckService.getTruckById(truckId: widget.truckId);
     _driversFuture = DriverService.getDrivers();
     _currentDriverFuture = TruckService.getTruckCurrentDriver(truckId: widget.truckId);
+    _loadOriginalAssignment();
 
     // Add validation listeners
     _brandController.addListener(_updateValidationStates);
     _modelController.addListener(_updateValidationStates);
     _yearController.addListener(_updateValidationStates);
     _plateController.addListener(_updateValidationStates);
+  }
+
+  Future<void> _loadOriginalAssignment() async {
+    try {
+      final assignment = await DriverTruckService.getCurrentAssignmentByTruck(widget.truckId);
+      if (assignment == null) {
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _originalDriverTruckId = assignment.id;
+          _originalDriverId ??= assignment.driverId;
+        });
+      }
+    } catch (_) {
+      // Ignore assignment load errors here; we'll retry on save.
+    }
   }
 
   @override
@@ -126,6 +149,28 @@ class _EditTruckPageState extends State<EditTruckPage> {
     return hasBrand && hasModel && hasYear && hasValidPlate;
   }
 
+  Future<void> _removeOriginalAssignmentIfNeeded() async {
+    if (_originalDriverId == _selectedDriverId && _originalDriverTruckId == null) {
+      return;
+    }
+
+    if (_originalDriverTruckId != null) {
+      await DriverTruckService.removeDriverFromTruck(
+        driverTruckId: _originalDriverTruckId!,
+      );
+      return;
+    }
+
+    final assignment = await DriverTruckService.getCurrentAssignmentByTruck(widget.truckId);
+    if (assignment == null) {
+      return;
+    }
+
+    await DriverTruckService.removeDriverFromTruck(
+      driverTruckId: assignment.id,
+    );
+  }
+
   Future<void> _saveChanges() async {
     if (!_validateRequiredFields()) {
       return;
@@ -136,6 +181,7 @@ class _EditTruckPageState extends State<EditTruckPage> {
     });
 
     try {
+      // Actualizar datos del camión
       await TruckService.updateTruck(
         truckId: widget.truckId,
         brand: _brandController.text,
@@ -143,6 +189,21 @@ class _EditTruckPageState extends State<EditTruckPage> {
         fabricationYear: int.parse(_yearController.text),
         plate: _plateController.text.replaceAll(' ', ''),
       );
+
+      // Si el chofer cambió, crear nueva asignación
+      if (_assignmentSelectionChanged) {
+        await _removeOriginalAssignmentIfNeeded();
+        if (_selectedDriverId != null) {
+          await DriverTruckService.assignDriverToTruck(
+            driverId: _selectedDriverId!,
+            truckId: widget.truckId,
+            date: DateTime.now(),
+          );
+        }
+        // Note: If _selectedDriverId is null, we're unassigning the driver
+        // The current driver will no longer be considered "current" as there's
+        // no new assignment for this truck
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -152,6 +213,7 @@ class _EditTruckPageState extends State<EditTruckPage> {
             backgroundColor: Colors.green,
           ),
         );
+        _assignmentSelectionChanged = false;
       }
     } catch (e) {
       if (mounted) {
@@ -203,6 +265,20 @@ class _EditTruckPageState extends State<EditTruckPage> {
     });
 
     try {
+      final assignment = _originalDriverTruckId != null
+          ? null
+          : await DriverTruckService.getCurrentAssignmentByTruck(widget.truckId);
+
+      if (_originalDriverTruckId != null) {
+        await DriverTruckService.removeDriverFromTruck(
+          driverTruckId: _originalDriverTruckId!,
+        );
+      } else if (assignment != null) {
+        await DriverTruckService.removeDriverFromTruck(
+          driverTruckId: assignment.id,
+        );
+      }
+
       await TruckService.deleteTruck(truckId: widget.truckId);
 
       if (mounted) {
@@ -288,6 +364,7 @@ class _EditTruckPageState extends State<EditTruckPage> {
                     final driverData = currentDriverSnapshot.data?['driver'];
                     if (driverData != null) {
                       _selectedDriverId = driverData['id'] as int;
+                      _originalDriverId = _selectedDriverId; // Track original
                     }
                   }
 
@@ -415,12 +492,15 @@ class _EditTruckPageState extends State<EditTruckPage> {
                                           (driver) => DropdownMenuEntry<int?>(
                                             value: driver.id,
                                             label: driver.fullName,
+                                            enabled: (driver.currentTruck == null), // Solo habilitar si no tiene camión asignado o es el chofer actual
                                           ),
                                         )
-                                        .toList(),
                                   ],
                                   onSelected: (value) {
                                     setState(() {
+                                      if (value != _selectedDriverId) {
+                                        _assignmentSelectionChanged = true;
+                                      }
                                       _selectedDriverId = value;
                                     });
                                   },

@@ -62,14 +62,42 @@ class DriverTruckService {
     }
   }
 
+  // GET - Obtener la asignación actual de un camión (la más reciente)
+  static Future<DriverTruckData?> getCurrentAssignmentByTruck(int truckId) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/driver-trucks/truck/$truckId/current-assignment'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      if (response.statusCode == 404) {
+        return null;
+      }
+
+      return ApiResponseHandler.handleResponse<DriverTruckData>(
+        response,
+        (jsonData) => DriverTruckData.fromJson(jsonData),
+        operation: 'obtener asignación actual del camión',
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   // GET ALL - Obtener todas las asignaciones conductor-camión
   static Future<List<DriverTruckData>> getDriverTrucks() async {
+    final token = TokenStorage.accessToken;
+
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/driver-trucks/'),
             headers: ApiResponseHandler.createHeaders(
-              null,
+              token,
               includeContentType: false,
             ),
           )
@@ -91,12 +119,14 @@ class DriverTruckService {
   static Future<DriverTruckData> getDriverTruckById({
     required int driverTruckId,
   }) async {
+    final token = TokenStorage.accessToken;
+
     try {
       final response = await http
           .get(
             Uri.parse('$baseUrl/driver-trucks/$driverTruckId'),
             headers: ApiResponseHandler.createHeaders(
-              null,
+              token,
               includeContentType: false,
             ),
           )
@@ -118,6 +148,8 @@ class DriverTruckService {
     required int truckId,
     required DateTime date,
   }) async {
+    final token = TokenStorage.accessToken;
+
     try {
       final payload = {
         'driver_id': driverId,
@@ -128,10 +160,7 @@ class DriverTruckService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/driver-trucks/'),
-            headers: ApiResponseHandler.createHeaders(
-              null,
-              includeContentType: false,
-            ),
+            headers: ApiResponseHandler.createHeaders(token),
             body: jsonEncode(payload),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
@@ -153,6 +182,8 @@ class DriverTruckService {
     int? truckId,
     DateTime? date,
   }) async {
+    final token = TokenStorage.accessToken;
+
     try {
       final payload = {
         if (driverId != null) 'driver_id': driverId,
@@ -163,10 +194,7 @@ class DriverTruckService {
       final response = await http
           .put(
             Uri.parse('$baseUrl/driver-trucks/$driverTruckId'),
-            headers: ApiResponseHandler.createHeaders(
-              null,
-              includeContentType: false,
-            ),
+            headers: ApiResponseHandler.createHeaders(token),
             body: jsonEncode(payload),
           )
           .timeout(ApiResponseHandler.defaultTimeout);
@@ -185,12 +213,14 @@ class DriverTruckService {
   static Future<void> removeDriverFromTruck({
     required int driverTruckId,
   }) async {
+    final token = TokenStorage.accessToken;
+
     try {
       final response = await http
           .delete(
             Uri.parse('$baseUrl/driver-trucks/$driverTruckId'),
             headers: ApiResponseHandler.createHeaders(
-              null,
+              token,
               includeContentType: false,
             ),
           )

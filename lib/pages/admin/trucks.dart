@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_sgfcp/pages/shared/truck.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/pages/admin/create_truck.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
@@ -136,7 +137,7 @@ class _TrucksPageAdminState extends State<TrucksPageAdmin> {
                   final truck = trucks[index];
                   return ListTile(
                     title: Text('${truck.brand} ${truck.modelName}'),
-                    subtitle: Text(truck.plate),
+                    subtitle: Text(formatPlate(truck.plate)),
                     leading: Icon(
                       Symbols.local_shipping,
                       color: truck.operational ? Colors.green : Colors.grey,

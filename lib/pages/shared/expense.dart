@@ -11,7 +11,6 @@ import 'package:frontend_sgfcp/models/expense_type.dart';
 import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/services/expense_service.dart';
 import 'package:frontend_sgfcp/services/receipt_storage_service.dart';
-import 'package:frontend_sgfcp/services/token_storage.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';

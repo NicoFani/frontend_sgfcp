@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/services/truck_service.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
+import 'package:frontend_sgfcp/services/driver_truck_service.dart';
 import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/utils/formatters.dart';
@@ -169,7 +170,8 @@ class _CreateTruckPageAdminState extends State<CreateTruckPageAdmin> {
     });
 
     try {
-      await TruckService.createTruck(
+      // Crear el camión
+      final createdTruck = await TruckService.createTruck(
         plate: _plateController.text.replaceAll(' ', ''),
         operational: true,
         brand: _brandController.text,
@@ -179,6 +181,15 @@ class _CreateTruckPageAdminState extends State<CreateTruckPageAdmin> {
         vtvDueDate: _vtvDueDate,
         plateDueDate: _plateDueDate,
       );
+
+      // Si hay un chofer seleccionado, asignarlo al camión
+      if (_selectedDriverId != null) {
+        await DriverTruckService.assignDriverToTruck(
+          driverId: _selectedDriverId!,
+          truckId: createdTruck.id,
+          date: DateTime.now(),
+        );
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -341,6 +352,7 @@ class _CreateTruckPageAdminState extends State<CreateTruckPageAdmin> {
                               (driver) => DropdownMenuEntry<int?>(
                                 value: driver.id,
                                 label: driver.fullName,
+                                enabled: driver.currentTruck == null, // Solo habilitar si no tiene camión asignado
                               ),
                             )
                       ],

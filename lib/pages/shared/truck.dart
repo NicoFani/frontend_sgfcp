@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/theme/spacing.dart';
 import 'package:frontend_sgfcp/models/info_item.dart';
 import 'package:frontend_sgfcp/models/simple_table_row_data.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:frontend_sgfcp/widgets/simple_card.dart';
@@ -145,7 +146,11 @@ class _TruckPageState extends State<TruckPage> {
                           label: 'Año',
                           value: truck.fabricationYear.toString(),
                         ),
-                        InfoItem(label: 'Patente', value: truck.plate),
+                        InfoItem(
+                          label: 'Patente',
+                          value: truck.plate,
+                          formatter: formatPlate,
+                        ),
                       ],
                       labelColumnWidth: infoLabelWidth,
                     ),
