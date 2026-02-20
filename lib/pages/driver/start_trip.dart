@@ -106,10 +106,7 @@ class _StartTripPageState extends State<StartTripPage> {
   }
 
   bool _validateRequiredFields() {
-    final docNumber = _docNumberController.text.trim();
-    final expectedDocLength = _docType == DocumentType.ctg ? 11 : 13;
-    final hasDocNumber = docNumber.isNotEmpty;
-    final hasValidDocNumberLength = hasDocNumber && docNumber.length == expectedDocLength;
+    final hasDocNumber = _docNumberController.text.trim().isNotEmpty;
     final hasWeight = _weightController.text.trim().isNotEmpty;
     final hasKm = _kmController.text.trim().isNotEmpty;
     final hasLoadOwner = _selectedLoadOwner != null;
@@ -117,12 +114,12 @@ class _StartTripPageState extends State<StartTripPage> {
 
     setState(() {
       _showValidationErrors = true;
-      _docNumberStatesController.update(WidgetState.error, !hasDocNumber || !hasValidDocNumberLength);
+      _docNumberStatesController.update(WidgetState.error, !hasDocNumber);
       _weightStatesController.update(WidgetState.error, !hasWeight);
       _kmStatesController.update(WidgetState.error, !hasKm);
     });
 
-    return hasDocNumber && hasValidDocNumberLength && hasWeight && hasKm && hasLoadOwner && hasLoadType;
+    return hasDocNumber && hasWeight && hasKm && hasLoadOwner && hasLoadType;
   }
   void _startTrip() async {
     if (!_validateRequiredFields()) {
@@ -138,9 +135,9 @@ class _StartTripPageState extends State<StartTripPage> {
           'document_number': _docNumberController.text,
         'document_type': documentTypeToApiValue(_docType),
         if (_weightController.text.isNotEmpty)
-          'load_weight_on_load': parseCurrency(_weightController.text),
+          'load_weight_on_load': double.tryParse(_weightController.text),
         if (_kmController.text.isNotEmpty)
-          'estimated_kms': parseCurrency(_kmController.text),
+          'estimated_kms': double.tryParse(_kmController.text),
         if (_selectedLoadOwner != null) 'load_owner_id': _selectedLoadOwner!.id,
         if (_selectedLoadTypeId != null) 'load_type_id': _selectedLoadTypeId,
         'calculated_per_km': _calculatedPerKm,
@@ -159,7 +156,7 @@ class _StartTripPageState extends State<StartTripPage> {
       await TripService.updateTrip(tripId: widget.trip.id, data: data);
 
       if (mounted) {
-        Navigator.of(context).pop(true);
+        Navigator.of(context).popUntil((route) => route.isFirst);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Viaje comenzado exitosamente'),
@@ -241,15 +238,9 @@ class _StartTripPageState extends State<StartTripPage> {
                         labelText: "Nro. de documento",
                         border: OutlineInputBorder(),
                         counterText: "", // oculta contador si querés
-                        errorText: _showValidationErrors
-                            ? (_docNumberController.text.trim().isEmpty
-                                ? 'Campo requerido'
-                                : (_docNumberController.text.trim().length !=
-                                        (_docType == DocumentType.ctg ? 11 : 13)
-                                    ? (_docType == DocumentType.ctg
-                                        ? 'CTG debe tener 11 dígitos'
-                                        : 'Remito debe tener 13 dígitos')
-                                    : null))
+                        errorText: _showValidationErrors &&
+                                _docNumberController.text.trim().isEmpty
+                            ? 'Campo requerido'
                             : null,
                       ),
                     ),
@@ -481,6 +472,9 @@ class _StartTripPageState extends State<StartTripPage> {
                     ? (value) {
                         setState(() {
                           _fuelDelivered = value ?? false;
+                          if (!_fuelDelivered) {
+                            _fuelController.clear();
+                          }
                         });
                       }
                     : null,
@@ -501,6 +495,9 @@ class _StartTripPageState extends State<StartTripPage> {
                     ? (value) {
                         setState(() {
                           _clientAdvancePayment = value ?? false;
+                          if (!_clientAdvancePayment) {
+                            _clientAdvancePaymentController.clear();
+                          }
                         });
                       }
                     : null,

@@ -59,6 +59,32 @@ class AdvancePaymentService {
     }
   }
 
+  // GET BY DRIVER - Obtener adelantos de un chofer específico
+  static Future<List<AdvancePaymentData>> getAdvancePaymentsByDriver({
+    required int driverId,
+  }) async {
+    final token = TokenStorage.accessToken;
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/advance-payments/driver/$driverId'),
+            headers: ApiResponseHandler.createHeaders(token),
+          )
+          .timeout(ApiResponseHandler.defaultTimeout);
+
+      return ApiResponseHandler.handleResponse<List<AdvancePaymentData>>(
+        response,
+        (jsonData) => (jsonData as List<dynamic>)
+            .map((advance) => AdvancePaymentData.fromJson(advance))
+            .toList(),
+        operation: 'obtener adelantos del chofer',
+      );
+    } catch (e) {
+      ApiResponseHandler.handleNetworkError(e);
+    }
+  }
+
   // POST - Crear un nuevo adelanto
   static Future<AdvancePaymentData> createAdvancePayment({
     required int driverId,

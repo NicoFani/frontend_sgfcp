@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/pages/driver/driver_advance_payments.dart';
 import 'package:frontend_sgfcp/pages/shared/driver_data.dart';
 import 'package:frontend_sgfcp/utils/url_navigator.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -135,6 +136,20 @@ class _ProfileOptionsList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
         children: [
+          ListTile(
+            leading: Icon(Symbols.mintmark),
+            title: Text('Adelantos'),
+            trailing: const Icon(Icons.arrow_right),
+            onTap: () {
+              Navigator.of(
+                context,
+              ).push(DriverAdvancePaymentsPage.route(driver: driver));
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: const Divider(height: 1),
+          ),
           ListTile(
             leading: Icon(Symbols.id_card),
             title: Text('Documentación'),

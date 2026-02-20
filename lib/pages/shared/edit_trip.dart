@@ -81,11 +81,9 @@ class _EditTripPageState extends State<EditTripPage> {
   final WidgetStatesController _destinationStatesController =
       WidgetStatesController();
 
-    bool get isAdmin =>
+  final bool isAdmin =
       (TokenStorage.user != null && TokenStorage.user!['is_admin'] == true);
   bool get _isFinalized => widget.trip.state == 'Finalizado';
-  bool get _isPending => widget.trip.state == 'Pendiente';
-  bool get _isInProgress => widget.trip.state == 'En curso';
 
   @override
   void initState() {
@@ -114,14 +112,14 @@ class _EditTripPageState extends State<EditTripPage> {
     _destinationController.text = widget.trip.destination;
     _destinationDescController.text = widget.trip.destinationDescription ?? '';
     _calculatedPerKm = widget.trip.calculatedPerKm;
+    _netWeightController.text = widget.trip.loadWeightOnLoad.toString();
+    _kmsController.text = widget.trip.estimatedKms.toString();
     final currencyFormatter = CurrencyTextInputFormatter.currency(
       locale: 'es_AR',
       symbol: '',
       decimalDigits: 2,
       enableNegative: false,
     );
-    _netWeightController.text = currencyFormatter.formatDouble(widget.trip.loadWeightOnLoad);
-    _kmsController.text = currencyFormatter.formatDouble(widget.trip.estimatedKms);
     _rateController.text = currencyFormatter.formatDouble(widget.trip.rate);
     _advanceController.text = widget.trip.clientAdvancePayment > 0
       ? currencyFormatter.formatDouble(widget.trip.clientAdvancePayment)
@@ -144,31 +142,11 @@ class _EditTripPageState extends State<EditTripPage> {
     final now = DateTime.now();
     final currentDate = isStart ? _startDate : _endDate;
 
-    final DateTime firstDate;
-    final DateTime lastDate;
-
-    if (isStart && _isPending) {
-      // Misma validación que en crear viaje: desde hoy hasta +5 años
-      firstDate = now;
-      lastDate = DateTime(now.year + 5);
-    } else {
-      firstDate = DateTime(now.year - 5);
-      lastDate = DateTime(now.year + 5);
-    }
-
-    DateTime initialDate = currentDate ?? now;
-    if (initialDate.isBefore(firstDate)) {
-      initialDate = firstDate;
-    }
-    if (initialDate.isAfter(lastDate)) {
-      initialDate = lastDate;
-    }
-
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      initialDate: currentDate ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
     );
 
     if (picked != null) {
@@ -217,12 +195,10 @@ class _EditTripPageState extends State<EditTripPage> {
 
   void _updateValidationStates() {
     if (!_showValidationErrors) return;
-    if (_isInProgress) {
-      _docNumberStatesController.update(
-        WidgetState.error,
-        _docNumberController.text.trim().isEmpty,
-      );
-    }
+    _docNumberStatesController.update(
+      WidgetState.error,
+      _docNumberController.text.trim().isEmpty,
+    );
     if (isAdmin) {
       _originStatesController.update(
         WidgetState.error,
@@ -233,49 +209,40 @@ class _EditTripPageState extends State<EditTripPage> {
         _destinationController.text.trim().isEmpty,
       );
     }
-    if (_isInProgress) {
-      _weightStatesController.update(
-        WidgetState.error,
-        _netWeightController.text.trim().isEmpty,
-      );
-      _kmStatesController.update(
-        WidgetState.error,
-        _kmsController.text.trim().isEmpty,
-      );
-    }
+    _weightStatesController.update(
+      WidgetState.error,
+      _netWeightController.text.trim().isEmpty,
+    );
+    _kmStatesController.update(
+      WidgetState.error,
+      _kmsController.text.trim().isEmpty,
+    );
   }
 
   bool _validateRequiredFields() {
-    final hasDocNumber = !_isInProgress || _docNumberController.text.trim().isNotEmpty;
-    final hasOrigin =
-      !(isAdmin || _isPending) || _originController.text.trim().isNotEmpty;
+    final hasDocNumber = _docNumberController.text.trim().isNotEmpty;
+    final hasOrigin = !isAdmin || _originController.text.trim().isNotEmpty;
     final hasDestination =
-      !(isAdmin || _isPending) || _destinationController.text.trim().isNotEmpty;
-    final hasClient =
-      !(isAdmin || _isPending) ||
-      (_selectedClient?.id ?? widget.trip.clientId) != null;
-    final hasWeight = !_isInProgress || _netWeightController.text.trim().isNotEmpty;
-    final hasKm = !_isInProgress || _kmsController.text.trim().isNotEmpty;
-    final hasLoadOwner = !_isInProgress || (_selectedLoadOwner?.id ?? widget.trip.loadOwnerId) != null;
-    final hasLoadType = !_isInProgress || (_selectedLoadType?.id ?? widget.trip.loadTypeId) != null;
+        !isAdmin || _destinationController.text.trim().isNotEmpty;
+    final hasClient = !isAdmin || _selectedClient != null;
+    final hasWeight = _netWeightController.text.trim().isNotEmpty;
+    final hasKm = _kmsController.text.trim().isNotEmpty;
+    final hasLoadOwner = _selectedLoadOwner != null;
+    final hasLoadType = _selectedLoadType != null;
     final hasEndDate = !_isFinalized || _endDate != null;
 
     setState(() {
       _showValidationErrors = true;
-      if (_isInProgress) {
-        _docNumberStatesController.update(WidgetState.error, !hasDocNumber);
-      }
-      if (isAdmin || _isPending) {
+      _docNumberStatesController.update(WidgetState.error, !hasDocNumber);
+      if (isAdmin) {
         _originStatesController.update(WidgetState.error, !hasOrigin);
         _destinationStatesController.update(
           WidgetState.error,
           !hasDestination,
         );
       }
-      if (_isInProgress) {
-        _weightStatesController.update(WidgetState.error, !hasWeight);
-        _kmStatesController.update(WidgetState.error, !hasKm);
-      }
+      _weightStatesController.update(WidgetState.error, !hasWeight);
+      _kmStatesController.update(WidgetState.error, !hasKm);
     });
 
     return hasDocNumber &&
@@ -291,94 +258,74 @@ class _EditTripPageState extends State<EditTripPage> {
 
   void _updateTrip() async {
     if (!_validateRequiredFields()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completá los campos requeridos para guardar cambios.')),
-      );
       return;
     }
 
     setState(() => _isLoading = true);
-    var updateSucceeded = false;
-    TripData? updatedTrip;
 
-    final Map<String, dynamic> data;
-    if (_isPending) {
-      data = <String, dynamic>{
-        'driver_id':
-            _selectedDriver?.id ??
-            widget.trip.driver?.id ??
-            widget.trip.driverId,
-        'origin': _originController.text,
-        if (_originDescController.text.trim().isNotEmpty)
-          'origin_description': _originDescController.text.trim(),
-        'destination': _destinationController.text,
-        if (_destinationDescController.text.trim().isNotEmpty)
-          'destination_description': _destinationDescController.text.trim(),
-        'client_id': _selectedClient?.id ?? widget.trip.clientId,
-        'start_date': _startDate!.toIso8601String().split('T')[0],
-      };
-    } else {
-      data = <String, dynamic>{
-        'document_type': documentTypeToApiValue(_docType),
-        'document_number': _docNumberController.text,
-        'driver_id':
-            _selectedDriver?.id ??
-            widget.trip.driver?.id ??
-            widget.trip.driverId,
-        'load_type_id':
-            _selectedLoadType?.id ??
-            widget.trip.loadType?.id ??
-            widget.trip.loadTypeId,
-        'origin': isAdmin ? _originController.text : widget.trip.origin,
-        if (isAdmin && _originDescController.text.trim().isNotEmpty)
-          'origin_description': _originDescController.text.trim(),
-        'destination':
-            isAdmin ? _destinationController.text : widget.trip.destination,
-        if (isAdmin && _destinationDescController.text.trim().isNotEmpty)
-          'destination_description': _destinationDescController.text.trim(),
-        if (isAdmin) 'client_id': _selectedClient?.id ?? widget.trip.clientId,
-        'start_date': _startDate!.toIso8601String().split('T')[0],
-        if (_endDate != null)
-          'end_date': _endDate!.toIso8601String().split('T')[0],
-        'load_owner_id':
-            _selectedLoadOwner?.id ??
-            widget.trip.loadOwner?.id ??
-            widget.trip.loadOwnerId,
-        'calculated_per_km': _calculatedPerKm,
-        'estimated_kms': parseCurrency(_kmsController.text),
-        'load_weight_on_load': parseCurrency(_netWeightController.text),
-        if (_rateController.text.trim().isNotEmpty)
-          'rate': parseCurrency(_rateController.text),
-        'fuel_on_client': _fuelDelivered,
-        'fuel_liters': _fuelDelivered
-            ? (double.tryParse(_fuelLitersController.text) ?? 0.0)
-            : 0.0,
-        if (_clientAdvancePayment && _advanceController.text.isNotEmpty)
-          'client_advance_payment': parseCurrency(_advanceController.text),
-      };
-    }
+    final data = <String, dynamic>{
+      'document_type': documentTypeToApiValue(_docType),
+      'document_number': _docNumberController.text,
+      'driver_id':
+          _selectedDriver?.id ??
+          widget.trip.driver?.id ??
+          widget.trip.driverId,
+      'load_type_id':
+          _selectedLoadType?.id ?? widget.trip.loadType?.id,
+      'origin': isAdmin ? _originController.text : widget.trip.origin,
+      if (isAdmin && _originDescController.text.trim().isNotEmpty)
+        'origin_description': _originDescController.text.trim(),
+      'destination':
+          isAdmin ? _destinationController.text : widget.trip.destination,
+      if (isAdmin && _destinationDescController.text.trim().isNotEmpty)
+        'destination_description': _destinationDescController.text.trim(),
+      if (isAdmin) 'client_id': _selectedClient?.id,
+      'start_date': _startDate!.toIso8601String().split('T')[0],
+      if (_endDate != null)
+        'end_date': _endDate!.toIso8601String().split('T')[0],
+      'load_owner_id': _selectedLoadOwner?.id ??
+        widget.trip.loadOwner?.id,
+      'calculated_per_km': _calculatedPerKm,
+      'estimated_kms':
+          double.tryParse(_kmsController.text) ?? 0.0,
+      'load_weight_on_load':
+          double.tryParse(_netWeightController.text) ?? 0.0,
+      'rate': parseCurrency(_rateController.text),
+      'fuel_on_client': _fuelDelivered,
+      'fuel_liters': _fuelDelivered && _fuelLitersController.text.isNotEmpty
+          ? double.tryParse(_fuelLitersController.text) ?? 0.0
+          : 0.0,
+      'client_advance_payment': _clientAdvancePayment && _advanceController.text.isNotEmpty
+          ? parseCurrency(_advanceController.text)
+          : 0.0,
+    };
 
-    final currentContext = context;
     try {
-      updatedTrip = await TripService.updateTrip(
+      await TripService.updateTrip(
         tripId: widget.trip.id,
         data: data,
       );
-      updateSucceeded = true;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Viaje actualizado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // ignore: use_build_context_synchronously
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       if (mounted) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(currentContext).showSnackBar(
-          SnackBar(content: Text('Error al guardar cambios: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
         setState(() => _isLoading = false);
-        if (updateSucceeded) {
-          // ignore: use_build_context_synchronously
-          Navigator.of(currentContext).pop(updatedTrip);
-        }
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar cambios: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -399,8 +346,6 @@ class _EditTripPageState extends State<EditTripPage> {
               Text(widget.trip.route, style: textTheme.titleLarge),
 
               gap12,
-
-              if (!_isPending) ...[
 
               // ----- Documento + Número de documento -----
               Row(
@@ -444,7 +389,6 @@ class _EditTripPageState extends State<EditTripPage> {
                         border: OutlineInputBorder(),
                         counterText: "", // oculta contador si querés
                         errorText: _showValidationErrors &&
-                          _isInProgress &&
                                 _docNumberController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
@@ -456,10 +400,8 @@ class _EditTripPageState extends State<EditTripPage> {
 
               gap12,
 
-              ], // end if (!_isPending)
-
-              // Campos editables de alta (admin o viaje pendiente)
-              if (isAdmin || _isPending) ...[
+              // Campos de administrador
+              if (isAdmin) ...[
                 TextField(
                   enabled: !_isLoading,
                   controller: _originController,
@@ -539,7 +481,7 @@ class _EditTripPageState extends State<EditTripPage> {
                           width: constraints.maxWidth,
                           label: const Text('Cliente'),
                           errorText: _showValidationErrors &&
-                              (_selectedClient?.id ?? widget.trip.clientId) == null
+                                  _selectedClient == null
                               ? 'Campo requerido'
                               : null,
                           initialSelection:
@@ -613,65 +555,51 @@ class _EditTripPageState extends State<EditTripPage> {
                 gap12,
               ],
 
-              // Fecha de inicio (+ Fecha de fin si no es Pendiente)
-              if (_isPending)
-                TextField(
-                  enabled: !_isLoading,
-                  controller: _startDateController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Fecha de inicio',
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today_outlined),
+              // Fecha de inicio + Fecha de fin
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: TextField(
+                      enabled: !_isLoading,
+                      controller: _startDateController,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Fecha de inicio',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today_outlined),
+                      ),
+                      onTap:
+                          _isLoading ? null : () => _pickDate(isStart: true),
+                    ),
                   ),
-                  onTap: _isLoading ? null : () => _pickDate(isStart: true),
-                )
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: TextField(
-                        enabled: !_isLoading,
-                        controller: _startDateController,
-                        readOnly: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Fecha de inicio',
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today_outlined),
-                        ),
-                        onTap:
-                            _isLoading ? null : () => _pickDate(isStart: true),
+                  gapW12,
+                  Expanded(
+                    flex: 1,
+                    child: TextField(
+                      enabled: !_isLoading && _isFinalized,
+                      controller: _endDateController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: 'Fecha de fin',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today_outlined),
+                        errorText: _showValidationErrors &&
+                                _isFinalized &&
+                                _endDate == null
+                            ? 'Campo requerido'
+                            : null,
                       ),
+                      onTap: _isLoading || !_isFinalized
+                          ? null
+                          : () => _pickDate(isStart: false),
                     ),
-                    gapW12,
-                    Expanded(
-                      flex: 1,
-                      child: TextField(
-                        enabled: !_isLoading && _isFinalized,
-                        controller: _endDateController,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: 'Fecha de fin',
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today_outlined),
-                          errorText: _showValidationErrors &&
-                                  _isFinalized &&
-                                  _endDate == null
-                              ? 'Campo requerido'
-                              : null,
-                        ),
-                        onTap: _isLoading || !_isFinalized
-                            ? null
-                            : () => _pickDate(isStart: false),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  
+                ],
+              ),
 
               gap12,
-
-              if (!_isPending) ...[
 
               // Peso neto + Km a recorrer
               Row(
@@ -686,7 +614,6 @@ class _EditTripPageState extends State<EditTripPage> {
                         labelText: 'Km a recorrer',
                         border: OutlineInputBorder(),
                         errorText: _showValidationErrors &&
-                          _isInProgress &&
                                 _kmsController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
@@ -716,7 +643,6 @@ class _EditTripPageState extends State<EditTripPage> {
                         suffixText: ' t',
                         border: OutlineInputBorder(),
                         errorText: _showValidationErrors &&
-                          _isInProgress &&
                                 _netWeightController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
@@ -738,10 +664,6 @@ class _EditTripPageState extends State<EditTripPage> {
               ),
 
               gap12,
-
-              ], // end if (!_isPending)
-
-              if (!_isPending) ...[
 
               FutureBuilder<List<LoadOwnerData>>(
                 future: _loadOwnersFuture,
@@ -775,8 +697,7 @@ class _EditTripPageState extends State<EditTripPage> {
                         width: constraints.maxWidth,
                         label: const Text('Dador de Carga'),
                         errorText: _showValidationErrors &&
-                          _isInProgress &&
-                          (_selectedLoadOwner?.id ?? widget.trip.loadOwnerId) == null
+                                _selectedLoadOwner == null
                             ? 'Campo requerido'
                             : null,
                         initialSelection: selectedLoadOwner,
@@ -842,8 +763,7 @@ class _EditTripPageState extends State<EditTripPage> {
                             width: constraints.maxWidth,
                             label: const Text('Tipo de carga'),
                             errorText: _showValidationErrors &&
-                                  _isInProgress &&
-                                  (_selectedLoadType?.id ?? widget.trip.loadTypeId) == null
+                                    _selectedLoadType == null
                                 ? 'Campo requerido'
                                 : null,
                             initialSelection: selectedLoadType,
@@ -874,10 +794,6 @@ class _EditTripPageState extends State<EditTripPage> {
               ),
 
               gap4,
-
-              ], // end if (!_isPending)
-
-              if (!_isPending) ...[
 
               // Tipo de calculo
               SwitchListTile(
@@ -922,10 +838,6 @@ class _EditTripPageState extends State<EditTripPage> {
 
               gap12,
 
-              ], // end if (!_isPending)
-
-              if (!_isPending) ...[
-
               // Vale de combustible entregado + Adelanto del cliente
               CheckboxTextField(
                 enabled: !_isLoading,
@@ -933,6 +845,9 @@ class _EditTripPageState extends State<EditTripPage> {
                 onChanged: (value) {
                   setState(() {
                     _fuelDelivered = value ?? false;
+                    if (!_fuelDelivered) {
+                      _fuelLitersController.clear();
+                    }
                   });
                 },
                 controller: _fuelLitersController,
@@ -950,6 +865,9 @@ class _EditTripPageState extends State<EditTripPage> {
                 onChanged: (value) {
                   setState(() {
                     _clientAdvancePayment = value ?? false;
+                    if (!_clientAdvancePayment) {
+                      _advanceController.clear();
+                    }
                   });
                 },
                 controller: _advanceController,
@@ -968,8 +886,6 @@ class _EditTripPageState extends State<EditTripPage> {
               ),
 
               gap16,
-
-              ], // end if (!_isPending)
 
               // Botón principal: Guardar cambios
               FilledButton.icon(

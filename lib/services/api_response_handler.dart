@@ -28,7 +28,7 @@ class ApiResponseHandler {
     if (details is List) {
       final parts = details
           .map((item) => _normalizeDetails(item))
-          .where((item) => item != null && item!.trim().isNotEmpty)
+          .where((item) => item != null && item.trim().isNotEmpty)
           .cast<String>()
           .toList();
       return parts.isEmpty ? null : parts.join(' | ');

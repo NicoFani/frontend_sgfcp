@@ -55,22 +55,11 @@ class _TripPageState extends State<TripPage> {
   }
 
   void _loadData() {
-    // Si ya tenemos el viaje completo, no hacemos otra llamada
-    if (widget.trip != null) {
-      _currentTrip = widget.trip;
-      setState(() {
-        _tripFuture = Future.value(widget.trip!);
-        _expensesFuture = ExpenseService.getExpensesByTrip(
-          tripId: widget.trip!.id,
-        );
-        // Load commission if trip is finalized and has driver
-        if (widget.trip!.state == 'Finalizado' && widget.trip!.driver != null) {
-          _commissionFuture = DriverCommissionService.getDriverCommissionById(
-            driverId: widget.trip!.driverId,
-          );
-        }
-      });
-    } else if (widget.tripId != null) {
+    // Always fetch fresh trip data from server, especially after edits
+    if (widget.tripId != null) {
+      if (widget.trip != null) {
+        _currentTrip = widget.trip;
+      }
       setState(() {
         _tripFuture = TripService.getTrip(tripId: widget.tripId!);
         _expensesFuture = ExpenseService.getExpensesByTrip(
@@ -78,11 +67,36 @@ class _TripPageState extends State<TripPage> {
         );
         // Load commission after trip loads if finalized
         _tripFuture.then((trip) {
-          if (trip.state == 'Finalizado' && trip.driver != null) {
+          if (mounted) {
             setState(() {
-              _commissionFuture = DriverCommissionService.getDriverCommissionById(
-                driverId: trip.driverId,
-              );
+              _currentTrip = trip;
+              if (trip.state == 'Finalizado' && trip.driver != null) {
+                _commissionFuture = DriverCommissionService.getDriverCommissionById(
+                  driverId: trip.driverId,
+                );
+              }
+            });
+          }
+        });
+      });
+    } else if (widget.trip != null) {
+      // If trip was passed, still fetch fresh data from server by ID
+      _currentTrip = widget.trip; // Set immediately for FAB
+      setState(() {
+        _tripFuture = TripService.getTrip(tripId: widget.trip!.id);
+        _expensesFuture = ExpenseService.getExpensesByTrip(
+          tripId: widget.trip!.id,
+        );
+        // Load commission after trip loads if finalized
+        _tripFuture.then((trip) {
+          if (mounted) {
+            setState(() {
+              _currentTrip = trip;
+              if (trip.state == 'Finalizado' && trip.driver != null) {
+                _commissionFuture = DriverCommissionService.getDriverCommissionById(
+                  driverId: trip.driverId,
+                );
+              }
             });
           }
         });
@@ -100,12 +114,15 @@ class _TripPageState extends State<TripPage> {
         );
         // Load commission after trip loads if finalized
         _tripFuture.then((trip) {
-          if (trip.state == 'Finalizado' && trip.driver != null) {
-            setState(() {
-              _commissionFuture = DriverCommissionService.getDriverCommissionById(
-                driverId: trip.driverId,
-              );
-            });
+          if (mounted) {
+            _currentTrip = trip;
+            if (trip.state == 'Finalizado' && trip.driver != null) {
+              setState(() {
+                _commissionFuture = DriverCommissionService.getDriverCommissionById(
+                  driverId: trip.driverId,
+                );
+              });
+            }
           }
         });
       });
