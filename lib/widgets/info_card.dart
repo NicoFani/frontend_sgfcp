@@ -162,7 +162,7 @@ class _InfoRow extends StatelessWidget {
         gapW8,
         Expanded(
           child: Text(
-            item.value,
+            item.formatter != null ? item.formatter!(item.value) : item.value,
             textAlign: TextAlign.left,
             style: textTheme.bodyLarge,
           ),

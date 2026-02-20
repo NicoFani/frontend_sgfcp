@@ -149,7 +149,7 @@ class _HomePageAdminState extends State<HomePageAdmin> {
 
               // --- Sección Atajos ---
               Text('Atajos', style: textTheme.titleLarge),
-              gap12,
+              gap16,
 
               SizedBox(
                 width: double.infinity,
@@ -181,10 +181,6 @@ class _HomePageAdminState extends State<HomePageAdmin> {
               ),
 
               gap24,
-
-              // --- Sección Viajes ---
-              Text('Viajes', style: textTheme.titleLarge),
-              gap8,
 
               // Calendario
               FutureBuilder<List<TripData>>(

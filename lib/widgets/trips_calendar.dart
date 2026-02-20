@@ -4,6 +4,8 @@ import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:frontend_sgfcp/pages/shared/trip.dart';
 import 'package:intl/intl.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/theme/spacing.dart';
+
 
 class TripsCalendar extends StatefulWidget {
   final List<TripData> trips;
@@ -73,7 +75,7 @@ class _TripsCalendarState extends State<TripsCalendar> {
   Color _finishedTripColor(ColorScheme colors) => colors.primary;
   Color _ongoingTripColor(ColorScheme colors) => colors.secondary;
   Color _scheduledTripColor(ColorScheme colors) => colors.onSecondaryFixedVariant;
-  Color _moreThanOneTrip(ColorScheme colors) => colors.onPrimaryContainer;
+  Color _moreThanOneTrip(ColorScheme colors) => colors.tertiary;
 
   Color _getDayColor(
     ColorScheme colors,
@@ -89,7 +91,7 @@ class _TripsCalendarState extends State<TripsCalendar> {
 
       switch (states.first) {
         case 'Finalizado':
-          return colors.onSurface;
+          return colors.onPrimary;
         case 'Pendiente':
           return colors.onTertiary;
         default:
@@ -149,113 +151,162 @@ class _TripsCalendarState extends State<TripsCalendar> {
     );
   }
 
+  void _showColorGuideDialog(BuildContext context, ColorScheme colors) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Guia de colores'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text('Pendiente'),
+              leading: Icon(Icons.circle, size: 12, color: _scheduledTripColor(colors).withValues(alpha: 0.7),),
+              visualDensity: VisualDensity.compact,
+            ),
+            ListTile(
+              title: Text('En curso'),
+              leading: Icon(Icons.circle, size: 12, color: _ongoingTripColor(colors).withValues(alpha: 0.7),),
+              visualDensity: VisualDensity.compact,
+            ),
+            ListTile(
+              title: Text('Finalizado'),
+              leading: Icon(Icons.circle, size: 12, color: _finishedTripColor(colors).withValues(alpha: 0.7),),
+              visualDensity: VisualDensity.compact,
+            ),
+            ListTile(
+              title: Text('Más de un viaje'),
+              leading: Icon(Icons.circle, size: 12, color: _moreThanOneTrip(colors).withValues(alpha: 0.7),),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: TableCalendar(
-            locale: Localizations.localeOf(context).toString(),
-            firstDay: DateTime(DateTime.now().year - 2),
-            lastDay: DateTime(DateTime.now().year + 2),
-            focusedDay: _focusedDay,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            calendarFormat: _calendarFormat,
-            eventLoader: _getEventsForDay,
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-              if (_getEventsForDay(selectedDay).isNotEmpty) {
-                _showTripsForDay(selectedDay);
-              }
-              widget.onDaySelected?.call(selectedDay);
-            },
-            onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            },
-            onPageChanged: (focusedDay) {
-              _focusedDay = focusedDay;
-            },
-            calendarBuilders: CalendarBuilders(
-              defaultBuilder: (context, day, focusedDay) {
-                final events = _getEventsForDay(day);
-                if (events.isNotEmpty) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: _getDayColor(colors, events, 'decoration'),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${day.day}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: _getDayColor(colors, events, 'label'),
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Viajes', style: textTheme.titleLarge),
+            IconButton(
+              onPressed: () => _showColorGuideDialog(context, colors),
+              icon: Icon(Icons.info_outline, color: colors.onSurfaceVariant),
+            )
+          ],
+        ),
+        gap8,
+        Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: TableCalendar(
+                locale: Localizations.localeOf(context).toString(),
+                firstDay: DateTime(DateTime.now().year - 2),
+                lastDay: DateTime(DateTime.now().year + 2),
+                focusedDay: _focusedDay,
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                calendarFormat: _calendarFormat,
+                eventLoader: _getEventsForDay,
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                  if (_getEventsForDay(selectedDay).isNotEmpty) {
+                    _showTripsForDay(selectedDay);
+                  }
+                  widget.onDaySelected?.call(selectedDay);
+                },
+                onFormatChanged: (format) {
+                  setState(() {
+                    _calendarFormat = format;
+                  });
+                },
+                onPageChanged: (focusedDay) {
+                  _focusedDay = focusedDay;
+                },
+                calendarBuilders: CalendarBuilders(
+                  defaultBuilder: (context, day, focusedDay) {
+                    final events = _getEventsForDay(day);
+                    if (events.isNotEmpty) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: _getDayColor(colors, events, 'decoration'),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: _getDayColor(colors, events, 'label'),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return null;
+                  },
+                  selectedBuilder: (context, day, focusedDay) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${day.day}',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }
-                return null;
-              },
-              selectedBuilder: (context, day, focusedDay) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${day.day}',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.onPrimary,
-                        fontWeight: FontWeight.bold,
+                    );
+                  },
+                  todayBuilder: (context, day, focusedDay) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colors.primary,
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                  ),
-                );
-              },
-              todayBuilder: (context, day, focusedDay) {
-                return Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: colors.primary,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${day.day}',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurface,
-                        fontWeight: FontWeight.bold,
+                      child: Center(
+                        child: Text(
+                          '${day.day}',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                    );
+                  },
+                ),
+                headerStyle: HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
+                  titleTextStyle: textTheme.titleLarge ?? const TextStyle(),
+                  leftChevronIcon: Icon(
+                    Icons.chevron_left,
+                    color: colors.onSurface,
                   ),
-                );
-              },
-            ),
-            headerStyle: HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-              titleTextStyle: textTheme.titleLarge ?? const TextStyle(),
-              leftChevronIcon: Icon(
-                Icons.chevron_left,
-                color: colors.onSurface,
-              ),
-              rightChevronIcon: Icon(
-                Icons.chevron_right,
-                color: colors.onSurface,
-              ),
-            ),
-        )
-      ),
+                  rightChevronIcon: Icon(
+                    Icons.chevron_right,
+                    color: colors.onSurface,
+                  ),
+                ),
+            )
+                  ),
+        ),
+      ],
     ); 
   }
 }

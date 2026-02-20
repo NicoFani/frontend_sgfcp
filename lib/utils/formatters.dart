@@ -60,6 +60,21 @@ String formatPhone(String value) {
   return '${clipped.substring(0, 4)} ${clipped.substring(4, 6)}-${clipped.substring(6)}';
 }
 
+String formatCvu(String value) {
+  // CVU is 22 digits: XXXXXXXXXXXXXXXXXXXXX
+  // Format as: XXXX XXXX XXXX XXXX XXXX XX
+  final digits = value.replaceAll(RegExp(r'\D'), '');
+  final clipped = digits.length > 22 ? digits.substring(0, 22) : digits;
+  if (clipped.isEmpty) return '';
+  
+  final buffer = StringBuffer();
+  for (int i = 0; i < clipped.length; i++) {
+    if (i > 0 && i % 4 == 0) buffer.write(' ');
+    buffer.write(clipped[i]);
+  }
+  return buffer.toString();
+}
+
 String formatPlate(String value) {
   // Extract alphanumeric characters only
   final alphanumeric = value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();

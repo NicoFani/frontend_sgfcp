@@ -156,12 +156,13 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'excel',
                         child: Text('Descargar Excel'),
                       ),
-                      const PopupMenuItem(
+                       PopupMenuItem(
                         value: 'pdf',
+                        enabled: _summary?.status == 'Aprobado',
                         child: Text('Descargar PDF'),
                       ),
                     ],
@@ -555,7 +556,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
   }
 
   Future<void> _openTripDetail(int tripId, {TripData? prefetchedTrip}) async {
-    final previousStatus = _summary?.status;
+    // final previousStatus = _summary?.status;
 
     try {
       final trip = prefetchedTrip ?? await TripService.getTrip(tripId: tripId);

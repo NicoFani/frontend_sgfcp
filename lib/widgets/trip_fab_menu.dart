@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_sgfcp/models/trip_data.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 class TripFabMenu extends StatefulWidget {
+  final TripData trip;
   final VoidCallback onAddExpense;
   final VoidCallback onEditTrip;
 
   const TripFabMenu({
     super.key,
+    required this.trip,
     required this.onAddExpense,
     required this.onEditTrip,
   });
@@ -46,16 +49,21 @@ class _TripFabMenuState extends State<TripFabMenu> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
-                      child: FloatingActionButton.extended(
-                        heroTag: null,
-                        onPressed: () {
-                          _close();
-                          widget.onAddExpense();
-                        },
-                        icon: const Icon(Symbols.garage_money),
-                        label: const Text('Cargar gasto'),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100),
+                      child: Opacity(
+                        opacity: widget.trip.state == 'Pendiente' ? 0.5 : 1.0,
+                        child: FloatingActionButton.extended(
+                          heroTag: null,
+                          onPressed: widget.trip.state == 'Pendiente'
+                              ? null
+                              : () {
+                                  _close();
+                                  widget.onAddExpense();
+                                },
+                          icon: const Icon(Symbols.garage_money),
+                          label: const Text('Cargar gasto'),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
                         ),
                       ),
                     ),

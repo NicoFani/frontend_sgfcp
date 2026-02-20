@@ -133,10 +133,7 @@ class _HomePageDriverState extends State<HomePageDriver> {
 
               gap24,
 
-              // --- Upcoming trips + calendar title ---
-              Text('Viajes', style: textTheme.titleLarge),
-              gap8,
-
+              // --- Trips Calendar section ---
               TripsCalendar(trips: _trips),
             ],
           ),
