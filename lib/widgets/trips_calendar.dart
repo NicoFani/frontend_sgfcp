@@ -46,7 +46,6 @@ class _TripsCalendarState extends State<TripsCalendar> {
     _eventsMap = {};
     for (final trip in widget.trips) {
       final startDate = trip.startDate;
-      final endDate = trip.endDate;
 
       final normalizedStart = DateTime(
         startDate.year,
@@ -54,15 +53,6 @@ class _TripsCalendarState extends State<TripsCalendar> {
         startDate.day,
       );
       _eventsMap.putIfAbsent(normalizedStart, () => []).add(trip);
-
-      if (endDate != null && endDate != startDate) {
-        final normalizedEnd = DateTime(
-          endDate.year,
-          endDate.month,
-          endDate.day,
-        );
-        _eventsMap.putIfAbsent(normalizedEnd, () => []).add(trip);
-      }
     }
   }
 

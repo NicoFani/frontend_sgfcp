@@ -19,10 +19,6 @@ class SummaryDataCard extends StatelessWidget {
   final String statusLabel;
   final SummaryStatus status;
 
-  /// Optional width for the left column to align with other cards.
-  final double? leftColumnWidth;
-  final double? rightColumnWidth;
-
   const SummaryDataCard({
     super.key,
     this.numberLabel = 'Número',
@@ -35,56 +31,28 @@ class SummaryDataCard extends StatelessWidget {
     required this.periodValue,
     this.statusLabel = 'Estado',
     required this.status,
-    this.leftColumnWidth,
-    this.rightColumnWidth,
   });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colors = Theme.of(context).colorScheme;
+    const double labelWidth = 58;
 
-    Widget labelValueRow(String label, Widget value) {
+    Widget labelValuePair(String label, Widget value, double width) {
       return Row(
         children: [
-          Text(label, style: textTheme.labelLarge?.copyWith(color: colors.onSurfaceVariant),),
+          SizedBox(
+            width: width,
+            child: Text(
+              label,
+              style: textTheme.labelLarge?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
           const SizedBox(width: 8),
           Expanded(child: value),
-        ],
-      );
-    }
-
-    Widget leftColumn() {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          labelValueRow(
-            numberLabel,
-            Text(numberValue, style: textTheme.bodyLarge, textAlign: TextAlign.left),
-          ),
-          const SizedBox(height: 8),
-          labelValueRow(
-            dateLabel,
-            Text(DateFormat('dd/MM/yyyy').format(date), style: textTheme.bodyLarge, textAlign: TextAlign.left),
-          ),
-          const SizedBox(height: 8),
-        ],
-      );
-    }
-
-    Widget rightColumn() {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          labelValueRow(
-            driverLabel,
-            Text(driverValue, style: textTheme.bodyLarge, textAlign: TextAlign.left),
-          ),
-          const SizedBox(height: 8),
-          labelValueRow(
-            periodLabel,
-            Text(periodValue, style: textTheme.bodyLarge, textAlign: TextAlign.left),
-          ),
         ],
       );
     }
@@ -98,27 +66,73 @@ class SummaryDataCard extends StatelessWidget {
           children: [
             Text('Datos', style: textTheme.titleMedium),
             const SizedBox(height: 8),
+            
+            // First row: Número - Chofer
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (leftColumnWidth != null)
-                  ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: leftColumnWidth!, maxWidth: leftColumnWidth!),
-                    child: leftColumn(),
-                  )
-                else
-                  leftColumn(),
+                Expanded(
+                  child: labelValuePair(
+                    numberLabel,
+                    Text(
+                      numberValue,
+                      style: textTheme.bodyLarge,
+                      textAlign: TextAlign.left,
+                    ),
+                    labelWidth,
+                  ),
+                ),
                 const SizedBox(width: 16),
-                if (rightColumnWidth != null)
-                  ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: rightColumnWidth!, maxWidth: rightColumnWidth!),
-                    child: rightColumn(),
-                  )
-                else
-                  Expanded(child: rightColumn()),
+                Expanded(
+                  child: labelValuePair(
+                    driverLabel,
+                    Text(
+                      driverValue,
+                      style: textTheme.bodyLarge,
+                      textAlign: TextAlign.left,
+                    ),
+                    labelWidth,
+                  ),
+                ),
               ],
             ),
-            labelValueRow(
+            
+            const SizedBox(height: 8),
+            
+            // Second row: Fecha - Período
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: labelValuePair(
+                    dateLabel,
+                    Text(
+                      DateFormat('dd/MM/yyyy').format(date),
+                      style: textTheme.bodyLarge,
+                      textAlign: TextAlign.left,
+                    ),
+                    labelWidth,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: labelValuePair(
+                    periodLabel,
+                    Text(
+                      periodValue,
+                      style: textTheme.bodyLarge,
+                      textAlign: TextAlign.left,
+                    ),
+                    labelWidth,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Estado row
+            labelValuePair(
               statusLabel,
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -129,6 +143,7 @@ class SummaryDataCard extends StatelessWidget {
                   Icon(status.icon, color: status.color(colors), size: 18),
                 ],
               ),
+              labelWidth,
             ),
           ],
         ),

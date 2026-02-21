@@ -10,6 +10,7 @@ import 'package:frontend_sgfcp/widgets/simple_card.dart';
 import 'package:frontend_sgfcp/widgets/summary_data_card.dart';
 import 'package:frontend_sgfcp/widgets/summary_item_group_card.dart';
 import 'package:frontend_sgfcp/widgets/trips_list_section.dart';
+import 'package:frontend_sgfcp/utils/formatters.dart';
 import 'package:intl/intl.dart';
 
 class SummaryDetailPage extends StatefulWidget {
@@ -162,7 +163,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                       ),
                        PopupMenuItem(
                         value: 'pdf',
-                        enabled: _summary?.status == 'Aprobado',
+                        enabled: _summary?.status == 'approved',
                         child: Text('Descargar PDF'),
                       ),
                     ],
@@ -184,7 +185,6 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                 summary.periodMonth,
               ),
               status: _getStatusFromString(summary.status),
-              leftColumnWidth: 160,
             ),
 
             gap4,
@@ -362,7 +362,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Total',
+                        'Totales',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       gap16,
@@ -626,7 +626,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
       children: [
         Text(label, style: textStyle),
         Text(
-          '\$${amount.toStringAsFixed(2)}',
+          formatCurrency(amount),
           style: textStyle?.copyWith(color: amount < 0 ? Colors.red : null),
         ),
       ],
