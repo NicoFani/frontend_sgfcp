@@ -56,11 +56,11 @@ class _StartTripPageState extends State<StartTripPage> {
       TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
 
-    final WidgetStatesController _docNumberStatesController =
+  final WidgetStatesController _docNumberStatesController =
       WidgetStatesController();
-    final WidgetStatesController _weightStatesController =
+  final WidgetStatesController _weightStatesController =
       WidgetStatesController();
-    final WidgetStatesController _kmStatesController = WidgetStatesController();
+  final WidgetStatesController _kmStatesController = WidgetStatesController();
 
   @override
   void initState() {
@@ -121,6 +121,7 @@ class _StartTripPageState extends State<StartTripPage> {
 
     return hasDocNumber && hasWeight && hasKm && hasLoadOwner && hasLoadType;
   }
+
   void _startTrip() async {
     if (!_validateRequiredFields()) {
       return;
@@ -135,9 +136,9 @@ class _StartTripPageState extends State<StartTripPage> {
           'document_number': _docNumberController.text,
         'document_type': documentTypeToApiValue(_docType),
         if (_weightController.text.isNotEmpty)
-          'load_weight_on_load': double.tryParse(_weightController.text),
+          'load_weight_on_load': parseCurrency(_weightController.text),
         if (_kmController.text.isNotEmpty)
-          'estimated_kms': double.tryParse(_kmController.text),
+          'estimated_kms': parseCurrency(_kmController.text),
         if (_selectedLoadOwner != null) 'load_owner_id': _selectedLoadOwner!.id,
         if (_selectedLoadTypeId != null) 'load_type_id': _selectedLoadTypeId,
         'calculated_per_km': _calculatedPerKm,
@@ -145,12 +146,13 @@ class _StartTripPageState extends State<StartTripPage> {
           'rate': parseCurrency(_tariffController.text),
         // Incluir combustible solo si fue entregado
         if (_fuelDelivered && _fuelController.text.isNotEmpty)
-          'fuel_liters': double.tryParse(_fuelController.text),
+          'fuel_liters': parseCurrency(_fuelController.text),
         'fuel_on_client': _fuelDelivered,
         if (_clientAdvancePayment &&
             _clientAdvancePaymentController.text.isNotEmpty)
-          'client_advance_payment':
-              parseCurrency(_clientAdvancePaymentController.text),
+          'client_advance_payment': parseCurrency(
+            _clientAdvancePaymentController.text,
+          ),
       };
 
       await TripService.updateTrip(tripId: widget.trip.id, data: data);
@@ -230,15 +232,14 @@ class _StartTripPageState extends State<StartTripPage> {
                       controller: _docNumberController,
                       statesController: _docNumberStatesController,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       maxLength: _docType == DocumentType.ctg ? 11 : 13,
                       decoration: InputDecoration(
                         labelText: "Nro. de documento",
                         border: OutlineInputBorder(),
                         counterText: "", // oculta contador si querés
-                        errorText: _showValidationErrors &&
+                        errorText:
+                            _showValidationErrors &&
                                 _docNumberController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
@@ -263,7 +264,8 @@ class _StartTripPageState extends State<StartTripPage> {
                         labelText: 'Peso de Carga',
                         border: OutlineInputBorder(),
                         suffixText: ' t',
-                        errorText: _showValidationErrors &&
+                        errorText:
+                            _showValidationErrors &&
                                 _weightController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
@@ -276,7 +278,7 @@ class _StartTripPageState extends State<StartTripPage> {
                           locale: 'es_AR',
                           symbol: '',
                           decimalDigits: 2,
-                          enableNegative: false
+                          enableNegative: false,
                         ),
                       ],
                     ),
@@ -292,7 +294,8 @@ class _StartTripPageState extends State<StartTripPage> {
                         labelText: 'Kilómetros a Recorrer',
                         border: OutlineInputBorder(),
                         suffixText: ' km',
-                        errorText: _showValidationErrors &&
+                        errorText:
+                            _showValidationErrors &&
                                 _kmController.text.trim().isEmpty
                             ? 'Campo requerido'
                             : null,
@@ -305,7 +308,7 @@ class _StartTripPageState extends State<StartTripPage> {
                           locale: 'es_AR',
                           symbol: '',
                           decimalDigits: 2,
-                          enableNegative: false
+                          enableNegative: false,
                         ),
                       ],
                     ),
@@ -319,8 +322,7 @@ class _StartTripPageState extends State<StartTripPage> {
               FutureBuilder<List<LoadOwnerData>>(
                 future: _loadOwnersFuture,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
@@ -334,8 +336,8 @@ class _StartTripPageState extends State<StartTripPage> {
                       return DropdownMenu<LoadOwnerData>(
                         width: constraints.maxWidth,
                         label: const Text('Dador de Carga'),
-                        errorText: _showValidationErrors &&
-                                _selectedLoadOwner == null
+                        errorText:
+                            _showValidationErrors && _selectedLoadOwner == null
                             ? 'Campo requerido'
                             : null,
                         initialSelection: _selectedLoadOwner,
@@ -385,7 +387,8 @@ class _StartTripPageState extends State<StartTripPage> {
                           return DropdownMenu<LoadTypeData>(
                             width: constraints.maxWidth,
                             label: const Text('Tipo de Carga'),
-                            errorText: _showValidationErrors &&
+                            errorText:
+                                _showValidationErrors &&
                                     _selectedLoadTypeId == null
                                 ? 'Campo requerido'
                                 : null,
@@ -422,7 +425,10 @@ class _StartTripPageState extends State<StartTripPage> {
 
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text('Tipo de cálculo', style: Theme.of(context).textTheme.labelLarge,),
+                        title: Text(
+                          'Tipo de cálculo',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
                         subtitle: Text(
                           _calculatedPerKm ? 'Por kilómetro' : 'Por tonelada',
                         ),
@@ -457,7 +463,7 @@ class _StartTripPageState extends State<StartTripPage> {
                     locale: 'es_AR',
                     symbol: '',
                     decimalDigits: 2,
-                    enableNegative: false
+                    enableNegative: false,
                   ),
                 ],
               ),
@@ -482,9 +488,7 @@ class _StartTripPageState extends State<StartTripPage> {
                 checkboxLabel: 'Vale de Combustible entregado por el cliente',
                 textFieldLabel: 'Litros del Vale',
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
 
               // Adelanto del cliente
@@ -511,7 +515,7 @@ class _StartTripPageState extends State<StartTripPage> {
                     locale: 'es_AR',
                     symbol: '',
                     decimalDigits: 2,
-                    enableNegative: false
+                    enableNegative: false,
                   ),
                 ],
               ),
