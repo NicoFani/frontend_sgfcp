@@ -24,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final String logoLocation = 'assets/images/logo_mockup_gemini_no_background.png';
+  final String logoLocation = 'assets/images/logo_v4.png';
 
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -125,6 +125,9 @@ class _LoginPageState extends State<LoginPage> {
                       height: 140,
                     ),
                   ),
+
+                  Text("PampaMS", style: textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF2A3D4C))),
+
 
                   gap32,
 
