@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
-import 'package:frontend_sgfcp/models/other_items_type.dart';
-import 'package:frontend_sgfcp/models/driver_data.dart';
-import 'package:frontend_sgfcp/models/payroll_period_data.dart';
+import 'package:frontend_sgfcp/pages/admin/create_other_item.dart';
 import 'package:material_symbols_icons/symbols.dart';
-
 import 'package:frontend_sgfcp/theme/spacing.dart';
-import 'package:frontend_sgfcp/services/driver_service.dart';
-import 'package:frontend_sgfcp/services/payroll_period_service.dart';
+import 'package:frontend_sgfcp/models/other_item_row_data.dart';
+import 'package:frontend_sgfcp/models/other_items_type.dart';
+import 'package:frontend_sgfcp/widgets/other_items_list.dart';
 import 'package:frontend_sgfcp/services/payroll_other_item_service.dart';
-import 'package:frontend_sgfcp/utils/formatters.dart';
+import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/widgets/month_picker.dart';
 import 'package:intl/intl.dart';
 
 class OtherItemsPage extends StatefulWidget {
   const OtherItemsPage({super.key});
 
-  /// Route name you can use with Navigator.pushNamed
-  static const String routeName = 'admin/other-items';
+  static const String routeName = '/admin/other-items';
 
-  /// Helper to create a route to this page
   static Route route() {
     return MaterialPageRoute<void>(builder: (_) => const OtherItemsPage());
   }
@@ -29,469 +24,376 @@ class OtherItemsPage extends StatefulWidget {
 }
 
 class _OtherItemsPageState extends State<OtherItemsPage> {
-  OtherItemsType _otherItemsType = OtherItemsType.ajuste;
-  DriverData? _selectedDriver;
-  PayrollPeriodData? _selectedPeriod;
-  bool _isAdjustmentPositive = true;
-
-  // Controllers
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _referenceController = TextEditingController();
-  final TextEditingController _periodController = TextEditingController();
-
-  // Datos cargados
-  List<DriverData> _drivers = [];
-  List<PayrollPeriodData> _periods = [];
+  List<OtherItemRowData> _rows = [];
+  List<String> _allDriverNames = [];
   bool _isLoading = true;
-
-  // Validation controllers
-  final WidgetStatesController _driverStatesController = WidgetStatesController();
-  final WidgetStatesController _periodStatesController = WidgetStatesController();
-  final WidgetStatesController _otherItemStatesController = WidgetStatesController();
-  final WidgetStatesController _amountStatesController = WidgetStatesController();
-  final WidgetStatesController _descriptionStatesController = WidgetStatesController();
-  final WidgetStatesController _referenceStatesController = WidgetStatesController();
-  bool _showValidationErrors = false;
+  final Set<String> _selectedDrivers = {};
+  final Set<OtherItemsType> _selectedItemTypes = {};
+  DateTime? _selectedMonth;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-
-    // Add validation listeners
-    _amountController.addListener(_updateValidationStates);
-    _descriptionController.addListener(_updateValidationStates);
-    _referenceController.addListener(_updateValidationStates);
+    _loadOtherItems();
   }
 
-  void _loadData() async {
+  Future<void> _loadOtherItems() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
+      // Fetch drivers first to get names
       final drivers = await DriverService.getDrivers();
-      final periods = await PayrollPeriodService.getAllPeriods();
+      final driverMap = {
+        for (var driver in drivers) driver.id: driver.fullName
+      };
+      
+      // Store all driver names for filter
+      _allDriverNames = drivers.map((d) => d.fullName).toList()..sort();
+
+      final response = await PayrollOtherItemService.getAllOtherItems(
+        page: 1,
+        perPage: 1000, // Load all items for now
+      );
+
+      final items = response['items'] as List<dynamic>;
 
       setState(() {
-        _drivers = drivers;
-        _periods = periods;
+        _rows = items.map((item) {
+          // Parse item type
+          final itemTypeString = item['item_type'] as String;
+          final itemType = OtherItemsTypeExtension.fromBackendString(itemTypeString);
+
+          // Parse driver name from driver_id
+          final driverId = item['driver_id'] as int?;
+          final driverName = driverId != null ? (driverMap[driverId] ?? 'N/A') : 'N/A';
+
+          // Parse amount
+          final amount = item['amount'] is String
+              ? double.parse(item['amount'])
+              : (item['amount'] as num).toDouble();
+
+          // Parse date
+          final createdAt = item['created_at'] != null
+              ? DateTime.parse(item['created_at'])
+              : DateTime.now();
+
+          // Parse period info if available
+          int? periodMonth;
+          int? periodYear;
+          if (item['period_start_date'] != null) {
+            final periodDate = DateTime.parse(item['period_start_date']);
+            periodMonth = periodDate.month;
+            periodYear = periodDate.year;
+          }
+
+          return OtherItemRowData(
+            itemId: item['id'] as int,
+            itemType: itemType,
+            driver: driverName,
+            amount: amount,
+            description: item['description'] as String? ?? '',
+            date: createdAt,
+            periodMonth: periodMonth,
+            periodYear: periodYear,
+          );
+        }).toList();
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error cargando datos: ${e.toString()}')),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _descriptionController.dispose();
-    _amountController.dispose();
-    _referenceController.dispose();
-    _periodController.dispose();
-    _driverStatesController.dispose();
-    _periodStatesController.dispose();
-    _otherItemStatesController.dispose();
-    _amountStatesController.dispose();
-    _descriptionStatesController.dispose();
-    _referenceStatesController.dispose();
-    super.dispose();
-  }
-
-  void _updateValidationStates() {
-    if (!_showValidationErrors) return;
-
-    setState(() {
-      _driverStatesController.update(
-        WidgetState.error,
-        _selectedDriver == null,
-      );
-      _periodStatesController.update(
-        WidgetState.error,
-        _selectedPeriod == null,
-      );
-      _otherItemStatesController.update(
-        WidgetState.error,
-        false, // Always valid since we have a default
-      );
-      _amountStatesController.update(
-        WidgetState.error,
-        _amountController.text.trim().isEmpty,
-      );
-      _descriptionStatesController.update(
-        WidgetState.error,
-        _descriptionController.text.trim().isEmpty,
-      );
-
-      // Reference required only for multa
-      if (_otherItemsType == OtherItemsType.multa) {
-        _referenceStatesController.update(
-          WidgetState.error,
-          _referenceController.text.trim().isEmpty,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar conceptos: $e')),
         );
-      } else {
-        _referenceStatesController.update(WidgetState.error, false);
       }
-    });
-  }
-
-  bool _validateRequiredFields() {
-    final hasDriver = _selectedDriver != null;
-    final hasPeriod = _selectedPeriod != null;
-    final hasAmount = _amountController.text.trim().isNotEmpty;
-    final hasDescription = _descriptionController.text.trim().isNotEmpty;
-    final hasReference = _otherItemsType == OtherItemsType.multa
-        ? _referenceController.text.trim().isNotEmpty
-        : true;
-
-    setState(() {
-      _showValidationErrors = true;
-      _driverStatesController.update(WidgetState.error, !hasDriver);
-      _periodStatesController.update(WidgetState.error, !hasPeriod);
-      _amountStatesController.update(WidgetState.error, !hasAmount);
-      _descriptionStatesController.update(WidgetState.error, !hasDescription);
-      if (_otherItemsType == OtherItemsType.multa) {
-        _referenceStatesController.update(WidgetState.error, !hasReference);
-      }
-    });
-
-    return hasDriver && hasPeriod && hasAmount && hasDescription && hasReference;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final locale = Localizations.localeOf(context).toString();
+    final monthLabel = _selectedMonth == null
+        ? 'Mes'
+        : _capitalize(DateFormat.yMMMM(locale).format(_selectedMonth!));
+
+    final filteredRows = _applyFilters();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Otros conceptos')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Selector de Chofer
-              DropdownMenu<DriverData>(
-                expandedInsets: EdgeInsets.zero,
-                label: const Text('Chofer'),
-                initialSelection: _selectedDriver,
-                errorText: _showValidationErrors && _selectedDriver == null
-                    ? 'Selecciona un chofer'
-                    : null,
-                dropdownMenuEntries: _drivers
-                    .map(
-                      (driver) => DropdownMenuEntry(
-                        value: driver,
-                        label: driver.fullName,
-                      ),
-                    )
-                    .toList(),
-                onSelected: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedDriver = value;
-                    _updateValidationStates();
-                  });
-                },
-              ),
-
-              gap12,
-
-              // Selector de Período
-              TextField(
-                controller: _periodController,
-                readOnly: true,
-                statesController: _periodStatesController,
-                decoration: InputDecoration(
-                  labelText: 'Período',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: const Icon(Icons.calendar_today_outlined),
-                  errorText: _showValidationErrors && _selectedPeriod == null
-                      ? 'Selecciona un período'
-                      : null,
+      appBar: AppBar(
+        title: const Text('Otros conceptos'),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Primary action
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Symbols.request_quote),
+                    label: const Text('Cargar otros conceptos'),
+                    onPressed: () async {
+                      final result = await Navigator.of(
+                        context,
+                      ).push(CreateOtherItemPage.route());
+                      // If an item was created successfully, refresh the list
+                      if (result == true && mounted) {
+                        _loadOtherItems();
+                      }
+                    },
+                  ),
                 ),
-                onTap: () => _pickPeriodMonth(),
-              ),
 
-              gap12,
+                gap24,
 
-              // Concepto
-              DropdownMenu<OtherItemsType>(
-                expandedInsets: EdgeInsets.zero,
-                label: const Text('Concepto'),
-                initialSelection: _otherItemsType,
-                dropdownMenuEntries: const [
-                  DropdownMenuEntry(
-                    value: OtherItemsType.ajuste,
-                    label: 'Ajuste',
-                  ),
-                  DropdownMenuEntry(
-                    value: OtherItemsType.multa,
-                    label: 'Multa',
-                  ),
-                  DropdownMenuEntry(
-                    value: OtherItemsType.bonificacionExtra,
-                    label: 'Bonificación Extra',
-                  ),
-                  DropdownMenuEntry(
-                    value: OtherItemsType.cargoExtra,
-                    label: 'Cargo Extra',
-                  ),
-                ],
-                onSelected: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _otherItemsType = value;
-                    _isAdjustmentPositive = true;
-                    _updateValidationStates();
-                  });
-                },
-              ),
-
-              gap12,
-
-              if (_otherItemsType == OtherItemsType.ajuste) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Filters
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
                   children: [
-                     Text('Tipo de ajuste', style: Theme.of(context).textTheme.bodyLarge,),
-                    gap8,
-                    SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment(value: true, label: Text('Suma')),
-                        ButtonSegment(value: false, label: Text('Resta')),
-                      ],
-                      selected: {_isAdjustmentPositive},
-                      onSelectionChanged: (value) {
-                        setState(() {
-                          _isAdjustmentPositive = value.first;
-                        });
-                      },
+                    OutlinedButton.icon(
+                      onPressed: _openDriverFilterDialog,
+                      icon: const Icon(Symbols.group, size: 16),
+                      label: Text(
+                        _selectedDrivers.isEmpty
+                            ? 'Choferes'
+                            : 'Choferes (${_selectedDrivers.length})',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _openItemTypeFilterDialog,
+                      icon: const Icon(Symbols.category, size: 16),
+                      label: Text(
+                        _selectedItemTypes.isEmpty
+                            ? 'Tipo'
+                            : 'Tipo (${_selectedItemTypes.length})',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _pickMonth,
+                      icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                      label: Text(
+                        monthLabel,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _hasAnyFilter
+                          ? () {
+                              setState(() {
+                                _selectedDrivers.clear();
+                                _selectedItemTypes.clear();
+                                _selectedMonth = null;
+                              });
+                            }
+                          : null,
+                      style: TextButton.styleFrom(
+                        fixedSize: const Size.fromHeight(36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      child: const Icon(
+                        Icons.filter_alt_off_outlined,
+                        size: 16,
+                      ),
                     ),
                   ],
                 ),
+
                 gap12,
-              ],
 
-              // Importe
-              TextField(
-                controller: _amountController,
-                statesController: _amountStatesController,
-                decoration: InputDecoration(
-                  labelText: 'Importe',
-                  prefixText: r'$ ',
-                  border: const OutlineInputBorder(),
-                  errorText: _showValidationErrors &&
-                          _amountController.text.trim().isEmpty
-                      ? 'Ingresa un importe'
-                      : null,
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  CurrencyTextInputFormatter.currency(
-                    locale: 'es_AR',
-                    symbol: '',
-                    decimalDigits: 2,
-                  ),
-                ],
-              ),
-
-              gap12,
-
-              // Descripción
-              TextField(
-                controller: _descriptionController,
-                statesController: _descriptionStatesController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Descripción',
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                  errorText: _showValidationErrors &&
-                          _descriptionController.text.trim().isEmpty
-                      ? 'Ingresa una descripción'
-                      : null,
-                ),
-              ),
-
-              // Multa → input de referencia (municipio, infracción, etc)
-              if (_otherItemsType == OtherItemsType.multa) ...[
-                gap12,
-                TextField(
-                  controller: _referenceController,
-                  statesController: _referenceStatesController,
-                  decoration: InputDecoration(
-                    labelText: 'Referencia (Municipio, infracción, etc)',
-                    border: const OutlineInputBorder(),
-                    errorText: _showValidationErrors &&
-                            _referenceController.text.trim().isEmpty
-                        ? 'Ingresa una referencia'
-                        : null,
-                  ),
+                // Other items list (header + rows)
+                OtherItemsList(
+                  rows: filteredRows,
+                  onItemChanged: _loadOtherItems,
                 ),
               ],
-
-              gap16,
-
-              // Botón para guardar
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                onPressed: _submitForm,
-                icon: const Icon(Symbols.request_quote),
-                label: const Text('Cargar concepto'),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
-  Future<void> _submitForm() async {
-    if (!_validateRequiredFields()) {
-      return;
-    }
-
-    try {
-      final itemType = _otherItemsType.toBackendString();
-      final rawAmount = parseCurrency(_amountController.text);
-      double amount;
-
-      if (_otherItemsType == OtherItemsType.ajuste) {
-        amount = _isAdjustmentPositive ? rawAmount.abs() : -rawAmount.abs();
-      } else if (_otherItemsType == OtherItemsType.bonificacionExtra) {
-        amount = rawAmount.abs();
-      } else {
-        // Multa y cargo extra siempre restan
-        amount = -rawAmount.abs();
+  List<OtherItemRowData> _applyFilters() {
+    return _rows.where((row) {
+      if (_selectedDrivers.isNotEmpty &&
+          !_selectedDrivers.contains(row.driver)) {
+        return false;
       }
-
-      await PayrollOtherItemService.createOtherItem(
-        driverId: _selectedDriver!.id,
-        periodId: _selectedPeriod!.id,
-        itemType: itemType,
-        description: _descriptionController.text,
-        amount: amount,
-        reference: _otherItemsType == OtherItemsType.multa
-            ? _referenceController.text
-            : null,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Concepto cargado exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Limpiar formulario
-        _descriptionController.clear();
-        _amountController.clear();
-        _referenceController.clear();
-
-        setState(() {
-          _selectedDriver = null;
-          _selectedPeriod = null;
-          _periodController.clear();
-          _otherItemsType = OtherItemsType.ajuste;
-          _isAdjustmentPositive = true;
-          _showValidationErrors = false;
-        });
+      if (_selectedItemTypes.isNotEmpty &&
+          !_selectedItemTypes.contains(row.itemType)) {
+        return false;
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      if (_selectedMonth != null) {
+        final rowYear = row.periodYear ?? row.date.year;
+        final rowMonth = row.periodMonth ?? row.date.month;
+        if (!(_selectedMonth!.year == rowYear &&
+            _selectedMonth!.month == rowMonth)) {
+          return false;
+        }
       }
-    }
+      return true;
+    }).toList();
   }
 
-  Future<void> _pickPeriodMonth() async {
-    if (_periods.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay períodos disponibles')),
+  bool get _hasAnyFilter =>
+      _selectedDrivers.isNotEmpty ||
+      _selectedItemTypes.isNotEmpty ||
+      _selectedMonth != null;
+
+  Future<void> _openDriverFilterDialog() async {
+    // Use all drivers from the system, not just those with items
+    final options = _allDriverNames;
+    final temp = {..._selectedDrivers};
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocalState) {
+            return AlertDialog(
+              title: const Text('Filtrar por chofer'),
+              content: SizedBox(
+                width: 360,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final d in options)
+                      CheckboxListTile(
+                        value: temp.contains(d),
+                        onChanged: (v) {
+                          setLocalState(() {
+                            if (v == true) {
+                              temp.add(d);
+                            } else {
+                              temp.remove(d);
+                            }
+                          });
+                        },
+                        title: Text(d),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    setState(
+                      () => _selectedDrivers
+                        ..clear()
+                        ..addAll(temp),
+                    );
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
         );
-      }
-      return;
-    }
-
-    final sortedPeriods = [..._periods]
-      ..sort((a, b) => a.startDate.compareTo(b.startDate));
-    final firstDate = DateTime(
-      sortedPeriods.first.startDate.year,
-      sortedPeriods.first.startDate.month,
+      },
     );
-    final lastDate = DateTime(
-      sortedPeriods.last.startDate.year,
-      sortedPeriods.last.startDate.month,
-    );
+  }
 
+  Future<void> _openItemTypeFilterDialog() async {
+    final options = OtherItemsType.values;
+    final temp = {..._selectedItemTypes};
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocalState) {
+            return AlertDialog(
+              title: const Text('Filtrar por tipo de concepto'),
+              content: SizedBox(
+                width: 360,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final t in options)
+                      CheckboxListTile(
+                        value: temp.contains(t),
+                        onChanged: (v) {
+                          setLocalState(() {
+                            if (v == true) {
+                              temp.add(t);
+                            } else {
+                              temp.remove(t);
+                            }
+                          });
+                        },
+                        title: Text(t.label),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    setState(
+                      () => _selectedItemTypes
+                        ..clear()
+                        ..addAll(temp),
+                    );
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _pickMonth() async {
     final now = DateTime.now();
-    var initial = _selectedPeriod == null
-        ? DateTime(now.year, now.month)
-        : DateTime(
-            _selectedPeriod!.startDate.year,
-            _selectedPeriod!.startDate.month,
-          );
-
-    if (initial.isBefore(firstDate)) {
-      initial = firstDate;
-    } else if (initial.isAfter(lastDate)) {
-      initial = lastDate;
-    }
-
+    final initial = _selectedMonth ?? DateTime(now.year, now.month);
     final picked = await showMonthPicker(
       context: context,
       initialDate: initial,
-      firstDate: firstDate,
-      lastDate: lastDate,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
     );
-
-    if (picked == null) return;
-
-    PayrollPeriodData? match;
-    for (final p in sortedPeriods) {
-      if (p.startDate.year == picked.year &&
-          p.startDate.month == picked.month) {
-        match = p;
-        break;
-      }
-    }
-
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final label = DateFormat.yMMMM(locale).format(picked);
-
-    if (match == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay un período para ese mes'),
-          ),
-        );
-      }
+    if (picked != null) {
       setState(() {
-        _selectedPeriod = null;
-        _periodController.clear();
-        _updateValidationStates();
+        _selectedMonth = picked;
       });
-      return;
     }
-
-    setState(() {
-      _selectedPeriod = match;
-      _periodController.text = label[0].toUpperCase() + label.substring(1);
-      _updateValidationStates();
-    });
   }
+
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }

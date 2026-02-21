@@ -129,7 +129,11 @@ class _HomePageDriverState extends State<HomePageDriver> {
               // --- Next Trip section ---
               Text('Tu próximo viaje', style: textTheme.titleLarge),
               gap8,
-              NextTripCard(trip: _nextTrip, onRefresh: _loadData),
+              NextTripCard(
+                trip: _nextTrip,
+                onRefresh: _loadData,
+                isDriverActive: _currentTrip != null,
+              ),
 
               gap24,
 
@@ -270,8 +274,14 @@ class CurrentTripCard extends StatelessWidget {
 class NextTripCard extends StatelessWidget {
   final TripData? trip;
   final Future<void> Function() onRefresh;
+  final bool isDriverActive;
 
-  const NextTripCard({super.key, required this.trip, required this.onRefresh});
+  const NextTripCard({
+    super.key,
+    required this.trip,
+    required this.onRefresh,
+    required this.isDriverActive,
+  });
 
   String _getTimeUntilStart(DateTime startDate) {
     final now = DateTime.now();
@@ -354,11 +364,13 @@ class NextTripCard extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    onPressed: () {
-                      Navigator.of(context)
-                          .push(StartTripPage.route(trip: trip!))
-                          .then((_) => onRefresh());
-                    },
+                    onPressed: isDriverActive
+                        ? null
+                        : () {
+                            Navigator.of(context)
+                                .push(StartTripPage.route(trip: trip!))
+                                .then((_) => onRefresh());
+                          },
                     icon: const Icon(Icons.add_road),
                     label: const Text('Comenzar viaje'),
                   ),

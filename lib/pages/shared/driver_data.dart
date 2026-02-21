@@ -7,6 +7,7 @@ import 'package:frontend_sgfcp/models/driver_data.dart';
 import 'package:frontend_sgfcp/widgets/info_card.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:frontend_sgfcp/services/token_storage.dart';
+import 'package:frontend_sgfcp/pages/shared/login_page.dart';
 import 'package:frontend_sgfcp/services/driver_service.dart';
 import 'package:frontend_sgfcp/services/driver_commission_service.dart';
 import 'package:frontend_sgfcp/services/driver_guaranteed_minimum_service.dart';
@@ -227,6 +228,27 @@ class _DriverDataPageState extends State<DriverDataPage> {
                   },
                   labelColumnWidth: infoLabelWidth,
                 ),
+
+                // Logout button (only for non-admins)
+                if (!isAdmin) ...[gap4,
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        TokenStorage.clear();
+                        Navigator.of(
+                          context,
+                        ).pushAndRemoveUntil(LoginPage.route(), (route) => false);
+                      },
+                      icon: const Icon(Symbols.logout),
+                      label: const Text('Cerrar sesión'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
     );

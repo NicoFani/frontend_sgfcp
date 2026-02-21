@@ -32,6 +32,7 @@ class _MiTripsPageState extends State<MiTripsPage> {
   late Future<List<TripData>> _tripsFuture;
   late Future<TripData?> _currentTripFuture;
   late Future<TripData?> _nextTripFuture;
+  bool _isDriverActive = false;
 
   @override
   void initState() {
@@ -44,6 +45,15 @@ class _MiTripsPageState extends State<MiTripsPage> {
       _tripsFuture = TripService.getTrips();
       _currentTripFuture = TripService.getCurrentTrip();
       _nextTripFuture = TripService.getNextTrip();
+    });
+    
+    // Update driver active status
+    _currentTripFuture.then((currentTrip) {
+      if (mounted) {
+        setState(() {
+          _isDriverActive = currentTrip != null;
+        });
+      }
     });
   }
 
@@ -153,6 +163,7 @@ class _MiTripsPageState extends State<MiTripsPage> {
                       : 'En $daysUntilTrip días',
                   icon: Symbols.add_road,
                   label: 'Comenzar',
+                  enabled: !_isDriverActive,
                   onPressed: () {
                     Navigator.of(context)
                         .push(StartTripPage.route(trip: nextTrip))

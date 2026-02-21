@@ -91,14 +91,14 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _handleForgotPassword() {
-    // TODO: Implementar recuperación de contraseña
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcionalidad de recuperación en desarrollo'),
-      ),
-    );
-  }
+  // void _handleForgotPassword() {
+  //   // TODO: Implementar recuperación de contraseña
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(
+  //       content: Text('Funcionalidad de recuperación en desarrollo'),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -210,19 +210,19 @@ class _LoginPageState extends State<LoginPage> {
                   gap12,
 
                     // Forgot password
-                    SizedBox(
-                      height: 36,
-                      child: FilledButton.tonal(
-                        onPressed: _handleForgotPassword,
-                        child: Text(
-                          'Olvidé mi contraseña',
-                          style: textTheme.labelLarge?.copyWith(
-                            color: colors.onSecondaryContainer,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // SizedBox(
+                    //   height: 36,
+                    //   child: FilledButton.tonal(
+                    //     onPressed: _handleForgotPassword,
+                    //     child: Text(
+                    //       'Olvidé mi contraseña',
+                    //       style: textTheme.labelLarge?.copyWith(
+                    //         color: colors.onSecondaryContainer,
+                    //         fontWeight: FontWeight.w500,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
 
                 ],
               ),

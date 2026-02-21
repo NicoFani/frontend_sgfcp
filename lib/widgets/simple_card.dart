@@ -9,6 +9,7 @@ class SimpleCard extends StatelessWidget {
   final String? label;      // null cuando es iconOnly
   final bool _iconOnly;     // flag interno
   final bool _tonal;        // por si después querés otras variantes
+  final bool enabled;       // controla si el botón está habilitado
 
   const SimpleCard({
     super.key,
@@ -17,6 +18,7 @@ class SimpleCard extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.subtitle,
+    this.enabled = true,
   })  : _iconOnly = false,
         _tonal = false;
 
@@ -26,6 +28,7 @@ class SimpleCard extends StatelessWidget {
     String? subtitle,
     required IconData icon,
     required VoidCallback onPressed,
+    bool enabled = true,
   }) {
     return SimpleCard._internal(
       title: title,
@@ -35,6 +38,7 @@ class SimpleCard extends StatelessWidget {
       label: null,    // sin label
       iconOnly: true,
       tonal: true,
+      enabled: enabled,
     );
   }
 
@@ -46,6 +50,7 @@ class SimpleCard extends StatelessWidget {
     required this.label,
     required bool iconOnly,
     required bool tonal,
+    required this.enabled,
   })  : _iconOnly = iconOnly,
         _tonal = tonal;
 
@@ -95,7 +100,7 @@ class SimpleCard extends StatelessWidget {
   // VARIANTE icon-only tonal
   if (_iconOnly && _tonal) {
     return FilledButton.tonal(
-      onPressed: onPressed,
+      onPressed: enabled ? onPressed : null,
       style: FilledButton.styleFrom(
         fixedSize: const Size(48, 48),
         padding: EdgeInsets.zero,
@@ -106,13 +111,13 @@ class SimpleCard extends StatelessWidget {
 
   // VARIANTE por defecto: primary con label + icon
   return FilledButton.icon(
-    onPressed: onPressed,
+    onPressed: enabled ? onPressed : null,
     icon: Icon(icon, size: 20),
     label: Text(
       label!,
-      style: textTheme.labelLarge?.copyWith(
-        color: colors.onPrimary
-      )
+      // style: textTheme.labelLarge?.copyWith(
+      //   color: colors.onPrimary
+      // )
     ),    
     style: FilledButton.styleFrom(
       fixedSize: const Size(double.infinity, 48),

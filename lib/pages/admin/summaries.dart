@@ -148,7 +148,7 @@ class _SummariesPageAdminState extends State<SummariesPageAdmin> {
                   width: double.infinity,
                   child: FilledButton.tonalIcon(
                     icon: const Icon(Symbols.request_quote),
-                    label: const Text('Cargar otros conceptos'),
+                    label: const Text('Otros conceptos'),
                     onPressed: () =>
                         Navigator.of(context).push(OtherItemsPage.route()),
                   ),
