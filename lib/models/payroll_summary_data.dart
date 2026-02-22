@@ -10,6 +10,8 @@ class PayrollSummaryData {
   final double guaranteedMinimumApplied;
   final double advancesDeducted;
   final double otherItemsTotal;
+  final double balanceInFavor;
+  final double balanceAgainst;
   final double totalAmount;
   final String status;
   final String? errorMessage;
@@ -31,6 +33,8 @@ class PayrollSummaryData {
     required this.guaranteedMinimumApplied,
     required this.advancesDeducted,
     required this.otherItemsTotal,
+    required this.balanceInFavor,
+    required this.balanceAgainst,
     required this.totalAmount,
     required this.status,
     this.errorMessage,
@@ -58,6 +62,8 @@ class PayrollSummaryData {
       ),
       advancesDeducted: _parseDecimal(json['advances_deducted']),
       otherItemsTotal: _parseDecimal(json['other_items_total']),
+      balanceInFavor: _parseDecimal(json['balance_in_favor']),
+      balanceAgainst: _parseDecimal(json['balance_against']),
       totalAmount: _parseDecimal(json['total_amount']),
       status: json['status'] as String,
       errorMessage: json['error_message'] as String?,

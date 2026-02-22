@@ -161,7 +161,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                         value: 'excel',
                         child: Text('Descargar Excel'),
                       ),
-                       PopupMenuItem(
+                      PopupMenuItem(
                         value: 'pdf',
                         enabled: _summary?.status == 'approved',
                         child: Text('Descargar PDF'),
@@ -366,15 +366,9 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       gap16,
-                      _buildTotalRow(
-                        'Saldo a favor',
-                        summary.totalAmount > 0 ? summary.totalAmount : 0,
-                      ),
+                      _buildTotalRow('Saldo a favor', summary.balanceInFavor),
                       gap8,
-                      _buildTotalRow(
-                        'Saldo en contra',
-                        summary.totalAmount < 0 ? summary.totalAmount : 0,
-                      ),
+                      _buildTotalRow('Saldo en contra', summary.balanceAgainst),
                       const Divider(height: 24),
                       _buildTotalRow(
                         'Total',
