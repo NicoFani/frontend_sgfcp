@@ -550,7 +550,7 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
   }
 
   Future<void> _openTripDetail(int tripId, {TripData? prefetchedTrip}) async {
-    // final previousStatus = _summary?.status;
+    final previousStatus = _summary?.status;
 
     try {
       final trip = prefetchedTrip ?? await TripService.getTrip(tripId: tripId);
@@ -564,6 +564,18 @@ class _SummaryDetailPageState extends State<SummaryDetailPage> {
       await Navigator.of(context).push(TripPage.route(tripId: tripId));
     } finally {
       if (!mounted) return;
+
+      // Si el resumen estaba en error, recalcular automáticamente
+      // para verificar si el problema se resolvió
+      if (previousStatus == 'error') {
+        try {
+          await PayrollSummaryService.recalculateSummary(
+            summaryId: widget.summaryId,
+          );
+        } catch (_) {
+          // Si falla el recálculo, solo recargar los datos
+        }
+      }
 
       await _loadSummary();
     }
